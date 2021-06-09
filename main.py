@@ -1,10 +1,9 @@
-
 class parsing_hexdump:
-    network_id = ""
-    version_max = ""
-    version_using = ""
-    version_min = ""
-    message_type = ""
+    network_id = -1
+    version_max = -1
+    version_using = -1
+    version_min = -1
+    message_type = -1
     extensions = []
 
     def __init__(self, hexdump):
@@ -13,21 +12,13 @@ class parsing_hexdump:
         self.parse_header()
 
     def parse_header(self):
-        for i in range(0, 8):
-            attribute = self.working_hexdump[:2]
-            self.working_hexdump = self.working_hexdump[2:]
-            if (i == 1):
-                parsing_hexdump.network_id = attribute
-            elif (i == 2):
-                parsing_hexdump.version_max = attribute
-            elif(i == 3) :
-                parsing_hexdump.version_using = attribute
-            elif(i == 4):
-                parsing_hexdump.version_min = attribute
-            elif (i == 5):
-                parsing_hexdump.message_type = attribute
-            elif(i == 6 or i == 7):
-                parsing_hexdump.extensions.append(attribute)
+        parsing_hexdump.network_id = int(self.working_hexdump[2:4])
+        parsing_hexdump.version_max = int(self.working_hexdump[4:6])
+        parsing_hexdump.version_using = int(self.working_hexdump[6:8])
+        parsing_hexdump.version_min = int(self.working_hexdump[8:10])
+        parsing_hexdump.message_type = int(self.working_hexdump[10:12])
+        parsing_hexdump.extensions.append(int(self.working_hexdump[12:14]))
+        parsing_hexdump.extensions.append(int(self.working_hexdump[14:16]))
 
 
     def display_header(self):
