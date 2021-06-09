@@ -1,7 +1,7 @@
 import binascii
 
 
-class parsing_hexdump:
+class message_header:
     network_id = -1
     version_max = -1
     version_using = -1
@@ -33,5 +33,5 @@ class parsing_hexdump:
 
 
 input_stream = "524212121202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
-h = parsing_hexdump(binascii.unhexlify(input_stream))
+h = message_header(binascii.unhexlify(input_stream))
 h.display_header()
