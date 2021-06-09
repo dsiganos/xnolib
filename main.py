@@ -10,18 +10,17 @@ class parsing_hexdump:
     extensions = []
 
     def __init__(self, hexdump):
-        self.original_hexdump = hexdump
-        self.working_hexdump = hexdump
+        self.hexdump = hexdump
         self.parse_header()
 
     def parse_header(self):
-        parsing_hexdump.network_id = self.working_hexdump[1]
-        parsing_hexdump.version_max = self.working_hexdump[2]
-        parsing_hexdump.version_using = self.working_hexdump[3]
-        parsing_hexdump.version_min = self.working_hexdump[4]
-        parsing_hexdump.message_type = self.working_hexdump[5]
-        parsing_hexdump.extensions.append(self.working_hexdump[6])
-        parsing_hexdump.extensions.append(self.working_hexdump[7])
+        parsing_hexdump.network_id = self.hexdump[1]
+        parsing_hexdump.version_max = self.hexdump[2]
+        parsing_hexdump.version_using = self.hexdump[3]
+        parsing_hexdump.version_min = self.hexdump[4]
+        parsing_hexdump.message_type = self.hexdump[5]
+        parsing_hexdump.extensions.append(self.hexdump[6])
+        parsing_hexdump.extensions.append(self.hexdump[7])
 
 
     def display_header(self):
