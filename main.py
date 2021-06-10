@@ -136,15 +136,15 @@ class peers():
         no_of_peers = int(len(rawdata) / 18)
         start_index = 0
         end_index = 18
-        peers = []
+        peers_list = []
         for i in range(0, no_of_peers):
             ip = ipv6addresss(rawdata[start_index:end_index - 2])
             port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
             p = peer_address(ip, port)
-            peers.append(p)
+            peers_list.append(p)
             start_index = end_index
             end_index += 18
-        return peers
+        return peers(peers_list)
 
     def serialise(self):
         data = b""
@@ -154,7 +154,6 @@ class peers():
 
     def __str__(self):
         string = ""
-        print(len(self.peers))
         for i in range(0, len(self.peers)):
             string += "Peer %d:" % (i+1)
             string += str(self.peers[i])
