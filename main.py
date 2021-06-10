@@ -44,10 +44,28 @@ class message_type:
 
 class message_header:
 
-    def __init__(self, data):
+    def __init__(self, net_id, versions, msg_type):
         self.ext = []
-        self.parse_header(data)
+        self.net_id = net_id
+        self.ver_max = versions[0]
+        self.ver_using = versions[1]
+        self.ver_min = versions[2]
+        self.msg_type = msg_type
+        # TODO: extensions
 
+    def serialise_header(self):
+        header = b""
+        header += ord('R').to_bytes(1, "big")
+        header += ord(self.net_id).to_bytes(1, "big")
+        # FIXME: you have the version data, use it
+        for i in range(0, 3):
+            header += (34).to_bytes(1, "big")
+        header += self.message_type.to_bytes(1, "big")
+        header += (00).to_bytes(1, "big")
+        header += (00).to_bytes(1, "big")
+        return header
+
+    # this need to become a class method
     def parse_header(self, data):
         if data[0] != ord('R'):
             raise ParseErrorBadMagicNumber()
@@ -56,9 +74,6 @@ class message_header:
         self.ver_using = data[3]
         self.ver_min = data[4]
         self.msg_type = message_type(data[5])
-        self.ext.append(data[6])
-        self.ext.append(data[7])
-
 
     def __str__(self):
         str  = "NetID:%s, "    % self.net_id
