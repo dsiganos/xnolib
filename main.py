@@ -75,7 +75,7 @@ class ipv6addresss:
         self.parse_address()
 
     def parse_address(self):
-        if len(data) < 16:
+        if len(self.data) < 16:
             raise ParseErrorBadIPv6
         address_int = int.from_bytes(self.data[0:16], "big")
         self.address = ipaddress.IPv6Address(address_int)
@@ -92,20 +92,17 @@ class message_body():
         self.parse_peer()
 
     def parse_peer(self):
-        self.ip = ipv6addresss(data[:16])
-        self.port = int.from_bytes(data[16:18], "little")
+        self.ip = ipv6addresss(self.data[:16])
+        self.port = int.from_bytes(self.data[16:18], "little")
 
     def __str__(self):
         string = "Peer: ["
         string += str(self.ip) + "]:"
         string += str(self.port)
         return string
+    
 
-
-
-
-input_stream = "524212121202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
-
+input_stream = "524122222202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
 data = binascii.unhexlify(input_stream)
 h = message_header(data)
 b = message_body(data[8:26])
