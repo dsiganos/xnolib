@@ -1,37 +1,49 @@
 import binascii
 
+class ParseErrorBadMagicNumber(Exception):
+    pass
+
+class ParseErrorBadNetworkId(Exception):
+    pass
+
+class network_id:
+    def __init__(self, rawbyte):
+        self.parse_header(rawbyte)
+
+    def parse_header(self, rawbyte):
+        if not (rawbyte in [ord('A'), ord('B'), ord('C')]):
+            raise ParseErrorBadNetworkId()
+        self.id = rawbyte
+
+    def __str__(self):
+        return chr(self.id)
 
 class message_header:
-    network_id = -1
-    version_max = -1
-    version_using = -1
-    version_min = -1
-    message_type = -1
-    extensions = []
 
-    def __init__(self, hexdump):
-        self.hexdump = hexdump
-        self.parse_header()
+    def __init__(self, data):
+        self.parse_header(data)
 
-    def parse_header(self):
-        parsing_hexdump.network_id = self.hexdump[1]
-        parsing_hexdump.version_max = self.hexdump[2]
-        parsing_hexdump.version_using = self.hexdump[3]
-        parsing_hexdump.version_min = self.hexdump[4]
-        parsing_hexdump.message_type = self.hexdump[5]
-        parsing_hexdump.extensions.append(self.hexdump[6])
-        parsing_hexdump.extensions.append(self.hexdump[7])
+    def parse_header(self, data):
+        if data[0] != ord('R'):
+            raise ParseErrorBadMagicNumber()
+        self.net_id = network_id(data[1])
+        self.ver_max = data[2]
+        self.ver_using = data[3]
+        self.ver_min = data[4]
+        self.msg_type = data[5]
+        # TODO: extensions
 
-
-    def display_header(self):
-        print("Network ID: {}".format(parsing_hexdump.network_id))
-        print("Version Max: {}".format(parsing_hexdump.version_max))
-        print("Version Using: {}".format(parsing_hexdump.version_using))
-        print("Version Min: {}".format(parsing_hexdump.version_min))
-        print("Message Type: {}".format(parsing_hexdump.message_type))
-        print("Extensions: {} {}".format(parsing_hexdump.extensions[0], parsing_hexdump.extensions[1]))
-
+    def __str__(self):
+        str  = "NetID:%s, "    % self.net_id
+        str += "VerMax:%s, "   % self.ver_max
+        str += "VerUsing:%s, " % self.ver_using
+        str += "VerMin:%s, "   % self.ver_min
+        str += "MsgType:%s"    % self.msg_type
+        # TODO: extensions
+        return str
 
 input_stream = "524212121202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
-h = message_header(binascii.unhexlify(input_stream))
-h.display_header()
+
+data = binascii.unhexlify(input_stream)
+h = message_header(data)
+print(h)
