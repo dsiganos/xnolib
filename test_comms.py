@@ -25,7 +25,6 @@ class TestComms(unittest.TestCase):
 
     def test_peer_deserialisation(self):
         p = peers.parse_peers(self.data[8:])
-        print(p)
         self.assertEqual(8, len(p.peers))
 
     def test_peer_serialisation(self):
