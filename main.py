@@ -82,6 +82,10 @@ class message_header:
         ext.append(data[7])
         return message_header(net_id, versions, msg_type, ext)
 
+    def __eq__(self, other):
+        if str(self) == str(other):
+            return True
+
     def __str__(self):
         str  = "NetID:%s, "    % self.net_id
         str += "VerMax:%s, "   % self.ver_max
@@ -152,6 +156,10 @@ class peers():
         for i in range(0, len(self.peers)):
             data += self.peers[i].serialise()
         return data
+
+    def __eq__(self, other):
+        if str(self) == str(other):
+            return True
 
     def __str__(self):
         string = ""
