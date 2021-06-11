@@ -224,23 +224,34 @@ class message_telemetry_req:
             return True
         return False
 
+class message_bulk_pull:
+    def __init__(self):
+        self.header = message_header(network_id(66), [18, 18, 18], message_type(6), [0, 0])
+        self.public_key = binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A")
+
+    def serialise(self):
+        data = self.header.serialise_header()
+        data += self.public_key
+        data += (0).to_bytes(32, "big")
+        return data
+
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("peering-beta.nano.org", 54000))
 keepalive = message_keepmealive()
 req = keepalive.serialise()
 s.send(req)
-telemetry = message_telemetry_req()
-req = telemetry.serialise()
+bulk_pull = message_bulk_pull()
+req = bulk_pull.serialise()
 s.send(req)
 
 
 def receive_loop(sock):
     while True:
-        print("Running")
         # TODO: we expect to get a message header here
         # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
         # then do work according to the message type
-        data = sock.recv(8)
+        data = sock.recv(1024)
         if len(data) == 0:
             raise SocketClosedByPeer();
         print(data)
