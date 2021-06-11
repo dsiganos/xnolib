@@ -182,27 +182,55 @@ class peers():
             string += "\n"
         return string
 
+class message_keepmealive:
+    def __init__(self):
+        self.header = message_header(network_id(66), [18, 18, 18], message_type(2), [0, 0])
+        ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
+        ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
+        ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
+        ip4 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9538:2eec")), 54000)
+        ip5 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:2e04:4970")), 54000)
+        ip6 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:68cd:cd53")), 54000)
+        ip7 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:b3a2:bdef")), 54000)
+        ip8 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:74ca:6b61")), 54000)
+        peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
+        self.peers = peers(peer_list)
+
+    def serialise(self):
+        data = self.header.serialise_header()
+        data += self.peers.serialise()
+        return data
+
+    def __str__(self):
+        string = str(self.header)
+        string += "\n" + str(self.peers)
+
+    def __eq__(self, other):
+        if str(self) == str(other):
+            return True
+        return False
+class message_telemetry_req:
+    def __init__(self):
+        self.header = message_header(network_id(66), [18, 18, 18], message_type(12), [0, 0])
+
+    def serialise(self):
+        return self.header.serialise_header()
+
+    def __str__(self):
+        return str(self.header)
+
+    def __eq__(self, other):
+        if str(self) == str(other):
+            return True
+        return False
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("peering-beta.nano.org", 54000))
-h = message_header(network_id(66), [18, 18, 18], message_type(2), [0, 0])
-ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
-ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
-ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
-ip4 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9538:2eec")), 54000)
-ip5 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:2e04:4970")), 54000)
-ip6 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:68cd:cd53")), 54000)
-ip7 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:b3a2:bdef")), 54000)
-ip8 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:74ca:6b61")), 54000)
-peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
-p = peers(peer_list)
-req = h.serialise_header()
-req += p.serialise()
+keepalive = message_keepmealive()
+req = keepalive.serialise()
 s.send(req)
-
-h1 = message_header(network_id(66), [34, 34, 34], message_type(12), [0, 0])
-req = h1.serialise_header()
-#req += p.serialise()
+telemetry = message_telemetry_req()
+req = telemetry.serialise()
 s.send(req)
 
 
