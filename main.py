@@ -33,6 +33,7 @@ class network_id:
         self.parse_header(int(rawbyte))
 
     def parse_header(self, rawbyte):
+        # print(rawbyte)
         if not (rawbyte in [ord('A'), ord('B'), ord('C')]):
             raise ParseErrorBadNetworkId()
         self.id = rawbyte
@@ -184,7 +185,7 @@ class peers():
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("peering-beta.nano.org", 54000))
-h = message_header(network_id(66), [34, 34, 34], message_type(2), [0, 0])
+h = message_header(network_id(66), [18, 18, 18], message_type(2), [0, 0])
 ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
 ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
 ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
@@ -201,7 +202,7 @@ s.send(req)
 
 h1 = message_header(network_id(66), [34, 34, 34], message_type(12), [0, 0])
 req = h1.serialise_header()
-req += p.serialise()
+#req += p.serialise()
 s.send(req)
 
 
