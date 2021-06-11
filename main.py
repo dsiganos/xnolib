@@ -168,3 +168,23 @@ class peers():
             string += str(self.peers[i])
             string += "\n"
         return string
+    
+    
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(("peering-beta.nano.org", 54000))
+h = message_header(network_id(65), [34, 34, 34], message_type(2), [0, 0])
+ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
+ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
+ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
+ip4 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9538:2eec")), 54000)
+ip5 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:2e04:4970")), 54000)
+ip6 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:68cd:cd53")), 54000)
+ip7 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:b3a2:bdef")), 54000)
+ip8 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:74ca:6b61")), 54000)
+peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
+p = peers(peer_list)
+req = h.serialise_header()
+req += p.serialise()
+s.send(req)
+info = s.recv(1024)
+print (info)
