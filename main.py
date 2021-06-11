@@ -1,5 +1,6 @@
 import binascii
 import ipaddress
+import socket
 
 
 class ParseErrorBadMagicNumber(Exception):
@@ -19,9 +20,10 @@ class ParseErrorBadMessageBody(Exception):
 
 class network_id:
     def __init__(self, rawbyte):
-        self.parse_header(rawbyte)
+        self.parse_header(int(rawbyte))
 
     def parse_header(self, rawbyte):
+        #print(rawbyte)
         if not (rawbyte in [ord('A'), ord('B'), ord('C')]):
             raise ParseErrorBadNetworkId()
         self.id = rawbyte
@@ -36,7 +38,7 @@ class message_type:
 
     def parse_type(self, data):
         if (data != 2):
-            raise ParseErrorBadMessageType
+            raise ParseErrorBadMessageType()
         self.type = data
 
     def __str__(self):
@@ -55,11 +57,11 @@ class message_header:
     def serialise_header(self):
         header = b""
         header += ord('R').to_bytes(1, "big")
-        header += ord(self.net_id).to_bytes(1, "big")
+        header += ord(str(self.net_id)).to_bytes(1, "big")
         header += self.ver_max.to_bytes(1, "big")
         header += self.ver_using.to_bytes(1, "big")
         header += self.ver_min.to_bytes(1, "big")
-        header += self.message_type.to_bytes(1, "big")
+        header += self.msg_type.type.to_bytes(1, "big")
         header += (00).to_bytes(1, "big")
         header += (00).to_bytes(1, "big")
         return header
@@ -90,18 +92,18 @@ class message_header:
         return str
 
 class ipv6addresss:
-    def __init__(self, data):
-        self.data = data
-        self.parse_address()
+    def __init__(self, ip):
+        self.ip = ip
 
-    def parse_address(self):
-        if len(self.data) < 16:
+    @classmethod
+    def parse_address(cls, data):
+        if len(data) < 16:
             raise ParseErrorBadIPv6
-        address_int = int.from_bytes(self.data[0:16], "big")
-        self.address = ipaddress.IPv6Address(address_int)
+        address_int = int.from_bytes(data[0:16], "big")
+        return ipv6addresss(ipaddress.IPv6Address(address_int))
 
     def __str__(self):
-        return str(self.address)
+        return str(self.ip)
 
 
 # A class representing a peer, stores its address, port and provides the means to convert
@@ -113,10 +115,9 @@ class peer_address:
 
     def serialise(self):
         data = b""
-        data += self.ip.packed
+        data += self.ip.ip.packed
         data += self.port.to_bytes(2, "little")
         return data
-
 
     def __str__(self):
         string = "["
@@ -132,13 +133,13 @@ class peers():
     @classmethod
     def parse_peers(cls, rawdata):
         if len(rawdata) % 18 != 0:
-            raise ParseErrorBadMessageBody
+            raise ParseErrorBadMessageBody()
         no_of_peers = int(len(rawdata) / 18)
         start_index = 0
         end_index = 18
         peers_list = []
         for i in range(0, no_of_peers):
-            ip = ipv6addresss(rawdata[start_index:end_index - 2])
+            ip = ipv6addresss.parse_address(rawdata[start_index:end_index - 2])
             port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
             p = peer_address(ip, port)
             peers_list.append(p)
@@ -159,11 +160,3 @@ class peers():
             string += str(self.peers[i])
             string += "\n"
         return string
-
-
-input_stream = "524122222202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
-data = binascii.unhexlify(input_stream)
-h = message_header.parse_header(data)
-b = peers.parse_peers(data[8:])
-print(h)
-print(b)
