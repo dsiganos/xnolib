@@ -33,7 +33,6 @@ class network_id:
         self.parse_header(int(rawbyte))
 
     def parse_header(self, rawbyte):
-        # print(rawbyte)
         if not (rawbyte in [ord('A'), ord('B'), ord('C')]):
             raise ParseErrorBadNetworkId()
         self.id = rawbyte
@@ -247,14 +246,19 @@ s.send(req)
 
 
 def receive_loop(sock):
+    data = b""
+    count = 1
     while True:
         # TODO: we expect to get a message header here
         # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
         # then do work according to the message type
-        data = sock.recv(1024)
+        data = sock.recv(8)
+        h = message_header.parse_header(data)
+        print(h)
+        break
         if len(data) == 0:
-            raise SocketClosedByPeer();
-        print(data)
+            raise SocketClosedByPeer()
+
 
 
 receive_thread = threading.Thread(target=receive_loop, args=(s,), daemon=True)
