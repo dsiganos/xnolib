@@ -1,7 +1,7 @@
 import binascii
 import ipaddress
 import socket
-
+import threading
 
 class ParseErrorBadMagicNumber(Exception):
     pass
@@ -16,6 +16,9 @@ class ParseErrorBadIPv6(Exception):
     pass
 
 class ParseErrorBadMessageBody(Exception):
+    pass
+
+class SocketClosedByPeer(Exception):
     pass
 
 class network_id:
@@ -186,5 +189,17 @@ p = peers(peer_list)
 req = h.serialise_header()
 req += p.serialise()
 s.send(req)
-info = s.recv(1024)
-print (info)
+
+def receive_loop(sock):
+    while True:
+        # TODO: we expect to get a message header here
+        # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
+        # then do work according to the message type
+        data = sock.recv(1)
+        if len(data) == 0:
+            raise SocketClosedByPeer();
+        print (data)
+
+receive_thread = threading.Thread(target=receive_loop, args=(s,), daemon=True)
+receive_thread.start()
+receive_thread.join()
