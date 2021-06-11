@@ -3,30 +3,36 @@ import ipaddress
 import socket
 import threading
 
+
 class ParseErrorBadMagicNumber(Exception):
     pass
+
 
 class ParseErrorBadNetworkId(Exception):
     pass
 
+
 class ParseErrorBadMessageType(Exception):
     pass
+
 
 class ParseErrorBadIPv6(Exception):
     pass
 
+
 class ParseErrorBadMessageBody(Exception):
     pass
 
+
 class SocketClosedByPeer(Exception):
     pass
+
 
 class network_id:
     def __init__(self, rawbyte):
         self.parse_header(int(rawbyte))
 
     def parse_header(self, rawbyte):
-        #print(rawbyte)
         if not (rawbyte in [ord('A'), ord('B'), ord('C')]):
             raise ParseErrorBadNetworkId()
         self.id = rawbyte
@@ -40,12 +46,13 @@ class message_type:
         self.parse_type(data)
 
     def parse_type(self, data):
-        if (data != 2):
-            raise ParseErrorBadMessageType()
+        if not (data in range(2, 13)):
+             raise ParseErrorBadMessageType()
         self.type = data
 
     def __str__(self):
         return str(self.type)
+
 
 class message_header:
 
@@ -90,13 +97,14 @@ class message_header:
             return True
 
     def __str__(self):
-        str  = "NetID:%s, "    % self.net_id
-        str += "VerMax:%s, "   % self.ver_max
+        str = "NetID:%s, " % self.net_id
+        str += "VerMax:%s, " % self.ver_max
         str += "VerUsing:%s, " % self.ver_using
-        str += "VerMin:%s, "   % self.ver_min
-        str += "MsgType:%s, "    % self.msg_type
+        str += "VerMin:%s, " % self.ver_min
+        str += "MsgType:%s, " % self.msg_type
         str += "Extensions:%s, %s" % (self.ext[0], self.ext[1])
         return str
+
 
 class ipv6addresss:
     def __init__(self, ip):
@@ -116,7 +124,7 @@ class ipv6addresss:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class peer_address:
-    def __init__(self,ip, port):
+    def __init__(self, ip, port):
         self.ip = ip
         self.port = port
 
@@ -131,6 +139,7 @@ class peer_address:
         string += str(self.ip) + "]:"
         string += str(self.port)
         return string
+
 
 # Creates, stores and manages all of the peer_address objects (from the raw data)
 class peers():
@@ -167,15 +176,15 @@ class peers():
     def __str__(self):
         string = ""
         for i in range(0, len(self.peers)):
-            string += "Peer %d:" % (i+1)
+            string += "Peer %d:" % (i + 1)
             string += str(self.peers[i])
             string += "\n"
         return string
-    
-    
+
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("peering-beta.nano.org", 54000))
-h = message_header(network_id(65), [34, 34, 34], message_type(2), [0, 0])
+h = message_header(network_id(66), [34, 34, 34], message_type(2), [0, 0])
 ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
 ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
 ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
@@ -190,15 +199,23 @@ req = h.serialise_header()
 req += p.serialise()
 s.send(req)
 
+h1 = message_header(network_id(66), [34, 34, 34], message_type(12), [0, 0])
+req = h1.serialise_header()
+req += p.serialise()
+s.send(req)
+
+
 def receive_loop(sock):
     while True:
+        print("Running")
         # TODO: we expect to get a message header here
         # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
         # then do work according to the message type
-        data = sock.recv(1)
+        data = sock.recv(8)
         if len(data) == 0:
             raise SocketClosedByPeer();
-        print (data)
+        print(data)
+
 
 receive_thread = threading.Thread(target=receive_loop, args=(s,), daemon=True)
 receive_thread.start()
