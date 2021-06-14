@@ -210,8 +210,8 @@ class peers():
         return string
 
 class message_keepmealive:
-    def __init__(self):
-        self.header = message_header(network_id(66), [18, 18, 18], message_type(2), [0, 0])
+    def __init__(self, net_id = network_id(66)):
+        self.header = message_header(net_id, [18, 18, 18], message_type(2), [0, 0])
         ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
         ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
         ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
@@ -373,6 +373,13 @@ class block_receive:
         self.source = source
         self.sig = sig
         self.work = work
+    def __str__(self):
+        string = "------------- Block Receive -------------\n"
+        string += "Previous Node: %d\n" % self.prev
+        string += "Source Node: %d\n" % self.source
+        string += "Signature: %d\n" % self.sig
+        string += "Proof of Work: %d" % self.work
+        return string
 
 class block_open:
     def __init__(self, source, rep, account, sig, work):
@@ -382,8 +389,14 @@ class block_open:
         self.sig = sig
         self.work = work
 
-    def parse_block_open(self, data):
-        pass
+    def __str__(self):
+        string = "------------- Block Send -------------\n"
+        string += "Source Node: %s\n" % hex(self.source)
+        string += "Representative Node: %s\n" % hex(self.rep)
+        string += "Account: %s\n" % hex(self.account)
+        string += "Signature: %s\n" % hex(self.sig)
+        string += "Proof of Work: %s" % hex(self.work)
+        return string
 
 class block_change:
     def __init__(self, prev, rep, sig, work):
@@ -392,9 +405,15 @@ class block_change:
         self.sig = sig
         self.work = work
 
+    def __str__(self):
+        string = "------------- Block Send -------------\n"
+        string += "Previous Node: %s\n" % hex(self.prev)
+        string += "Representative Node: %s\n" % hex(self.rep)
+        string += "Signature: %s\n" % hex(self.sig)
+        string += "Proof of Work: %s" % hex(self.work)
+
 class block_state:
     def __init__(self, account, prev, rep, bal, link, sig, work):
-        print ("making state block")
         self.account = account
         self.prev = prev
         self.rep = rep
@@ -415,8 +434,8 @@ class block_state:
         return string
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("peering-beta.nano.org", 54000))
-keepalive = message_keepmealive()
+s.connect(("peering.nano.org", 7075))
+keepalive = message_keepmealive(network_id(67))
 req = keepalive.serialise()
 s.send(req)
 bulk_pull = message_bulk_pull()
@@ -432,6 +451,7 @@ def receive_loop(sock):
         # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
         # then do work according to the message type
         data = sock.recv(217)
+        print (data)
         print(binascii.hexlify(data))
         b = bulk_pull_response.parse_bulk_pull_response(data)
         print ("printing the bulk pull")
