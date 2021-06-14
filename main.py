@@ -461,7 +461,7 @@ s.send(req)
 while True:
     block = None
     #The try-except is just because we will receive an exception from one of the blocks at the end
-    # If you print the first 153 bytes of the data you receive you will see the 'epoch v2 block' string in it somewhere
+    # If you print the first 153 bytes of the data you receive you will see the 'epoch v2 block' (in the binary data?) string in it somewhere
     try:
         type = s.recv(1)
         if type[0] == 2:
