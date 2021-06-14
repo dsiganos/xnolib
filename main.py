@@ -335,6 +335,8 @@ class bulk_pull_response:
         prev = int.from_bytes(data[32:64], "big")
         rep = int.from_bytes(data[64:96], "big")
         bal = int.from_bytes(data[96:112], "big")
+        print("link:")
+        print(data[112:144])
         link = int.from_bytes(data[112:144], "big")
         sig = int.from_bytes(data[188:208], "big")
         work = int.from_bytes(data[208:], "big")
@@ -358,13 +360,12 @@ class block_send:
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
-        string += "Previous Node: %d\n" % self.prev
-        string += "Destination Node: %d\n"  % self.dest
-        string += "Balance: %d\n" % self.bal
-        string += "Signature: %d\n" % self.sig
-        string += "Proof of Work: %d" % self.work
+        string += "Previous Node: %d\n" % hex(self.prev)
+        string += "Destination Node: %d\n"  % hex(self.dest)
+        string += "Balance: %d\n" % hex(self.bal)
+        string += "Signature: %d\n" % hex(self.sig)
+        string += "Proof of Work: %d" % hex(self.work)
         return string
-
 
 
 class block_receive:
@@ -375,10 +376,10 @@ class block_receive:
         self.work = work
     def __str__(self):
         string = "------------- Block Receive -------------\n"
-        string += "Previous Node: %d\n" % self.prev
-        string += "Source Node: %d\n" % self.source
-        string += "Signature: %d\n" % self.sig
-        string += "Proof of Work: %d" % self.work
+        string += "Previous Node: %d\n" % hex(self.prev)
+        string += "Source Node: %d\n" % hex(self.source)
+        string += "Signature: %d\n" % hex(self.sig)
+        string += "Proof of Work: %d" % hex(self.work)
         return string
 
 class block_open:
@@ -450,7 +451,7 @@ livectx = {
 ctx = livectx
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("peering.nano.org", 7075))
+s.connect((ctx['peeraddr'], ctx['peerport']))
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
@@ -467,10 +468,9 @@ def receive_loop(sock):
         # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
         # then do work according to the message type
         data = sock.recv(217)
-        print (data)
-        print(binascii.hexlify(data))
+        print(data)
+        #print(binascii.hexlify(data))
         b = bulk_pull_response.parse_bulk_pull_response(data)
-        print ("printing the bulk pull")
         print(b)
         break
         if len(data) == 0:
