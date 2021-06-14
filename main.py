@@ -335,8 +335,6 @@ class bulk_pull_response:
         prev = int.from_bytes(data[32:64], "big")
         rep = int.from_bytes(data[64:96], "big")
         bal = int.from_bytes(data[96:112], "big")
-        print("link:")
-        print(data[112:144])
         link = int.from_bytes(data[112:144], "big")
         sig = int.from_bytes(data[188:208], "big")
         work = int.from_bytes(data[208:], "big")
@@ -360,11 +358,11 @@ class block_send:
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
-        string += "Previous Node: %d\n" % hex(self.prev)
-        string += "Destination Node: %d\n"  % hex(self.dest)
-        string += "Balance: %d\n" % hex(self.bal)
-        string += "Signature: %d\n" % hex(self.sig)
-        string += "Proof of Work: %d" % hex(self.work)
+        string += "Previous Node: %s\n" % hex(self.prev)
+        string += "Destination Node: %s\n"  % hex(self.dest)
+        string += "Balance: %s\n" % hex(self.bal)
+        string += "Signature: %s\n" % hex(self.sig)
+        string += "Proof of Work: %s" % hex(self.work)
         return string
 
 
@@ -376,10 +374,10 @@ class block_receive:
         self.work = work
     def __str__(self):
         string = "------------- Block Receive -------------\n"
-        string += "Previous Node: %d\n" % hex(self.prev)
-        string += "Source Node: %d\n" % hex(self.source)
-        string += "Signature: %d\n" % hex(self.sig)
-        string += "Proof of Work: %d" % hex(self.work)
+        string += "Previous Node: %s\n" % hex(self.prev)
+        string += "Source Node: %s\n" % hex(self.source)
+        string += "Signature: %s\n" % hex(self.sig)
+        string += "Proof of Work: %s" % hex(self.work)
         return string
 
 class block_open:
@@ -451,6 +449,7 @@ livectx = {
 ctx = livectx
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 s.connect((ctx['peeraddr'], ctx['peerport']))
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
@@ -459,24 +458,23 @@ bulk_pull = message_bulk_pull(ctx)
 req = bulk_pull.serialise()
 s.send(req)
 
-
-def receive_loop(sock):
-    data = b""
-    count = 1
-    while True:
-        # TODO: we expect to get a message header here
-        # so ask for 8 bytes, deserialise the 8 bytes as a message header and if it is valid
-        # then do work according to the message type
-        data = sock.recv(217)
-        print(data)
-        #print(binascii.hexlify(data))
-        b = bulk_pull_response.parse_bulk_pull_response(data)
-        print(b)
+while True:
+    block = None
+    #The try-except is just because we will receive an exception from one of the blocks at the end
+    # If you print the first 153 bytes of the data you receive you will see the 'epoch v2 block' string in it somewhere
+    try:
+        type = s.recv(1)
+        if type[0] == 2:
+            block = bulk_pull_response.create_block_send(s.recv(152))
+        elif type[0] == 3:
+            block = bulk_pull_response.create_block_recv(s.recv(136))
+        elif type[0] == 4:
+            block = bulk_pull_response.create_block_open(s.recv(168))
+        elif type[0] == 5:
+            block = bulk_pull_response.create_block_change(s.recv(136))
+        elif type[0] == 6:
+            block = bulk_pull_response.create_block_state(s.recv(216))
+        print(block)
+    except:
+        print("--- Finished ---")
         break
-        if len(data) == 0:
-            raise SocketClosedByPeer()
-
-
-receive_thread = threading.Thread(target=receive_loop, args=(s,), daemon=True)
-receive_thread.start()
-receive_thread.join()
