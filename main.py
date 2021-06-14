@@ -210,7 +210,7 @@ class peers():
         return string
 
 class message_keepmealive:
-    def __init__(self, net_id = network_id(66)):
+    def __init__(self, net_id):
         self.header = message_header(net_id, [18, 18, 18], message_type(2), [0, 0])
         ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
         ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
@@ -238,9 +238,9 @@ class message_keepmealive:
         return False
 
 class message_bulk_pull:
-    def __init__(self):
-        self.header = message_header(network_id(66), [18, 18, 18], message_type(6), [0, 0])
-        self.public_key = binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A")
+    def __init__(self, ctx):
+        self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(6), [0, 0])
+        self.public_key = binascii.unhexlify(ctx['genesis_pub'])
 
 
     def serialise(self):
@@ -433,12 +433,28 @@ class block_state:
         string += "Work: %s\n" % hex(self.work)
         return string
 
+betactx = {
+    'net_id'      : network_id(ord('B')),
+    'peeraddr'    : "peering-beta.nano.org",
+    'peerport'    : 54000,
+    'genesis_pub' : '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+}
+
+livectx = {
+    'net_id'      : network_id(ord('C')),
+    'peeraddr'    : "peering.nano.org",
+    'peerport'    : 7075,
+    'genesis_pub' : 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+}
+
+ctx = livectx
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("peering.nano.org", 7075))
-keepalive = message_keepmealive(network_id(67))
+keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
-bulk_pull = message_bulk_pull()
+bulk_pull = message_bulk_pull(ctx)
 req = bulk_pull.serialise()
 s.send(req)
 
