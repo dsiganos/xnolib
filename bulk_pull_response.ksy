@@ -26,12 +26,12 @@ types:
               type:
                 switch-on: block_type_arg
                 cases:
-                    'enum_block_type::send.to_i' : block_send
-                    'enum_block_type::receive.to_i' : block_receive
-                    'enum_block_type::open.to_i' : block_open
-                    'enum_block_type::change.to_i' : block_change
-                    'enum_block_type::state.to_i' : block_state
-                    
+                    'enum_block_type::send.to_i': block_send
+                    'enum_block_type::receive.to_i': block_receive
+                    'enum_block_type::open.to_i': block_open
+                    'enum_block_type::change.to_i': block_change
+                    'enum_block_type::state.to_i': block_state
+
     block_send:
         seq:
             - id: previous
