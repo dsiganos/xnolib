@@ -1,6 +1,4 @@
-
 # This is by no means finished and will be updated! 
-
 
 meta: 
     id: not_sure_what_to_put_here
@@ -33,18 +31,71 @@ types:
                     'enum_block_type::open.to_i' : block_open
                     'enum_block_type::change.to_i' : block_change
                     'enum_block_type::state.to_i' : block_state
+                    
     block_send:
         seq:
             - id: previous
-              type: 32be
+              size: 32
             - id: destination
               size: 32
             - id: balance
-              size: 16 
+              size: 16
+            - id: signature
+              size: 64
+            - id: work
+              type: u8le 
 
+    block_receive:
+        seq:
+            - id: previous
+              size: 32
+            - id: source
+              size: 32
+            - id: signature
+              size: 32
+            - id: work
+              type: u8le
                 
-
-        
+    block_open:
+        seq:
+            - id: source
+              size: 32
+            - id: representative
+              size: 32 
+            - id: account 
+              size: 32
+            - id: signature
+              size: 64
+            - id: work 
+              type: u8le
+    
+    block_change:
+        seq:
+            - id: previous
+              size: 32
+            - id: representative
+              size: 32 
+            - id: signature
+              size: 64
+            - id: work
+              type: u8le
+    
+    block_state: 
+        seq:
+            - id: account
+              size: 32
+            - id: previous
+              size: 32
+            - id: representative
+              size: 32
+            - id: balance
+              size: 16
+            - id: link
+              size: 32
+            - id: signature
+              size: 64
+            - id: work
+              type: u8be
         
 
 enums:
