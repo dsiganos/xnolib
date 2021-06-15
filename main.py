@@ -2,6 +2,7 @@ import binascii
 import ipaddress
 import socket
 import threading
+import nanolib
 
 
 class ParseErrorBadMagicNumber(Exception):
@@ -359,7 +360,10 @@ class block_send:
     def __str__(self):
         string = "------------- Block Send -------------\n"
         string += "Previous Node: %s\n" % hex(self.prev)
-        string += "Destination Node: %s\n"  % hex(self.dest)
+        hexdest = "%064X" % self.dest
+        acc = nanolib.get_account_id(public_key=hexdest, prefix='nano_')
+        string += "Destination Node: %s\n" \
+                  "                  %s\n"  % (hexdest, acc)
         string += "Balance: %s\n" % hex(self.bal)
         string += "Signature: %s\n" % hex(self.sig)
         string += "Proof of Work: %s" % hex(self.work)
