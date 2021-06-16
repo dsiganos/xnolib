@@ -445,7 +445,9 @@ betactx = {
 
 livectx = {
     'net_id'      : network_id(ord('C')),
-    'peeraddr'    : "peering.nano.org",
+    'peeraddr'    : "94.130.135.50",
+    #'peeraddr'    : "139.180.168.194",
+    #'peeraddr'    : "peering.nano.org",
     'peerport'    : 7075,
     'genesis_pub' : 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
 }
@@ -461,6 +463,27 @@ s.send(req)
 bulk_pull = message_bulk_pull(ctx)
 req = bulk_pull.serialise()
 s.send(req)
+
+# kaitai
+if True:
+    from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+    import nano
+    import sys
+    import time
+
+    data = s.recv(1000000)
+    time.sleep(1)
+    data += s.recv(1000000)
+    print(data)
+
+    bio = BytesIO(data)
+    kio = KaitaiStream(bio)
+    n = nano.Nano.BulkPullResponse(kio)
+    for e in n.entry:
+        print(e.block_type)
+        print(e.block.block)
+
+    sys.exit(0)
 
 while True:
     block = None
