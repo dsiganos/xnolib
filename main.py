@@ -348,30 +348,98 @@ class block_state:
         return string
 
 
+
+
+# *********** Everything traversal and hash related starts here ***********
+
+
 class blocks_container:
     def __init__(self, blocks):
         self.blocks = blocks
 
-    def traverse_backwards(self):
-        pass
+
+    def hash_block_state(self, block):
+        data = b"".join([
+            STATE_BLOCK_HEADER_BYTES,
+            block.account,
+            block.previous,
+            block.representative,
+            block.balance,
+            block.link
+
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
+
+
+    def hash_block_send(self, block):
+        data = b"".join([
+            block.previous,
+            block.destination,
+            block.balance
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
+
+
+    def hash_block_change(self, block):
+        data = b"".join([
+            block.previous,
+            block.representative
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
+
+
+    def hash_block_open(self, block):
+        data = b"".join([
+            block.source,
+            block.representative,
+            block.account
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
+
+
+    def hash_block_receive(self, block):
+        data = b"".join([
+            block.previous,
+            block.source
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
+
+
+    def traverse_backwards(self, block):
+        traversal_order = []
+        i = self.blocks.index(block)
+
+        while i != -1:
+            traversal_order.append(i)
+            i = self.find_prev(self.blocks[i])
+
+        return traversal_order
+
 
     def find_prev(self, block):
-        for b in self.blocks:
-            if block.previous == self.compute_hash(b) and block != b:
-                return b
-        raise BadBlockHash()
+        if isinstance(block, Nano.BlockOpen):
+            prev = binascii.hexlify(block.source).decode("utf-8").upper()
+        else: prev = binascii.hexlify(block.previous).decode("utf-8").upper()
 
-    def compute_hash(self, block):
-        if isinstance(block, Nano.BlockSend):
-            sum = block.previous + block.destination + block.balance + block.signature + block.work
-            return blake2b(sum)
-        elif isinstance(block, Nano.BlockState):
-            sum = int(block.previous) + int.from_bytes(block.representative[0:], "big") + int.from_bytes(block.account[0:], "big") + int.from_bytes(block.work[0:], "big") + int.from_bytes(block.signature[0:], "big") + int.from_bytes(block.balance[0:], "big")
-            sum += block.link
-            return blake2b(sum)
-        elif isinstance(block, Nano.BlockChange):
-            sum = block.previous + block.representative + block.signature + block.work
-            return blake2b(sum)
+        index = 0
+        hash = ""
+
+        for b in self.blocks:
+            if isinstance(b, Nano.BlockState):
+                hash = self.hash_block_state(b)
+            elif isinstance(b, Nano.BlockSend):
+                hash = self.hash_block_send(b)
+            elif isinstance(b, Nano.BlockChange):
+                hash = self.hash_block_change(b)
+            elif isinstance(b, Nano.BlockOpen):
+                hash = self.hash_block_open(b)
+            elif isinstance(b, Nano.BlockReceive):
+                hash = self.hash_block_receive(b)
+            if prev == hash:
+                return index
+            index += 1
+
+        return -1
 
 
     def __str__(self):
@@ -382,51 +450,6 @@ class blocks_container:
         return string
 
 
-# ********** Everything relevant to hashing and traversing the chain starts here **********
-
-def hash_block_state(block):
-    data = b"".join([
-        STATE_BLOCK_HEADER_BYTES,
-        block.account,
-        block.previous,
-        block.representative,
-        block.balance,
-        block.link
-
-    ])
-    return blake2b(data, digest_size=32).hexdigest().upper()
-
-def hash_block_send(block):
-    data = b"".join([
-        block.previous,
-        block.destination,
-        block.balance
-    ])
-    return blake2b(data, digest_size=32).hexdigest().upper()
-
-def hash_block_change(block):
-    if isinstance(block, Nano.BlockChange):
-        data = b"".join([
-            block.previous,
-            block.representative
-        ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
-
-def traverse_backwards(block, blocks):
-    prev = binascii.hexlify(block.previous).decode("utf-8").upper()
-    hash = ""
-    index = 0
-    for b in blocks:
-        if isinstance(b, Nano.BlockState):
-            hash = hash_block_state(b)
-        elif isinstance(b, Nano.BlockSend):
-            hash = hash_block_send(b)
-        elif isinstance(b, Nano.BlockChange):
-            hash = hash_block_change(b)
-        if prev == hash:
-            return index
-        index += 1
-    return -1
 
 betactx = {
     'peeraddr'    : "peering-beta.nano.org",
@@ -438,7 +461,7 @@ livectx = {
     'net_id': network_id(67),
     'peeraddr'    : "peering.nano.org",
     'peerport'    : 7075,
-    'genesis_pub' : 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+    'genesis_pub' : '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6',
 }
 
 STATE_BLOCK_HEADER_BYTES = binascii.unhexlify(
@@ -468,21 +491,8 @@ if True:
     n = Nano.BulkPullResponse(kio)
     blocks = []
     for e in n.entry:
-         blocks.append(e.block.block)
-            
-    i = 0
-    traversal_order = []
-    while True:
-        traversal_order.append(i)
-        i = traverse_backwards(blocks[i], blocks)
-        if i == -1:
-            break
+        blocks.append(e.block.block)
+        #print(e.block.block)
 
-    print(traversal_order)
-
-
-
-    # bytes = BytesIO(binascii.unhexlify("e89208dd038fbb269987689621d52292ae9c35941a7484756ecced92a65093baeccb8cb65cd3106eda8ce9aa893fead497a91bca903890cbd7a5c59f06ab9113e89208dd038fbb269987689621d52292ae9c35941a7484756ecced92a65093ba000000041c06df91d202b70a4000001165706f636820763120626c6f636b00000000000000000000000000000000000057bfe93f4675fc16df0ccfc7ee4f78cc68047b5c14e2e2eed243f17348d8bab3cca04f8cbc2d291b4ddec5f7a74c1be1e872df78d560c46365eb15270a1d12010f78168d5b30191d"))
-    # kio = KaitaiStream(bytes)
-    # block = Nano.BlockState(kio)
-    # blockHash = hash_block_state(block)
+    container = blocks_container(blocks)
+    print(container.traverse_backwards(container.blocks[0]))
