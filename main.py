@@ -1,8 +1,10 @@
+from protocol import Nano
+from kaitaistruct import KaitaiStream, BytesIO
+from hashlib import blake2b
 import binascii
 import ipaddress
 import socket
-import threading
-import nanolib
+
 
 
 class ParseErrorBadMagicNumber(Exception):
@@ -54,6 +56,10 @@ class ParseErrorBadBlockState(Exception):
 
 
 class ParseErrorBadBulkPullResponse(Exception):
+    pass
+
+
+class BadBlockHash(Exception):
     pass
 
 
@@ -210,6 +216,7 @@ class peers():
             string += "\n"
         return string
 
+
 class message_keepmealive:
     def __init__(self, net_id):
         self.header = message_header(net_id, [18, 18, 18], message_type(2), [0, 0])
@@ -232,121 +239,24 @@ class message_keepmealive:
     def __str__(self):
         string = str(self.header)
         string += "\n" + str(self.peers)
+        return string
 
     def __eq__(self, other):
         if str(self) == str(other):
             return True
         return False
 
+
 class message_bulk_pull:
     def __init__(self, ctx):
         self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(6), [0, 0])
         self.public_key = binascii.unhexlify(ctx['genesis_pub'])
-
 
     def serialise(self):
         data = self.header.serialise_header()
         data += self.public_key
         data += (0).to_bytes(32, "big")
         return data
-
-class bulk_pull_response:
-    def __init__(self, blocks):
-        self.blocks = blocks
-        self.current_index = 0
-
-    @classmethod
-    def parse_bulk_pull_response(cls, data):
-        current_index = 0
-        prev_index = 0
-        blocks = []
-        while current_index < len(data): # maybe -1 here we'll see
-            prev_index = current_index
-            try:
-                if data[current_index] == 2:
-                    current_index += 153
-                    blocks.append(cls.create_block_send(data[prev_index + 1:current_index]))
-                elif data[current_index] == 3:
-                    current_index += 137
-                    blocks.append(cls.create_block_recv(data[prev_index + 1:current_index]))
-                elif data[current_index] == 4:
-                    current_index += 169
-                    blocks.append(cls.create_block_open(data[prev_index + 1:current_index]))
-                elif data[current_index] == 5:
-                    current_index += 137
-                    blocks.append(cls.create_block_change(data[prev_index + 1:current_index]))
-                elif data[current_index] == 6:
-                    current_index += 217
-                    blocks.append(cls.create_block_state(data[prev_index + 1:current_index]))
-            except IndexError as error:
-                raise ParseErrorBadBulkPullResponse()
-        return bulk_pull_response(blocks)
-
-
-    @classmethod
-    def create_block_send(cls, data):
-        if len(data) != 152:
-            raise ParseErrorBadBlockSend()
-        prev = int.from_bytes(data[:32], "big")
-        dest = int.from_bytes(data[32:64], "big")
-        bal = int.from_bytes(data[64:80], "big")
-        sig = int.from_bytes(data[80:144], "big")
-        work = int.from_bytes(data[144:], "little")
-        return block_send(prev, dest, bal, sig, work)
-
-
-    @classmethod
-    def create_block_recv(cls, data):
-        if len(data) != 136:
-            raise ParseErrorBadBlockReceive()
-        prev = int.from_bytes(data[:32], "big")
-        source = int.from_bytes(data[32:64], "big")
-        sig = int.from_bytes(data[64:128], "big")
-        work = int.from_bytes(data[128:], "little")
-        return block_receive(prev, source, sig, work)
-
-
-    @classmethod
-    def create_block_open(cls, data):
-        if len(data) != 168:
-            raise ParseErrorBadBlockOpen()
-        source = int.from_bytes(data[:32], "big")
-        rep = int.from_bytes(data[32:64], "big")
-        account = int.from_bytes(data[64:96], "big")
-        sig = int.from_bytes(data[96:160], "big")
-        work = int.from_bytes(data[160:], "little")
-        return block_open(source, rep, account, sig, work)
-
-    @classmethod
-    def create_block_change(cls, data):
-        if len(data) != 136:
-            raise ParseErrorBadBlockChange()
-        prev = int.from_bytes(data[:32], "big")
-        rep = int.from_bytes(data[32:64], "big")
-        sig = int.from_bytes(data[64:128], "big")
-        work = int.from_bytes(data[128:], "little")
-        return block_change(prev, rep, sig, work)
-
-
-    @classmethod
-    def create_block_state(cls, data):
-        if len(data) != 216:
-            raise ParseErrorBadBlockState()
-        account = int.from_bytes(data[:32], "big")
-        prev = int.from_bytes(data[32:64], "big")
-        rep = int.from_bytes(data[64:96], "big")
-        bal = int.from_bytes(data[96:112], "big")
-        link = int.from_bytes(data[112:144], "big")
-        sig = int.from_bytes(data[188:208], "big")
-        work = int.from_bytes(data[208:], "big")
-        return block_state(account, prev, rep, bal, link, sig, work)
-
-    def __str__(self):
-        string = "---------------------------------------------------\n"
-        for i in range(0, len(self.blocks)):
-            string += str(self.blocks[i])
-        string += "---------------------------------------------------"
-        return string
 
 
 class block_send:
@@ -360,11 +270,8 @@ class block_send:
     def __str__(self):
         string = "------------- Block Send -------------\n"
         string += "Previous Node: %s\n" % hex(self.prev)
-        hexdest = "%064X" % self.dest
-        acc = nanolib.get_account_id(public_key=hexdest, prefix='nano_')
-        string += "Destination Node: %s\n" \
-                  "                  %s\n"  % (hexdest, acc)
-        string += "Balance: %s\n" % hex(self.bal)
+        string += "Destination Node: %s\n" % hex(self.dest)
+        string += "Balance: %d\n" % self.bal
         string += "Signature: %s\n" % hex(self.sig)
         string += "Proof of Work: %s" % hex(self.work)
         return string
@@ -376,6 +283,7 @@ class block_receive:
         self.source = source
         self.sig = sig
         self.work = work
+
     def __str__(self):
         string = "------------- Block Receive -------------\n"
         string += "Previous Node: %s\n" % hex(self.prev)
@@ -383,6 +291,7 @@ class block_receive:
         string += "Signature: %s\n" % hex(self.sig)
         string += "Proof of Work: %s" % hex(self.work)
         return string
+
 
 class block_open:
     def __init__(self, source, rep, account, sig, work):
@@ -401,6 +310,7 @@ class block_open:
         string += "Proof of Work: %s" % hex(self.work)
         return string
 
+
 class block_change:
     def __init__(self, prev, rep, sig, work):
         self.prev = prev
@@ -414,6 +324,7 @@ class block_change:
         string += "Representative Node: %s\n" % hex(self.rep)
         string += "Signature: %s\n" % hex(self.sig)
         string += "Proof of Work: %s" % hex(self.work)
+
 
 class block_state:
     def __init__(self, account, prev, rep, bal, link, sig, work):
@@ -436,21 +347,102 @@ class block_state:
         string += "Work: %s\n" % hex(self.work)
         return string
 
+
+class blocks_container:
+    def __init__(self, blocks):
+        self.blocks = blocks
+
+    def traverse_backwards(self):
+        pass
+
+    def find_prev(self, block):
+        for b in self.blocks:
+            if block.previous == self.compute_hash(b) and block != b:
+                return b
+        raise BadBlockHash()
+
+    def compute_hash(self, block):
+        if isinstance(block, Nano.BlockSend):
+            sum = block.previous + block.destination + block.balance + block.signature + block.work
+            return blake2b(sum)
+        elif isinstance(block, Nano.BlockState):
+            sum = int(block.previous) + int.from_bytes(block.representative[0:], "big") + int.from_bytes(block.account[0:], "big") + int.from_bytes(block.work[0:], "big") + int.from_bytes(block.signature[0:], "big") + int.from_bytes(block.balance[0:], "big")
+            sum += block.link
+            return blake2b(sum)
+        elif isinstance(block, Nano.BlockChange):
+            sum = block.previous + block.representative + block.signature + block.work
+            return blake2b(sum)
+
+
+    def __str__(self):
+        string = "---------------------------------------------------\n"
+        for i in range(0, len(self.blocks)):
+            string += str(self.blocks[i])
+        string += "---------------------------------------------------"
+        return string
+
+
+# ********** Everything relevant to hashing and traversing the chain starts here **********
+
+def hash_block_state(block):
+    data = b"".join([
+        STATE_BLOCK_HEADER_BYTES,
+        block.account,
+        block.previous,
+        block.representative,
+        block.balance,
+        block.link
+
+    ])
+    return blake2b(data, digest_size=32).hexdigest().upper()
+
+def hash_block_send(block):
+    data = b"".join([
+        block.previous,
+        block.destination,
+        block.balance
+    ])
+    return blake2b(data, digest_size=32).hexdigest().upper()
+
+def hash_block_change(block):
+    if isinstance(block, Nano.BlockChange):
+        data = b"".join([
+            block.previous,
+            block.representative
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
+
+def traverse_backwards(block, blocks):
+    prev = binascii.hexlify(block.previous).decode("utf-8").upper()
+    hash = ""
+    index = 0
+    for b in blocks:
+        if isinstance(b, Nano.BlockState):
+            hash = hash_block_state(b)
+        elif isinstance(b, Nano.BlockSend):
+            hash = hash_block_send(b)
+        elif isinstance(b, Nano.BlockChange):
+            hash = hash_block_change(b)
+        if prev == hash:
+            return index
+        index += 1
+    return -1
+
 betactx = {
-    'net_id'      : network_id(ord('B')),
     'peeraddr'    : "peering-beta.nano.org",
     'peerport'    : 54000,
     'genesis_pub' : '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
 }
 
 livectx = {
-    'net_id'      : network_id(ord('C')),
-    'peeraddr'    : "94.130.135.50",
-    #'peeraddr'    : "139.180.168.194",
-    #'peeraddr'    : "peering.nano.org",
+    'net_id': network_id(67),
+    'peeraddr'    : "peering.nano.org",
     'peerport'    : 7075,
     'genesis_pub' : 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
 }
+
+STATE_BLOCK_HEADER_BYTES = binascii.unhexlify(
+    "0000000000000000000000000000000000000000000000000000000000000006")
 
 ctx = livectx
 
@@ -464,44 +456,33 @@ bulk_pull = message_bulk_pull(ctx)
 req = bulk_pull.serialise()
 s.send(req)
 
-# kaitai
 if True:
-    from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
-    import nano
-    import sys
     import time
 
     data = s.recv(1000000)
     time.sleep(1)
     data += s.recv(1000000)
-    print(data)
 
     bio = BytesIO(data)
     kio = KaitaiStream(bio)
-    n = nano.Nano.BulkPullResponse(kio)
+    n = Nano.BulkPullResponse(kio)
+    blocks = []
     for e in n.entry:
-        print(e.block_type)
-        print(e.block.block)
+         blocks.append(e.block.block)
+            
+    i = 0
+    traversal_order = []
+    while True:
+        traversal_order.append(i)
+        i = traverse_backwards(blocks[i], blocks)
+        if i == -1:
+            break
 
-    sys.exit(0)
+    print(traversal_order)
 
-while True:
-    block = None
-    #The try-except is just because we will receive an exception from one of the blocks at the end
-    # If you print the first 153 bytes of the data you receive you will see the 'epoch v2 block' (in the binary data?) string in it somewhere
-    try:
-        type = s.recv(1)
-        if type[0] == 2:
-            block = bulk_pull_response.create_block_send(s.recv(152))
-        elif type[0] == 3:
-            block = bulk_pull_response.create_block_recv(s.recv(136))
-        elif type[0] == 4:
-            block = bulk_pull_response.create_block_open(s.recv(168))
-        elif type[0] == 5:
-            block = bulk_pull_response.create_block_change(s.recv(136))
-        elif type[0] == 6:
-            block = bulk_pull_response.create_block_state(s.recv(216))
-        print(block)
-    except:
-        print("--- Finished ---")
-        break
+
+
+    # bytes = BytesIO(binascii.unhexlify("e89208dd038fbb269987689621d52292ae9c35941a7484756ecced92a65093baeccb8cb65cd3106eda8ce9aa893fead497a91bca903890cbd7a5c59f06ab9113e89208dd038fbb269987689621d52292ae9c35941a7484756ecced92a65093ba000000041c06df91d202b70a4000001165706f636820763120626c6f636b00000000000000000000000000000000000057bfe93f4675fc16df0ccfc7ee4f78cc68047b5c14e2e2eed243f17348d8bab3cca04f8cbc2d291b4ddec5f7a74c1be1e872df78d560c46365eb15270a1d12010f78168d5b30191d"))
+    # kio = KaitaiStream(bytes)
+    # block = Nano.BlockState(kio)
+    # blockHash = hash_block_state(block)
