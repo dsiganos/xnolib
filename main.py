@@ -1,5 +1,3 @@
-from protocol import Nano
-import time
 from hashlib import blake2b
 import binascii
 import ipaddress
