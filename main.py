@@ -324,6 +324,7 @@ class block_state:
         self.work = work
     
     def hash(self):
+        STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
         data = b"".join([
             STATE_BLOCK_HEADER_BYTES,
             self.account,
@@ -400,9 +401,6 @@ livectx = {
     'genesis_pub' : 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
     'random_block' : '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
 }
-
-STATE_BLOCK_HEADER_BYTES = binascii.unhexlify(
-    "0000000000000000000000000000000000000000000000000000000000000006")
 
 
 def read_socket(socket, bytes):
