@@ -1,5 +1,5 @@
 from protocol import Nano
-from kaitaistruct import KaitaiStream, BytesIO
+import time
 from hashlib import blake2b
 import binascii
 import ipaddress
@@ -248,9 +248,9 @@ class message_keepmealive:
 
 
 class message_bulk_pull:
-    def __init__(self, ctx):
-        self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(6), [0, 0])
-        self.public_key = binascii.unhexlify(ctx['genesis_pub'])
+    def __init__(self, block_hash, net_id):
+        self.header = message_header(net_id, [18, 18, 18], message_type(6), [0, 0])
+        self.public_key = binascii.unhexlify(block_hash)
 
     def serialise(self):
         data = self.header.serialise_header()
@@ -261,149 +261,138 @@ class message_bulk_pull:
 
 class block_send:
     def __init__(self, prev, dest, bal, sig, work):
-        self.prev = prev
-        self.dest = dest
-        self.bal = bal
-        self.sig = sig
+        self.previous = prev
+        self.destination = dest
+        self.balance = bal
+        self.signature = sig
         self.work = work
+
+    def hash(self):
+        data = b"".join([
+            self.previous,
+            self.destination,
+            self.balance
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
-        string += "Previous Node: %s\n" % hex(self.prev)
-        string += "Destination Node: %s\n" % hex(self.dest)
-        string += "Balance: %d\n" % self.bal
-        string += "Signature: %s\n" % hex(self.sig)
-        string += "Proof of Work: %s" % hex(self.work)
+        string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Destination Node: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
+        string += "Balance: %d\n" % self.balance
+        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
 class block_receive:
     def __init__(self, prev, source, sig, work):
-        self.prev = prev
+        self.previous = prev
         self.source = source
-        self.sig = sig
+        self.signature = sig
         self.work = work
+
+    def hash(self):
+        data = b"".join([
+            self.previous,
+            self.source
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
         string = "------------- Block Receive -------------\n"
-        string += "Previous Node: %s\n" % hex(self.prev)
-        string += "Source Node: %s\n" % hex(self.source)
-        string += "Signature: %s\n" % hex(self.sig)
-        string += "Proof of Work: %s" % hex(self.work)
+        string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
+        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
 class block_open:
     def __init__(self, source, rep, account, sig, work):
         self.source = source
-        self.rep = rep
+        self.representative = rep
         self.account = account
-        self.sig = sig
+        self.signature = sig
         self.work = work
+
+    def hash(self):
+        data = b"".join([
+            self.source,
+            self.representative,
+            self.account
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
-        string += "Source Node: %s\n" % hex(self.source)
-        string += "Representative Node: %s\n" % hex(self.rep)
-        string += "Account: %s\n" % hex(self.account)
-        string += "Signature: %s\n" % hex(self.sig)
-        string += "Proof of Work: %s" % hex(self.work)
+        string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
+        string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
 class block_change:
     def __init__(self, prev, rep, sig, work):
-        self.prev = prev
-        self.rep = rep
-        self.sig = sig
+        self.previous = prev
+        self.representative = rep
+        self.signature = sig
         self.work = work
+
+    def hash(self):
+        data = b"".join([
+            self.previous,
+            self.representative
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
-        string += "Previous Node: %s\n" % hex(self.prev)
-        string += "Representative Node: %s\n" % hex(self.rep)
-        string += "Signature: %s\n" % hex(self.sig)
-        string += "Proof of Work: %s" % hex(self.work)
+        string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
 
 
 class block_state:
     def __init__(self, account, prev, rep, bal, link, sig, work):
         self.account = account
-        self.prev = prev
-        self.rep = rep
-        self.bal = bal
+        self.previous = prev
+        self.representative = rep
+        self.balance = bal
         self.link = link
-        self.sig = sig
+        self.signature = sig
         self.work = work
+    
+    def hash(self):
+        data = b"".join([
+            STATE_BLOCK_HEADER_BYTES,
+            self.account,
+            self.previous,
+            self.representative,
+            self.balance,
+            self.link
+
+        ])
+        return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
         string = "------------- Block State -------------\n"
-        string += "Account: %s\n" % hex(self.account)
-        string += "Previous: %s\n" % hex(self.prev)
-        string += "Representative: %s\n" % hex(self.rep)
-        string += "Balance: %s\n" % hex(self.bal)
-        string += "Link: %s\n" % hex(self.link)
-        string += "Signature: %s\n" % hex(self.sig)
-        string += "Work: %s\n" % hex(self.work)
+        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "Previous: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Representative: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Balance: %d\n" % self.balance
+        string += "Link: %s\n" % binascii.hexlify(self.link).decode("utf-8").upper()
+        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
-
-
-
-
-# *********** Everything traversal and hash related starts here ***********
-
+    
 
 class blocks_container:
     def __init__(self, blocks):
         self.blocks = blocks
-
-
-    def hash_block_state(self, block):
-        data = b"".join([
-            STATE_BLOCK_HEADER_BYTES,
-            block.account,
-            block.previous,
-            block.representative,
-            block.balance,
-            block.link
-
-        ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
-
-
-    def hash_block_send(self, block):
-        data = b"".join([
-            block.previous,
-            block.destination,
-            block.balance
-        ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
-
-
-    def hash_block_change(self, block):
-        data = b"".join([
-            block.previous,
-            block.representative
-        ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
-
-
-    def hash_block_open(self, block):
-        data = b"".join([
-            block.source,
-            block.representative,
-            block.account
-        ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
-
-
-    def hash_block_receive(self, block):
-        data = b"".join([
-            block.previous,
-            block.source
-        ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
-
 
     def traverse_backwards(self, block):
         traversal_order = []
@@ -415,7 +404,6 @@ class blocks_container:
 
         return traversal_order
 
-
     def find_prev(self, block):
         if isinstance(block, Nano.BlockOpen):
             prev = binascii.hexlify(block.source).decode("utf-8").upper()
@@ -425,16 +413,7 @@ class blocks_container:
         hash = ""
 
         for b in self.blocks:
-            if isinstance(b, Nano.BlockState):
-                hash = self.hash_block_state(b)
-            elif isinstance(b, Nano.BlockSend):
-                hash = self.hash_block_send(b)
-            elif isinstance(b, Nano.BlockChange):
-                hash = self.hash_block_change(b)
-            elif isinstance(b, Nano.BlockOpen):
-                hash = self.hash_block_open(b)
-            elif isinstance(b, Nano.BlockReceive):
-                hash = self.hash_block_receive(b)
+            hash = b.hash()
             if prev == hash:
                 return index
             index += 1
@@ -476,24 +455,37 @@ s.connect((ctx['peeraddr'], ctx['peerport']))
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
-bulk_pull = message_bulk_pull(ctx)
+bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 req = bulk_pull.serialise()
 s.send(req)
 
-if True:
-    import time
+blocks = []
+while True:
+    block_type = s.recv(1)
+    if block_type == b'':
+        break
+    if block_type[0] == 2:
+        data = s.recv(152)
+        block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
+    elif block_type[0] == 3:
+        data = s.recv(136)
+        block = block_receive(data[:32], data[32:64], data[64:128], data[128:])
+    elif block_type[0] == 4:
+        data = s.recv(168)
+        block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:])
+    elif block_type[0] == 5:
+        data = s.recv(136)
+        block = block_change(data[:32], data[32:64], data[64:128], data[128:])
+    elif block_type[0] == 6:
+        data = s.recv(216)
+        block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208], data[208:])
+    else:
+        # Trying to implement the Ignore Until EOF
+        data = s.recv(1)
+        while data[0] != 1 or len(data) == 0:
+            data = s.recv(1)
+        break
+    blocks.append(block)
 
-    data = s.recv(1000000)
-    time.sleep(1)
-    data += s.recv(1000000)
-
-    bio = BytesIO(data)
-    kio = KaitaiStream(bio)
-    n = Nano.BulkPullResponse(kio)
-    blocks = []
-    for e in n.entry:
-        blocks.append(e.block.block)
-        #print(e.block.block)
-
-    container = blocks_container(blocks)
-    print(container.traverse_backwards(container.blocks[0]))
+print(blocks[-3].hash())
+print(len(blocks))
