@@ -424,6 +424,8 @@ s.send(req)
 blocks = []
 while True:
     block_type = s.recv(1)
+    if len(block_type) == 0:
+        break
 
     if block_type[0] == 2:
         data = read_socket(s, 152)
