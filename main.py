@@ -236,7 +236,7 @@ class block_send:
         string = "------------- Block Send -------------\n"
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Destination Node: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
-        string += "Balance: %d\n" % self.balance
+        string += "Balance: %d\n" % int(self.balance.hex(), 16)
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
@@ -341,7 +341,7 @@ class block_state:
         string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
         string += "Previous: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Representative: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Balance: %d\n" % self.balance
+        string += "Balance: %d\n" % int(self.balance.hex(), 16)
         string += "Link: %s\n" % binascii.hexlify(self.link).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
