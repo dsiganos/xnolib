@@ -2,6 +2,7 @@ from hashlib import blake2b
 import binascii
 import ipaddress
 import socket
+import nanolib
 
 
 class ParseErrorBadMagicNumber(Exception): pass
@@ -282,10 +283,12 @@ class block_open:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
+        hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block Open -------------\n"
         string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "Account: %s\n" % hexacc
+        string += "         %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
@@ -337,8 +340,10 @@ class block_state:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
+        hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block State -------------\n"
-        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "Account: %s\n" % hexacc
+        string += "         %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
         string += "Previous: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Representative: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Balance: %d\n" % int(self.balance.hex(), 16)
