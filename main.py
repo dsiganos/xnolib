@@ -462,8 +462,6 @@ s.send(req)
 blocks = []
 while True:
     block_type = s.recv(1)
-    if block_type == b'':
-        break
     if block_type[0] == 2:
         data = s.recv(152)
         block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
