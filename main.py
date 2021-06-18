@@ -325,7 +325,7 @@ class block_open:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
-        string = "------------- Block Send -------------\n"
+        string = "------------- Block Open -------------\n"
         string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
@@ -349,7 +349,7 @@ class block_change:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
-        string = "------------- Block Send -------------\n"
+        string = "------------- Block Change -------------\n"
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
@@ -405,7 +405,7 @@ class blocks_container:
         return traversal_order
 
     def find_prev(self, block):
-        if isinstance(block, Nano.BlockOpen):
+        if isinstance(block, block_open):
             prev = binascii.hexlify(block.source).decode("utf-8").upper()
         else: prev = binascii.hexlify(block.previous).decode("utf-8").upper()
 
@@ -447,11 +447,18 @@ livectx = {
 STATE_BLOCK_HEADER_BYTES = binascii.unhexlify(
     "0000000000000000000000000000000000000000000000000000000000000006")
 
+
+def read_socket(socket, bytes):
+    data = b''
+    while len(data) != bytes:
+        data += socket.recv(1)
+    return data
+
+
 ctx = livectx
-
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 s.connect((ctx['peeraddr'], ctx['peerport']))
+s.settimeout(2)
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
@@ -462,28 +469,26 @@ s.send(req)
 blocks = []
 while True:
     block_type = s.recv(1)
+
     if block_type[0] == 2:
-        data = s.recv(152)
+        data = read_socket(s, 152)
         block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
     elif block_type[0] == 3:
-        data = s.recv(136)
+        data = read_socket(s, 136)
         block = block_receive(data[:32], data[32:64], data[64:128], data[128:])
     elif block_type[0] == 4:
-        data = s.recv(168)
+        data = read_socket(s, 168)
         block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:])
     elif block_type[0] == 5:
-        data = s.recv(136)
+        data = read_socket(s, 136)
         block = block_change(data[:32], data[32:64], data[64:128], data[128:])
     elif block_type[0] == 6:
-        data = s.recv(216)
+        data = read_socket(s, 216)
         block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208], data[208:])
-    else:
-        # Trying to implement the Ignore Until EOF
-        data = s.recv(1)
-        while data[0] != 1 or len(data) == 0:
-            data = s.recv(1)
-        break
+    else: break
+
     blocks.append(block)
 
-print(blocks[-3].hash())
-print(len(blocks))
+print(blocks)
+container = blocks_container(blocks)
+print(container.traverse_backwards(container.blocks[0]))
