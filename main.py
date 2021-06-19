@@ -235,6 +235,7 @@ class block_send:
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
+        string += "Hash: %s\n" % self.hash()
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Destination Node: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
         string += "Balance: %d\n" % int(self.balance.hex(), 16)
@@ -259,6 +260,7 @@ class block_receive:
 
     def __str__(self):
         string = "------------- Block Receive -------------\n"
+        string += "Hash: %s\n" % self.hash()
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
@@ -285,6 +287,7 @@ class block_open:
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block Open -------------\n"
+        string += "Hash: %s\n" % self.hash()
         string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Account: %s\n" % hexacc
@@ -310,6 +313,7 @@ class block_change:
 
     def __str__(self):
         string = "------------- Block Change -------------\n"
+        string += "Hash: %s\n" % self.hash()
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
