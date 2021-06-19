@@ -239,7 +239,7 @@ class block_send:
         string += "Destination Node: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
         string += "Balance: %d\n" % int(self.balance.hex(), 16)
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
@@ -262,7 +262,7 @@ class block_receive:
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
@@ -290,7 +290,7 @@ class block_open:
         string += "Account: %s\n" % hexacc
         string += "         %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
@@ -313,7 +313,7 @@ class block_change:
         string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
 
 
 class block_state:
