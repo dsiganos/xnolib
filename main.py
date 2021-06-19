@@ -342,13 +342,14 @@ class block_state:
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block State -------------\n"
-        string += "Account: %s\n" % hexacc
-        string += "         %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
-        string += "Previous: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Representative: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Balance: %d\n" % int(self.balance.hex(), 16)
+        string += "Hash: %s\n" % self.hash()
+        string += "Acc:  %s\n" % hexacc
+        string += "      %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
+        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Bal:  %d\n" % int(self.balance.hex(), 16)
         string += "Link: %s\n" % binascii.hexlify(self.link).decode("utf-8").upper()
-        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
     
