@@ -236,11 +236,11 @@ class block_send:
     def __str__(self):
         string = "------------- Block Send -------------\n"
         string += "Hash: %s\n" % self.hash()
-        string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Destination Node: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
-        string += "Balance: %d\n" % int(self.balance.hex(), 16)
-        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Dest: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
+        string += "Bal:  %d\n" % int(self.balance.hex(), 16)
+        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
@@ -261,10 +261,10 @@ class block_receive:
     def __str__(self):
         string = "------------- Block Receive -------------\n"
         string += "Hash: %s\n" % self.hash()
-        string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
-        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
+        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
@@ -275,6 +275,7 @@ class block_open:
         self.account = account
         self.signature = sig
         self.work = work
+        self.previous = None
 
     def hash(self):
         data = b"".join([
@@ -288,12 +289,12 @@ class block_open:
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block Open -------------\n"
         string += "Hash: %s\n" % self.hash()
-        string += "Source Node: %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
-        string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Account: %s\n" % hexacc
-        string += "         %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
-        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
+        string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
+        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
 
@@ -314,10 +315,10 @@ class block_change:
     def __str__(self):
         string = "------------- Block Change -------------\n"
         string += "Hash: %s\n" % self.hash()
-        string += "Previous Node: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Representative Node: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Signature: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Proof of Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
+        string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
+        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
 
 
 class block_state:
