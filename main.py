@@ -386,7 +386,7 @@ class blocks_container:
 
 
     def __str__(self):
-        string = "---------------------------------------------------\n"
+        string = "------------------- container ---------------------\n"
         for i in range(0, len(self.blocks)):
             string += str(self.blocks[i])
         string += "---------------------------------------------------"
