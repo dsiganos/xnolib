@@ -389,6 +389,11 @@ class blocks_container:
 
         return -1
 
+    def find_block_by_hash(self, block_hash):
+        for b in self.blocks:
+            if b.hash() == block_hash:
+                return b
+        return None
 
     def __str__(self):
         string = "------------------- container ---------------------\n"
