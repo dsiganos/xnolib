@@ -47,6 +47,33 @@ def get_account_id(account, prefix='nano_'):
     return prefix + encode_account.decode()
 
 
+class block_type_enum:
+    invalid = 0
+    not_a_block = 1
+    send = 2
+    receive = 3
+    open = 4
+    change = 5
+    state = 6
+
+
+class message_type_enum:
+    invalid = 0x0
+    not_a_type = 0x1
+    keepalive = 0x2
+    publish = 0x3
+    confirm_req = 0x4
+    confirm_ack = 0x5
+    bulk_pull = 0x6
+    bulk_push = 0x7
+    frontier_req = 0x8
+    # deleted 0x9
+    node_id_handshake = 0x0a
+    bulk_pull_account = 0x0b
+    telemetry_req = 0x0c
+    telemetry_ack = 0x0d
+
+
 class network_id:
     def __init__(self, rawbyte):
         self.parse_header(int(rawbyte))
@@ -469,22 +496,30 @@ while True:
     if len(block_type) == 0:
         break
 
-    if block_type[0] == 2:
+    if block_type[0] == block_type_enum.send:
         data = read_socket(s, 152)
         block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
-    elif block_type[0] == 3:
+    elif block_type[0] == block_type_enum.receive:
         data = read_socket(s, 136)
         block = block_receive(data[:32], data[32:64], data[64:128], data[128:])
-    elif block_type[0] == 4:
+    elif block_type[0] == block_type_enum.open:
         data = read_socket(s, 168)
         block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:])
-    elif block_type[0] == 5:
+    elif block_type[0] == block_type_enum.change:
         data = read_socket(s, 136)
         block = block_change(data[:32], data[32:64], data[64:128], data[128:])
-    elif block_type[0] == 6:
+    elif block_type[0] == block_type_enum.state:
         data = read_socket(s, 216)
         block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208], data[208:])
-    else: break
+    elif block_type[0] == block_type_enum.invalid:
+        print('received block type invalid')
+        break
+    elif block_type[0] == block_type_enum.not_a_block:
+        print('received block type not a block')
+        break
+    else:
+        print('received unknown block type %s' % block_type_enum[0])
+        break
 
     blocks.append(block)
 
