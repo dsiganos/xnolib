@@ -484,6 +484,7 @@ def read_blocks_from_socket(s):
     while True:
         block_type = s.recv(1)
         if len(block_type) == 0:
+            print('socket closed by peer')
             break
 
         if block_type[0] == block_type_enum.send:
