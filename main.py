@@ -2,7 +2,7 @@ from hashlib import blake2b
 import binascii
 import ipaddress
 import socket
-import nanolib
+import base64
 
 
 class ParseErrorBadMagicNumber(Exception): pass
@@ -19,6 +19,30 @@ class ParseErrorBadBlockState(Exception): pass
 class ParseErrorBadBulkPullResponse(Exception): pass
 class BadBlockHash(Exception): pass
 class SocketClosedByPeer(Exception): pass
+
+
+# this function expects account to be a 32 byte bytearray
+def get_account_id(account, prefix='nano_'):
+    assert(len(account) == 32)
+
+    RFC_3548 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    ENCODING = b"13456789abcdefghijkmnopqrstuwxyz"
+
+    h = blake2b(digest_size=5)
+    h.update(account)
+    checksum = h.digest()
+
+    # prefix account to make it even length for base32, add checksum in reverse byte order
+    account = b'\x00\x00\x00'+account+checksum[::-1]
+
+    # use the optimized base32 lib to speed this up
+    encode_account = base64.b32encode(account)
+
+    # simply translate the result from RFC3548 to Nano's encoding, snip off the leading useless bytes
+    encode_account = encode_account.translate(bytes.maketrans(RFC_3548,ENCODING))[4:]
+
+    # add prefix and return
+    return prefix + encode_account.decode()
 
 
 class network_id:
@@ -292,7 +316,7 @@ class block_open:
         string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
+        string += "      %s\n" % get_account_id(self.account)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
@@ -349,7 +373,7 @@ class block_state:
         string = "------------- Block State -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Acc:  %s\n" % hexacc
-        string += "      %s\n" % nanolib.get_account_id(public_key=hexacc, prefix='nano_')
+        string += "      %s\n" % get_account_id(self.account)
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Bal:  %d\n" % int(self.balance.hex(), 16)
