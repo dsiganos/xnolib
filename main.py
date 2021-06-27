@@ -5,6 +5,8 @@ import binascii
 import ipaddress
 import socket
 import base64
+import dns.resolver
+import random
 
 
 class ParseErrorBadMagicNumber(Exception): pass
@@ -21,6 +23,11 @@ class ParseErrorBadBlockState(Exception): pass
 class ParseErrorBadBulkPullResponse(Exception): pass
 class BadBlockHash(Exception): pass
 class SocketClosedByPeer(Exception): pass
+
+
+def get_all_dns_addresses(url):
+    result = dns.resolver.resolve(url, 'A')
+    return [ x.to_text() for x in result ]
 
 
 # this function expects account to be a 32 byte bytearray
@@ -518,7 +525,8 @@ def read_blocks_from_socket(s):
 
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((ctx['peeraddr'], ctx['peerport']))
+peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+s.connect((peeraddr, ctx['peerport']))
 print ('Connected to %s:%s' % s.getpeername())
 s.settimeout(2)
 
