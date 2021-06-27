@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 from hashlib import blake2b
 import binascii
 import ipaddress
