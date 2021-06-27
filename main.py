@@ -479,6 +479,42 @@ def read_socket(socket, bytes):
     return data
 
 
+def read_blocks_from_socket(s):
+    blocks = []
+    while True:
+        block_type = s.recv(1)
+        if len(block_type) == 0:
+            break
+
+        if block_type[0] == block_type_enum.send:
+            data = read_socket(s, 152)
+            block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
+        elif block_type[0] == block_type_enum.receive:
+            data = read_socket(s, 136)
+            block = block_receive(data[:32], data[32:64], data[64:128], data[128:])
+        elif block_type[0] == block_type_enum.open:
+            data = read_socket(s, 168)
+            block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:])
+        elif block_type[0] == block_type_enum.change:
+            data = read_socket(s, 136)
+            block = block_change(data[:32], data[32:64], data[64:128], data[128:])
+        elif block_type[0] == block_type_enum.state:
+            data = read_socket(s, 216)
+            block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208], data[208:])
+        elif block_type[0] == block_type_enum.invalid:
+            print('received block type invalid')
+            break
+        elif block_type[0] == block_type_enum.not_a_block:
+            print('received block type not a block')
+            break
+        else:
+            print('received unknown block type %s' % block_type_enum[0])
+            break
+
+        blocks.append(block)
+    return blocks
+
+
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((ctx['peeraddr'], ctx['peerport']))
@@ -490,39 +526,7 @@ bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 req = bulk_pull.serialise()
 s.send(req)
 
-blocks = []
-while True:
-    block_type = s.recv(1)
-    if len(block_type) == 0:
-        break
-
-    if block_type[0] == block_type_enum.send:
-        data = read_socket(s, 152)
-        block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
-    elif block_type[0] == block_type_enum.receive:
-        data = read_socket(s, 136)
-        block = block_receive(data[:32], data[32:64], data[64:128], data[128:])
-    elif block_type[0] == block_type_enum.open:
-        data = read_socket(s, 168)
-        block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:])
-    elif block_type[0] == block_type_enum.change:
-        data = read_socket(s, 136)
-        block = block_change(data[:32], data[32:64], data[64:128], data[128:])
-    elif block_type[0] == block_type_enum.state:
-        data = read_socket(s, 216)
-        block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208], data[208:])
-    elif block_type[0] == block_type_enum.invalid:
-        print('received block type invalid')
-        break
-    elif block_type[0] == block_type_enum.not_a_block:
-        print('received block type not a block')
-        break
-    else:
-        print('received unknown block type %s' % block_type_enum[0])
-        break
-
-    blocks.append(block)
-
+blocks = read_blocks_from_socket(s)
 print(blocks)
 container = blocks_container(blocks)
 print(container.traverse_backwards(container.blocks[0]))
