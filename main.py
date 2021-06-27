@@ -519,7 +519,9 @@ def read_blocks_from_socket(s):
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((ctx['peeraddr'], ctx['peerport']))
+print ('Connected to %s:%s' % s.getpeername())
 s.settimeout(2)
+
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
