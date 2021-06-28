@@ -53,22 +53,6 @@ class BadBlockHash(Exception): pass
 class SocketClosedByPeer(Exception): pass
 
 
-def account_id_to_name(acc_id_bin):
-    assert (len(acc_id_bin) == 32)
-
-    genesis_live = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
-    genesis_beta = binascii.unhexlify('259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A')
-    burn = b'\x00' * 32
-
-    named_accounts = {
-        genesis_live : 'genesis live',
-        genesis_beta : 'genesis beta',
-        burn : 'burn',
-    }
-
-    return named_accounts.get(acc_id_bin, '')
-
-
 def get_all_dns_addresses(url):
     result = dns.resolver.resolve(url, 'A')
     return [x.to_text() for x in result]
@@ -86,20 +70,16 @@ def get_account_id(account, prefix='nano_'):
     checksum = h.digest()
 
     # prefix account to make it even length for base32, add checksum in reverse byte order
-    account2 = b'\x00\x00\x00' + account + checksum[::-1]
+    account = b'\x00\x00\x00' + account + checksum[::-1]
 
     # use the optimized base32 lib to speed this up
-    encode_account = base64.b32encode(account2)
+    encode_account = base64.b32encode(account)
 
     # simply translate the result from RFC3548 to Nano's encoding, snip off the leading useless bytes
     encode_account = encode_account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
 
-    label = account_id_to_name(account)
-    if label != '':
-        label = ' (' + label + ')'
-
-    # add prefix, label and return
-    return prefix + encode_account.decode() + label
+    # add prefix and return
+    return prefix + encode_account.decode()
 
 
 class block_type_enum:
@@ -331,7 +311,7 @@ class block_send:
         self.destination = dest
         self.balance = bal
         self.signature = sig
-        self.work = work[::-1]
+        self.work = work
 
     def hash(self):
         data = b"".join([
@@ -346,7 +326,6 @@ class block_send:
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Dest: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
-        string += "      %s\n" % get_account_id(self.destination)
         string += "Bal:  %d\n" % int(self.balance.hex(), 16)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
@@ -358,7 +337,7 @@ class block_receive:
         self.previous = prev
         self.source = source
         self.signature = sig
-        self.work = work[::-1]
+        self.work = work
 
     def hash(self):
         data = b"".join([
@@ -383,7 +362,7 @@ class block_open:
         self.representative = rep
         self.account = account
         self.signature = sig
-        self.work = work[::-1]
+        self.work = work
         self.previous = None
 
     def hash(self):
@@ -412,7 +391,7 @@ class block_change:
         self.previous = prev
         self.representative = rep
         self.signature = sig
-        self.work = work[::-1]
+        self.work = work
 
     def hash(self):
         data = b"".join([
@@ -535,6 +514,37 @@ def read_socket(socket, bytes):
     return data
 
 
+def read_block_send():
+    data = read_socket(s, 152)
+    block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:][::-1])
+    return block
+
+
+def read_block_receive():
+    data = read_socket(s, 136)
+    block = block_receive(data[:32], data[32:64], data[64:128], data[128:][::-1])
+    return block
+
+
+def read_block_open():
+    data = read_socket(s, 168)
+    block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:][::-1])
+    return block
+
+
+def read_block_change():
+    data = read_socket(s, 136)
+    block = block_change(data[:32], data[32:64], data[64:128], data[128:][::-1])
+    return block
+
+
+def read_block_state():
+    data = read_socket(s, 216)
+    block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
+                        data[208:])
+    return block
+
+
 def read_blocks_from_socket(s):
     blocks = []
     while True:
@@ -544,21 +554,15 @@ def read_blocks_from_socket(s):
             break
 
         if block_type[0] == block_type_enum.send:
-            data = read_socket(s, 152)
-            block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:])
+            block = read_block_send()
         elif block_type[0] == block_type_enum.receive:
-            data = read_socket(s, 136)
-            block = block_receive(data[:32], data[32:64], data[64:128], data[128:])
+            block = read_block_receive()
         elif block_type[0] == block_type_enum.open:
-            data = read_socket(s, 168)
-            block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:])
+            block = read_block_open()
         elif block_type[0] == block_type_enum.change:
-            data = read_socket(s, 136)
-            block = block_change(data[:32], data[32:64], data[64:128], data[128:])
+            block = read_block_change()
         elif block_type[0] == block_type_enum.state:
-            data = read_socket(s, 216)
-            block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
-                                data[208:])
+            block = read_block_state()
         elif block_type[0] == block_type_enum.invalid:
             print('received block type invalid')
             break
@@ -626,3 +630,5 @@ req = bulk_pull.serialise()
 s.send(req)
 
 blocks = read_blocks_from_socket(s)
+
+print(len(blocks))
