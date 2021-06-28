@@ -53,6 +53,22 @@ class BadBlockHash(Exception): pass
 class SocketClosedByPeer(Exception): pass
 
 
+def account_id_to_name(acc_id_bin):
+    assert (len(acc_id_bin) == 32)
+
+    genesis_live = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+    genesis_beta = binascii.unhexlify('259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A')
+    burn = b'\x00' * 32
+
+    named_accounts = {
+        genesis_live : 'genesis live',
+        genesis_beta : 'genesis beta',
+        burn : 'burn',
+    }
+
+    return named_accounts.get(acc_id_bin, '')
+
+
 def get_all_dns_addresses(url):
     result = dns.resolver.resolve(url, 'A')
     return [x.to_text() for x in result]
@@ -70,16 +86,20 @@ def get_account_id(account, prefix='nano_'):
     checksum = h.digest()
 
     # prefix account to make it even length for base32, add checksum in reverse byte order
-    account = b'\x00\x00\x00' + account + checksum[::-1]
+    account2 = b'\x00\x00\x00' + account + checksum[::-1]
 
     # use the optimized base32 lib to speed this up
-    encode_account = base64.b32encode(account)
+    encode_account = base64.b32encode(account2)
 
     # simply translate the result from RFC3548 to Nano's encoding, snip off the leading useless bytes
     encode_account = encode_account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
 
-    # add prefix and return
-    return prefix + encode_account.decode()
+    label = account_id_to_name(account)
+    if label != '':
+        label = ' (' + label + ')'
+
+    # add prefix, label and return
+    return prefix + encode_account.decode() + label
 
 
 class block_type_enum:
@@ -328,6 +348,7 @@ class block_send:
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Dest: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
+        string += "      %s\n" % get_account_id(self.destination)
         string += "Bal:  %d\n" % int(self.balance.hex(), 16)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
