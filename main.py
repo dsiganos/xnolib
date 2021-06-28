@@ -312,6 +312,7 @@ class block_send:
         self.balance = bal
         self.signature = sig
         self.work = work
+        self.account = None
 
     def hash(self):
         data = b"".join([
@@ -322,6 +323,7 @@ class block_send:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
+        hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block Send -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
@@ -329,6 +331,8 @@ class block_send:
         string += "Bal:  %d\n" % int(self.balance.hex(), 16)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % get_account_id(self.account)
         return string
 
 
@@ -338,7 +342,9 @@ class block_receive:
         self.source = source
         self.signature = sig
         self.work = work
+        self.account = None
 
+# TODO: Remember to reverse the order of the work if you implement serialisation!
     def hash(self):
         data = b"".join([
             self.previous,
@@ -347,12 +353,15 @@ class block_receive:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
+        hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block Receive -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % get_account_id(self.account)
         return string
 
 
@@ -392,6 +401,7 @@ class block_change:
         self.representative = rep
         self.signature = sig
         self.work = work
+        self.account = None
 
     def hash(self):
         data = b"".join([
@@ -401,12 +411,15 @@ class block_change:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def __str__(self):
+        hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block Change -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % get_account_id(self.account)
 
 
 class block_state:
@@ -450,6 +463,7 @@ class block_state:
 class blocks_container:
     def __init__(self, blocks):
         self.blocks = blocks
+        self.assign_account_ids()
 
     def traverse_backwards(self, block):
         traversal_order = []
@@ -468,8 +482,6 @@ class blocks_container:
             prev = binascii.hexlify(block.previous).decode("utf-8").upper()
 
         index = 0
-        hash = ""
-
         for b in self.blocks:
             hash = b.hash()
             if prev == hash:
@@ -483,6 +495,20 @@ class blocks_container:
             if b.hash() == block_hash:
                 return b
         return None
+
+    def assign_account_ids(self):
+        for b in self.blocks:
+            if b.account is not None:
+                continue
+            b.account = self.find_account_id(b)
+
+    def find_account_id(self, block):
+        prev = binascii.hexlify(block.previous).decode("utf-8").upper()
+        prev_block = self.find_block_by_hash(prev)
+        if prev_block.account is None:
+            return self.find_account_id(prev_block)
+        return prev_block.account
+
 
     def __str__(self):
         string = "------------------- container ---------------------\n"
@@ -631,4 +657,6 @@ s.send(req)
 
 blocks = read_blocks_from_socket(s)
 
-print(len(blocks))
+container = blocks_container(blocks)
+for b in container.blocks:
+    print(b)
