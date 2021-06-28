@@ -603,8 +603,6 @@ def read_blocks_from_socket(s):
     return blocks
 
 
-
-
 def pow_validate(work, prev):
     # It didn't want to create bytearrays with the raw bytes so I had to use the list()
     work = bytearray(list(work))
