@@ -8,31 +8,59 @@ import base64
 import dns.resolver
 import random
 
+import ed25519_blake2
+
 
 class ParseErrorBadMagicNumber(Exception): pass
+
+
 class ParseErrorBadNetworkId(Exception): pass
+
+
 class ParseErrorBadMessageType(Exception): pass
+
+
 class ParseErrorBadIPv6(Exception): pass
+
+
 class ParseErrorBadMessageBody(Exception): pass
+
+
 class ParseErrorBadBlockSend(Exception): pass
+
+
 class ParseErrorBadBlockReceive(Exception): pass
+
+
 class ParseErrorBadBlockOpen(Exception): pass
+
+
 class ParseErrorBadBlockChange(Exception): pass
+
+
 class ParseErrorBadBlockChange(Exception): pass
+
+
 class ParseErrorBadBlockState(Exception): pass
+
+
 class ParseErrorBadBulkPullResponse(Exception): pass
+
+
 class BadBlockHash(Exception): pass
+
+
 class SocketClosedByPeer(Exception): pass
 
 
 def get_all_dns_addresses(url):
     result = dns.resolver.resolve(url, 'A')
-    return [ x.to_text() for x in result ]
+    return [x.to_text() for x in result]
 
 
 # this function expects account to be a 32 byte bytearray
 def get_account_id(account, prefix='nano_'):
-    assert(len(account) == 32)
+    assert (len(account) == 32)
 
     RFC_3548 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
     ENCODING = b"13456789abcdefghijkmnopqrstuwxyz"
@@ -42,13 +70,13 @@ def get_account_id(account, prefix='nano_'):
     checksum = h.digest()
 
     # prefix account to make it even length for base32, add checksum in reverse byte order
-    account = b'\x00\x00\x00'+account+checksum[::-1]
+    account = b'\x00\x00\x00' + account + checksum[::-1]
 
     # use the optimized base32 lib to speed this up
     encode_account = base64.b32encode(account)
 
     # simply translate the result from RFC3548 to Nano's encoding, snip off the leading useless bytes
-    encode_account = encode_account.translate(bytes.maketrans(RFC_3548,ENCODING))[4:]
+    encode_account = encode_account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
 
     # add prefix and return
     return prefix + encode_account.decode()
@@ -390,7 +418,7 @@ class block_state:
         self.link = link
         self.signature = sig
         self.work = work
-    
+
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
         data = b"".join([
@@ -417,7 +445,7 @@ class block_state:
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
-    
+
 
 class blocks_container:
     def __init__(self, blocks):
@@ -436,7 +464,8 @@ class blocks_container:
     def find_prev(self, block):
         if isinstance(block, block_open):
             prev = binascii.hexlify(block.source).decode("utf-8").upper()
-        else: prev = binascii.hexlify(block.previous).decode("utf-8").upper()
+        else:
+            prev = binascii.hexlify(block.previous).decode("utf-8").upper()
 
         index = 0
         hash = ""
@@ -463,19 +492,18 @@ class blocks_container:
         return string
 
 
-
 betactx = {
-    'peeraddr'    : "peering-beta.nano.org",
-    'peerport'    : 54000,
-    'genesis_pub' : '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+    'peeraddr': "peering-beta.nano.org",
+    'peerport': 54000,
+    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
 }
 
 livectx = {
     'net_id': network_id(67),
-    'peeraddr'    : "peering.nano.org",
-    'peerport'    : 7075,
-    'genesis_pub' : 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
-    'random_block' : '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
+    'peeraddr': "peering.nano.org",
+    'peerport': 7075,
+    'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
 }
 
 
@@ -508,7 +536,8 @@ def read_blocks_from_socket(s):
             block = block_change(data[:32], data[32:64], data[64:128], data[128:])
         elif block_type[0] == block_type_enum.state:
             data = read_socket(s, 216)
-            block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208], data[208:])
+            block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
+                                data[208:])
         elif block_type[0] == block_type_enum.invalid:
             print('received block type invalid')
             break
@@ -523,11 +552,39 @@ def read_blocks_from_socket(s):
     return blocks
 
 
+def pow_threshold(check):
+    if check > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00':
+        return True
+    else:
+        return False
+
+
+def pow_validate(work, prev):
+    # It didn't want to create bytearrays with the raw bytes so I had to use the list()
+    work = bytearray(list(work))
+    prev = bytearray(list(prev))
+    h = blake2b(digest_size=8)
+    work.reverse()
+    h.update(work)
+    h.update(prev)
+    final = bytearray(h.digest())
+    final.reverse()
+    return pow_threshold(final)
+
+
+def verify(hash, signature, public_key):
+    try:
+        ed25519_blake2.checkvalid(signature, hash, public_key)
+    except ed25519_blake2.SignatureMismatch:
+        return False
+    return True
+
+
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
 s.connect((peeraddr, ctx['peerport']))
-print ('Connected to %s:%s' % s.getpeername())
+print('Connected to %s:%s' % s.getpeername())
 s.settimeout(2)
 
 keepalive = message_keepmealive(ctx['net_id'])
