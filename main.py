@@ -311,7 +311,7 @@ class block_send:
         self.destination = dest
         self.balance = bal
         self.signature = sig
-        self.work = work
+        self.work = work[::-1]
 
     def hash(self):
         data = b"".join([
@@ -337,7 +337,7 @@ class block_receive:
         self.previous = prev
         self.source = source
         self.signature = sig
-        self.work = work
+        self.work = work[::-1]
 
     def hash(self):
         data = b"".join([
@@ -362,7 +362,7 @@ class block_open:
         self.representative = rep
         self.account = account
         self.signature = sig
-        self.work = work
+        self.work = work[::-1]
         self.previous = None
 
     def hash(self):
@@ -391,7 +391,7 @@ class block_change:
         self.previous = prev
         self.representative = rep
         self.signature = sig
-        self.work = work
+        self.work = work[::-1]
 
     def hash(self):
         data = b"".join([
@@ -595,6 +595,14 @@ req = bulk_pull.serialise()
 s.send(req)
 
 blocks = read_blocks_from_socket(s)
-print(blocks)
-container = blocks_container(blocks)
-print(container.traverse_backwards(container.blocks[0]))
+
+for i in range(0, len(blocks)):
+    if isinstance(blocks[i], block_open):
+        work_valid = pow_validate(blocks[i].work, blocks[i].source)
+    else:
+        work_valid = pow_validate(blocks[i].work, blocks[i].previous)
+
+    sig_valid = verify(binascii.unhexlify(blocks[i].hash()), blocks[i].signature)
+    print ("---------------------------")
+    print("Valid Sig: {}".format(sig_valid))
+    print("Valid Work: {}".format(work_valid))
