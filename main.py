@@ -626,12 +626,15 @@ def verify(hash, signature, public_key=b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\
     return True
 
 
-def valid_block(block):
+def verify_pow(block):
     if isinstance(block, block_open):
-        work_valid = pow_validate(block.work, block.source)
+        return pow_validate(block.work, block.source)
     else:
-        work_valid = pow_validate(block.work, block.previous)
+        return pow_validate(block.work, block.previous)
 
+
+def valid_block(block):
+    work_valid = verify_pow(block)
     sig_valid = verify(binascii.unhexlify(block.hash()), block.signature)
     return work_valid and sig_valid
 
