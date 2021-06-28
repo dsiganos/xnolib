@@ -603,11 +603,6 @@ def read_blocks_from_socket(s):
     return blocks
 
 
-def pow_threshold(check):
-    if check > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00':
-        return True
-    else:
-        return False
 
 
 def pow_validate(work, prev):
@@ -620,7 +615,7 @@ def pow_validate(work, prev):
     h.update(prev)
     final = bytearray(h.digest())
     final.reverse()
-    return pow_threshold(final)
+    return final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
 
 
 def verify(hash, signature, public_key=b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba'):
