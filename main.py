@@ -572,7 +572,7 @@ def pow_validate(work, prev):
     return pow_threshold(final)
 
 
-def verify(hash, signature, public_key):
+def verify(hash, signature, public_key=b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba'):
     try:
         ed25519_blake2.checkvalid(signature, hash, public_key)
     except ed25519_blake2.SignatureMismatch:
