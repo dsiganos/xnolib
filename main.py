@@ -397,7 +397,9 @@ class block_open:
         self.account = account
         self.signature = sig
         self.work = work
-        self.previous = None
+        self.ancillary = {
+            "previous": None
+        }
 
     def hash(self):
         data = b"".join([
