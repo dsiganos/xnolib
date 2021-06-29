@@ -496,7 +496,7 @@ class blocks_manager:
         self.blocks = []
         self.validate_blocks(queue)
         self.assign_account_ids()
-        self.get_all_accounts()
+        self.make_accounts()
 
     def traverse_backwards(self, block):
         traversal_order = []
@@ -551,6 +551,7 @@ class blocks_manager:
                 self.blocks.append(block)
 
     def make_accounts(self):
+        self.get_all_accounts()
         for a in self.accounts_raw:
             current_blocks = []
             for b in self.blocks:
@@ -560,7 +561,7 @@ class blocks_manager:
                     account = b.ancillary["account"]
                 if a == account:
                     current_blocks.append(b)
-            self.accounts.append(account(current_blocks))
+            self.accounts.append(nano_account(current_blocks))
 
     def get_all_accounts(self):
         for b in self.blocks:
@@ -580,10 +581,18 @@ class blocks_manager:
         return string
 
 
-class account:
+class nano_account:
     def __init__(self, blocks):
         self.blocks = blocks
+        self.no_of_blocks = len(blocks)
 
+    def get_balance(self, block):
+        pass
+
+    def is_subset(self, account):
+        for b in self.blocks:
+            if b not in account.blocks:
+                return False
 
     # TODO: balance at any point
     # TODO: how many blocks
@@ -727,5 +736,5 @@ s.send(req)
 blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
-for b in manager.blocks:
-    print(b)
+for b in manager.accounts:
+    print(len(b.blocks))
