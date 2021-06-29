@@ -504,18 +504,18 @@ class blocks_manager:
 
         while i != -1:
             traversal_order.append(i)
-            i = self.find_prev(self.blocks[i])
+            i = self.find_prev(self.blocks[i], self.blocks)
 
         return traversal_order
 
-    def find_prev(self, block):
+    def find_prev(self, block, blocks):
         if isinstance(block, block_open):
             prev = binascii.hexlify(block.source).decode("utf-8").upper()
         else:
             prev = binascii.hexlify(block.previous).decode("utf-8").upper()
 
         index = 0
-        for b in self.blocks:
+        for b in blocks:
             hash = b.hash()
             if prev == hash:
                 return index
@@ -561,7 +561,7 @@ class blocks_manager:
                     account = b.ancillary["account"]
                 if a == account:
                     current_blocks.append(b)
-            self.accounts.append(nano_account(current_blocks))
+            self.accounts.append(nano_account(current_blocks, self.find_first_block(current_blocks)))
 
     def get_all_accounts(self):
         for b in self.blocks:
@@ -571,6 +571,14 @@ class blocks_manager:
                 account = b.ancillary["account"]
             if account not in self.accounts_raw:
                 self.accounts_raw.append(account)
+
+    def find_first_block(self, blocks):
+        index = 0
+        block = None
+        while index != -1:
+            block = blocks[index]
+            index = self.find_prev(block, blocks)
+        return block
 
 
     def __str__(self):
@@ -582,8 +590,9 @@ class blocks_manager:
 
 
 class nano_account:
-    def __init__(self, blocks):
+    def __init__(self, blocks, first):
         self.blocks = blocks
+        self.first = first
         self.no_of_blocks = len(blocks)
 
     def get_balance(self, block):
@@ -605,7 +614,7 @@ class nano_account:
             if b.hash() == prev:
                 return b
         return None
-    
+
     # TODO: balance at any point
     # TODO: how many blocks
     # TODO: next / previous block
@@ -748,5 +757,7 @@ s.send(req)
 blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
-for b in manager.blocks:
-    print(b)
+
+
+print("------------------------\n\n{}".format(manager.accounts[0].first))
+print(manager.blocks.index(manager.accounts[0].first))
