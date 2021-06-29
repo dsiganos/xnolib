@@ -489,9 +489,10 @@ class block_state:
         return string
 
 
-class blocks_container:
-    def __init__(self, blocks):
-        self.blocks = blocks
+class blocks_manager:
+    def __init__(self, queue):
+        self.blocks = []
+        self.validate_blocks(queue)
         self.assign_account_ids()
 
     def traverse_backwards(self, block):
@@ -540,6 +541,11 @@ class blocks_container:
             return self.find_account_id(prev_block)
         return prev_block.account
 
+    def validate_blocks(self, queue):
+        for i in range(0, len(queue)):
+            block = queue.pop(0)
+            if valid_block(block):
+                self.blocks.append(block)
 
     def __str__(self):
         string = "------------------- container ---------------------\n"
@@ -629,8 +635,8 @@ def read_blocks_from_socket(s):
         else:
             print('received unknown block type %s' % block_type_enum[0])
             break
-        if valid_block(block):
-            blocks.append(block)
+
+        blocks.append(block)
     return blocks
 
 
@@ -684,6 +690,6 @@ s.send(req)
 
 blocks = read_blocks_from_socket(s)
 
-container = blocks_container(blocks)
-for b in container.blocks:
+manager = blocks_manager(blocks)
+for b in manager.blocks:
     print(b)
