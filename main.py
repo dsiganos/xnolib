@@ -348,8 +348,15 @@ class block_send:
         ])
         return blake2b(data, digest_size=32).hexdigest().upper()
 
-    def __str__(self):
+    def str_ancillary_data(self):
+        string = ""
         hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % get_account_id(self.ancillary["account"])
+        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+
+
+    def __str__(self):
         string = "------------- Block Send -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
@@ -358,8 +365,6 @@ class block_send:
         string += "Bal:  %d\n" % int(self.balance.hex(), 16)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.ancillary["account"])
         return string
 
 
@@ -382,16 +387,22 @@ class block_receive:
         ])
         return blake2b(data, digest_size=32).hexdigest().upper()
 
-    def __str__(self):
+    def str_ancillary_data(self):
+        string = ""
         hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % get_account_id(self.ancillary["account"])
+        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+
+
+    def __str__(self):
         string = "------------- Block Receive -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.ancillary["account"])
+
         return string
 
 
@@ -414,6 +425,11 @@ class block_open:
             self.account
         ])
         return blake2b(data, digest_size=32).hexdigest().upper()
+
+    def str_ancillary_data(self):
+        string = ""
+        string += "Prev: %s" % binascii.hexlify(self.ancillary["previous"]).decode("utf-8").upper()
+        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
@@ -446,16 +462,20 @@ class block_change:
         ])
         return blake2b(data, digest_size=32).hexdigest().upper()
 
-    def __str__(self):
+    def str_ancillary_data(self):
+        string = ""
         hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+        string += "Acc : %s\n" % hexacc
+        string += "      %s\n" % get_account_id(self.ancillary["account"])
+        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+
+    def __str__(self):
         string = "------------- Block Change -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.ancillary["account"])
 
 
 class block_state:
@@ -513,7 +533,7 @@ class blocks_manager:
         traversal_order = []
         i = self.blocks.index(block)
 
-        while i != -1:
+        while i is not None:
             traversal_order.append(i)
             i = self.find_prev(self.blocks[i], self.blocks)
 
@@ -532,7 +552,7 @@ class blocks_manager:
                 return index
             index += 1
 
-        return -1
+        return None
 
     def find_block_by_hash(self, block_hash):
         for b in self.blocks:
@@ -587,7 +607,7 @@ class blocks_manager:
     def find_first_block(self, blocks):
         index = 0
         block = None
-        while index != -1:
+        while index is not None:
             block = blocks[index]
             index = self.find_prev(block, blocks)
         return block
@@ -595,6 +615,9 @@ class blocks_manager:
     def assign_blocks_next(self):
         for b in self.blocks:
             i = self.find_prev(b, self.blocks)
+            #TODO: Remember to review this section, not sure if this works properly!
+            if i is None:
+                continue
             if self.blocks[i].ancillary["next"] is None:
                 self.blocks[i].ancillary["next"] = binascii.unhexlify(b.hash())
 
@@ -803,3 +826,10 @@ blocks = read_blocks_from_socket(s)
 manager = blocks_manager(blocks)
 
 print(manager.accounts[0].last)
+
+# TODO: Remove all -1
+# TODO: Make sure you can print every block from anywhere
+# TODO: Store account public key not ID
+# TODO: Give every class a __str__
+# TODO: Not sure if it should be possible to traverse the block open, look into it!
+# TODO: Bugs while setting the -1 to None fix them
