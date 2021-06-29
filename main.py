@@ -561,31 +561,31 @@ def read_socket(socket, bytes):
     return data
 
 
-def read_block_send():
+def read_block_send(s):
     data = read_socket(s, 152)
     block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:][::-1])
     return block
 
 
-def read_block_receive():
+def read_block_receive(s):
     data = read_socket(s, 136)
     block = block_receive(data[:32], data[32:64], data[64:128], data[128:][::-1])
     return block
 
 
-def read_block_open():
+def read_block_open(s):
     data = read_socket(s, 168)
     block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:][::-1])
     return block
 
 
-def read_block_change():
+def read_block_change(s):
     data = read_socket(s, 136)
     block = block_change(data[:32], data[32:64], data[64:128], data[128:][::-1])
     return block
 
 
-def read_block_state():
+def read_block_state(s):
     data = read_socket(s, 216)
     block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
                         data[208:])
@@ -601,15 +601,15 @@ def read_blocks_from_socket(s):
             break
 
         if block_type[0] == block_type_enum.send:
-            block = read_block_send()
+            block = read_block_send(s)
         elif block_type[0] == block_type_enum.receive:
-            block = read_block_receive()
+            block = read_block_receive(s)
         elif block_type[0] == block_type_enum.open:
-            block = read_block_open()
+            block = read_block_open(s)
         elif block_type[0] == block_type_enum.change:
-            block = read_block_change()
+            block = read_block_change(s)
         elif block_type[0] == block_type_enum.state:
-            block = read_block_state()
+            block = read_block_state(s)
         elif block_type[0] == block_type_enum.invalid:
             print('received block type invalid')
             break
