@@ -491,6 +491,7 @@ class block_state:
 
 class blocks_manager:
     def __init__(self, queue):
+        self.accounts_raw = []
         self.accounts = []
         self.blocks = []
         self.validate_blocks(queue)
@@ -550,7 +551,7 @@ class blocks_manager:
                 self.blocks.append(block)
 
     def split_blocks_by_account(self):
-        pass
+
 
     def get_all_accounts(self):
         for b in self.blocks:
@@ -558,8 +559,8 @@ class blocks_manager:
                 account = b.account
             else:
                 account = b.ancillary["account"]
-            if account not in self.accounts:
-                self.accounts.append(account)
+            if account not in self.accounts_raw:
+                self.accounts_raw.append(account)
 
 
     def __str__(self):
@@ -570,9 +571,10 @@ class blocks_manager:
         return string
 
 
-class blocks_container:
+class account:
     def __init__(self, blocks):
         self.blocks = blocks
+
 
     # TODO: balance at any point
     # TODO: how many blocks
