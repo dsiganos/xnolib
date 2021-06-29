@@ -550,8 +550,17 @@ class blocks_manager:
             if valid_block(block):
                 self.blocks.append(block)
 
-    def split_blocks_by_account(self):
-
+    def make_accounts(self):
+        for a in self.accounts_raw:
+            current_blocks = []
+            for b in self.blocks:
+                if isinstance(b, block_open) or isinstance(b, block_state):
+                    account = b.account
+                else:
+                    account = b.ancillary["account"]
+                if a == account:
+                    current_blocks.append(b)
+            self.accounts.append(account(current_blocks))
 
     def get_all_accounts(self):
         for b in self.blocks:
