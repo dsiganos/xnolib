@@ -593,6 +593,7 @@ class nano_account:
         for b in self.blocks:
             if b not in account.blocks:
                 return False
+        return True
 
     # TODO: balance at any point
     # TODO: how many blocks
