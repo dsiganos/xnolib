@@ -596,6 +596,16 @@ class nano_account:
                 return False
         return True
 
+    def find_prev(self, block):
+        if isinstance(block, block_open):
+            prev = binascii.hexlify(block.source).decode("utf-8").upper()
+        else:
+            prev = binascii.hexlify(block.previous).decode("utf-8").upper()
+        for b in self.blocks:
+            if b.hash() == prev:
+                return b
+        return None
+    
     # TODO: balance at any point
     # TODO: how many blocks
     # TODO: next / previous block
