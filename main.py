@@ -682,6 +682,14 @@ class nano_account:
                 return b
         raise InvalidBlockHash()
 
+    def __str__(self):
+        assert(len(self.blocks) >= 1)
+        string = "------------- Nano Account Start -------------\n\n"
+        for b in self.blocks[::-1]:
+            string += str(b) + '\n'
+        string += "------------- Nano Account End   -------------\n"
+        return string
+
     # TODO: balance at any point
     # TODO: how many blocks
     # TODO: next / previous block
