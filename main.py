@@ -53,6 +53,9 @@ class BadBlockHash(Exception): pass
 class SocketClosedByPeer(Exception): pass
 
 
+class InvalidBlockHash(Exception): pass
+
+
 def account_id_to_name(acc_id_bin):
     assert (len(acc_id_bin) == 32)
 
@@ -646,6 +649,15 @@ class nano_account:
             if b.hash() == prev:
                 return b
         return None
+
+    def find_next(self, block):
+        if block.ancillary["next"] is None:
+            return None
+        next = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
+        for b in self.blocks:
+            if b.hash() == next:
+                return b
+        raise InvalidBlockHash()
 
     # TODO: balance at any point
     # TODO: how many blocks
