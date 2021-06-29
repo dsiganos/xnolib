@@ -333,7 +333,8 @@ class block_send:
         self.signature = sig
         self.work = work
         self.ancillary = {
-            "account": None
+            "account": None,
+            "next": None
         }
 
     def hash(self):
@@ -366,7 +367,8 @@ class block_receive:
         self.signature = sig
         self.work = work
         self.ancillary = {
-            "account": None
+            "account": None,
+            "next": None
         }
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
@@ -398,7 +400,8 @@ class block_open:
         self.signature = sig
         self.work = work
         self.ancillary = {
-            "previous": None
+            "previous": None,
+            "next": None
         }
 
     def hash(self):
@@ -429,7 +432,8 @@ class block_change:
         self.signature = sig
         self.work = work
         self.ancillary = {
-            "account": None
+            "account": None,
+            "next": None
         }
 
     def hash(self):
@@ -460,6 +464,9 @@ class block_state:
         self.link = link
         self.signature = sig
         self.work = work
+        self.ancillary = {
+            "next": None
+        }
 
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
@@ -497,6 +504,7 @@ class blocks_manager:
         self.validate_blocks(queue)
         self.assign_account_ids()
         self.make_accounts()
+        self.assign_blocks_next()
 
     def traverse_backwards(self, block):
         traversal_order = []
@@ -579,6 +587,22 @@ class blocks_manager:
             block = blocks[index]
             index = self.find_prev(block, blocks)
         return block
+
+    def assign_blocks_next(self):
+        for b in self.blocks:
+            i = self.find_prev(b, self.blocks)
+            if self.blocks[i].ancillary["next"] is None:
+                self.blocks[i].ancillary["next"] = binascii.unhexlify(b.hash())
+
+    def find_next(self, block, blocks):
+        if block.ancillary["next"] is None:
+            return -1
+        next = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
+        for b in blocks:
+            if b.hash() == next:
+                return blocks.index(b)
+        return -1
+
 
 
     def __str__(self):
@@ -758,6 +782,3 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
-
-print("------------------------\n\n{}".format(manager.accounts[0].first))
-print(manager.blocks.index(manager.accounts[0].first))
