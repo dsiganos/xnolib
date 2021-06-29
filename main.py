@@ -587,7 +587,8 @@ class nano_account:
         self.no_of_blocks = len(blocks)
 
     def get_balance(self, block):
-        pass
+        if isinstance(block, block_send):
+            return block.balance
 
     def is_subset(self, account):
         for b in self.blocks:
@@ -737,5 +738,5 @@ s.send(req)
 blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
-for b in manager.accounts:
-    print(len(b.blocks))
+for b in manager.blocks:
+    print(b)
