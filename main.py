@@ -491,9 +491,11 @@ class block_state:
 
 class blocks_manager:
     def __init__(self, queue):
+        self.accounts = []
         self.blocks = []
         self.validate_blocks(queue)
         self.assign_account_ids()
+        self.get_all_accounts()
 
     def traverse_backwards(self, block):
         traversal_order = []
@@ -547,6 +549,19 @@ class blocks_manager:
             if valid_block(block):
                 self.blocks.append(block)
 
+    def split_blocks_by_account(self):
+        pass
+
+    def get_all_accounts(self):
+        for b in self.blocks:
+            if isinstance(b, block_open) or isinstance(b, block_state):
+                account = b.account
+            else:
+                account = b.ancillary["account"]
+            if account not in self.accounts:
+                self.accounts.append(account)
+
+
     def __str__(self):
         string = "------------------- container ---------------------\n"
         for i in range(0, len(self.blocks)):
@@ -554,6 +569,16 @@ class blocks_manager:
         string += "---------------------------------------------------"
         return string
 
+
+class blocks_container:
+    def __init__(self, blocks):
+        self.blocks = blocks
+
+    # TODO: balance at any point
+    # TODO: how many blocks
+    # TODO: next / previous block
+    # TODO: first block
+    # TODO: last block
 
 betactx = {
     'peeraddr': "peering-beta.nano.org",
