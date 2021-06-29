@@ -569,7 +569,8 @@ class blocks_manager:
                     account = b.ancillary["account"]
                 if a == account:
                     current_blocks.append(b)
-            self.accounts.append(nano_account(current_blocks, self.find_first_block(current_blocks)))
+            self.accounts.append(nano_account(current_blocks, self.find_first_block(current_blocks),
+                                              self.find_last_block(current_blocks)))
 
     def get_all_accounts(self):
         for b in self.blocks:
@@ -603,7 +604,13 @@ class blocks_manager:
                 return blocks.index(b)
         return -1
 
+    def find_last_block(self, blocks):
+        index = 0
+        while index != -1:
+            block = blocks[index]
+            index = self.find_next(block, blocks)
 
+        return block
 
     def __str__(self):
         string = "------------------- container ---------------------\n"
@@ -614,9 +621,10 @@ class blocks_manager:
 
 
 class nano_account:
-    def __init__(self, blocks, first):
+    def __init__(self, blocks, first, last):
         self.blocks = blocks
         self.first = first
+        self.last = last
         self.no_of_blocks = len(blocks)
 
     def get_balance(self, block):
@@ -782,3 +790,4 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
+print(manager.accounts[0].last)
