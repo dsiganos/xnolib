@@ -770,7 +770,6 @@ class nano_account:
             relevant_block = self.find_next(block)
         else:
             relevant_block = self.find_prev(block)
-
         balance = relevant_block.get_balance()
         while balance is None:
             if open_block:
@@ -933,8 +932,21 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
-for b in manager.accounts[0].blocks:
-    print(int.from_bytes(b.get_balance(), "big"))
+print(manager.accounts[0].blocks[42].source)
+print(manager.accounts[0].blocks[42].representative)
+print(manager.accounts[0].blocks[42].account)
+print(manager.accounts[0].blocks[42].signature)
+print(manager.accounts[0].blocks[42].work)
+
+genesis_block_source = b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba'
+genesis_block_representative = b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba'
+genesis_block_account = b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba'
+genesis_block_signature = b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02'
+genesis_block_work = b'b\xf0T\x17\xdd?\xb6\x91'
+
+# print(manager.accounts[0].blocks[42])
+# print(int.from_bytes(manager.accounts[0].blocks[42].get_balance(), "big"))
+# print(int.from_bytes(manager.accounts[0].blocks[41].get_balance(), "big"))
 
 
 
