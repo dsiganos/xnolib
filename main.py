@@ -640,7 +640,7 @@ class blocks_manager:
                 if a == account:
                     current_blocks.append(b)
             self.accounts.append(nano_account(current_blocks, self.find_first_block(current_blocks),
-                                              self.find_last_block(current_blocks)))
+                                              self.find_last_block(current_blocks), a))
 
     def get_all_accounts(self):
         for b in self.blocks:
@@ -702,10 +702,11 @@ class blocks_manager:
 
 
 class nano_account:
-    def __init__(self, blocks, first, last):
+    def __init__(self, blocks, first, last, account):
         self.blocks = blocks
         self.first = first
         self.last = last
+        self.account = account
         self.no_of_blocks = len(blocks)
 
     def get_balance(self, block):
@@ -891,10 +892,10 @@ for b in manager.accounts[0].blocks:
     print(b.str_ancillary_data())
 
 
-# TODO: Test if all of the block printing and printing acillary works!
+# TODO: Test if all of the block printing and printing acillary works! *DONE*
 # TODO: Remove all -1  *DONE*
 # TODO: Make sure you can print every block from anywhere *DONE*
-# TODO: Store account public key not ID
+# TODO: Store account public key not ID *DONE*
 # TODO: Give every class a __str__
 # TODO: Not sure if it should be possible to traverse the block open, look into it!
 # TODO: Bugs while setting the -1 to None fix them *DONE*
