@@ -456,7 +456,7 @@ class block_open:
         else:
             next = self.ancillary["next"]
         string = ""
-        string += "Prev: %s" % previous
+        string += "Prev: %s\n" % previous
         string += "Next: %s\n" % next
         return string
 
@@ -694,7 +694,7 @@ class blocks_manager:
         return traversal
 
     def __str__(self):
-        string = "------------------- container ---------------------\n"
+        string = "------------------- Manager ---------------------\n"
         for i in range(0, len(self.blocks)):
             string += str(self.blocks[i])
         string += "---------------------------------------------------"
@@ -892,9 +892,9 @@ for b in manager.accounts[0].blocks:
 
 
 # TODO: Test if all of the block printing and printing acillary works!
-# TODO: Remove all -1
-# TODO: Make sure you can print every block from anywhere
+# TODO: Remove all -1  *DONE*
+# TODO: Make sure you can print every block from anywhere *DONE*
 # TODO: Store account public key not ID
 # TODO: Give every class a __str__
 # TODO: Not sure if it should be possible to traverse the block open, look into it!
-# TODO: Bugs while setting the -1 to None fix them
+# TODO: Bugs while setting the -1 to None fix them *DONE*
