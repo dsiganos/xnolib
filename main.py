@@ -731,11 +731,9 @@ class nano_account:
         self.last = last
         self.account = account
         self.no_of_blocks = len(blocks)
+        self.assign_balances()
 
-    def get_balance(self, block):
-        # TODO: Unfinished, need to work out how to manage the balances
-        if isinstance(block, block_send):
-            return block.balance
+    def get_balance(self, block): return block.get_balance()
 
     # Checks if itself is a subset of another account
     def is_subset(self, account):
@@ -759,6 +757,30 @@ class nano_account:
             if b.hash() == next:
                 return b
         raise InvalidBlockHash()
+
+    def assign_balances(self):
+        for b in self.blocks:
+            if b.get_balance() is None:
+                b.ancillary["balance"] = self.find_block_balance(b)
+
+    def find_block_balance(self, block):
+        open_block = False
+        if isinstance(block, block_open):
+            open_block = True
+            relevant_block = self.find_next(block)
+        else:
+            relevant_block = self.find_prev(block)
+
+        balance = relevant_block.get_balance()
+        while balance is None:
+            if open_block:
+                relevant_block = self.find_next(relevant_block)
+                balance = relevant_block.get_balance()
+                print(balance)
+            if not open_block:
+                relevant_block = self.find_prev(relevant_block)
+                balance = relevant_block.get_balance()
+        return balance
 
     def __str__(self):
         assert(len(self.blocks) >= 1)
@@ -912,13 +934,15 @@ blocks = read_blocks_from_socket(s)
 manager = blocks_manager(blocks)
 
 for b in manager.accounts[0].blocks:
-    print(b.str_ancillary_data())
+    print(int.from_bytes(b.get_balance(), "big"))
+
+
 
 
 # TODO: Test if all of the block printing and printing acillary works! *DONE*
 # TODO: Remove all -1  *DONE*
 # TODO: Make sure you can print every block from anywhere *DONE*
 # TODO: Store account public key not ID *DONE*
-# TODO: Give every class a __str__
-# TODO: Not sure if it should be possible to traverse the block open, look into it!
+# TODO: Give every class a __str__ *DONE*
+# TODO: Not sure if it should be possible to traverse the block open, look into it! *DONE*
 # TODO: Bugs while setting the -1 to None fix them *DONE*
