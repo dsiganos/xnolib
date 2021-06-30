@@ -816,7 +816,7 @@ genesis_block_open = {
     "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
     "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
     "work": b'b\xf0T\x17\xdd?\xb6\x91',
-    "balance": int.to_bytes(340282366920938463463374607431768211455)
+    "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
 }
 
 
@@ -940,12 +940,6 @@ s.send(req)
 blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
-
-print(manager.accounts[0].blocks[42].source)
-print(manager.accounts[0].blocks[42].representative)
-print(manager.accounts[0].blocks[42].account)
-print(manager.accounts[0].blocks[42].signature)
-print(manager.accounts[0].blocks[42].work)
 
 # TODO: Test if all of the block printing and printing acillary works! *DONE*
 # TODO: Remove all -1  *DONE*
