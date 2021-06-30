@@ -605,9 +605,8 @@ class blocks_manager:
         self.accounts = []
         self.blocks = []
         self.validate_blocks(queue)
-        self.assign_account_ids()
+        self.init_block_ancillary()
         self.make_accounts()
-        self.assign_blocks_next()
 
     def traverse_backwards(self, block):
         traversal_order = []
@@ -711,6 +710,10 @@ class blocks_manager:
             index = self.find_next(self.blocks[index], self.blocks)
 
         return traversal
+
+    def init_block_ancillary(self):
+        self.assign_account_ids()
+        self.assign_blocks_next()
 
     def __str__(self):
         string = "------------------- Manager ---------------------\n"
@@ -908,7 +911,8 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
-print(manager)
+for b in manager.accounts[0].blocks:
+    print(b.str_ancillary_data())
 
 
 # TODO: Test if all of the block printing and printing acillary works! *DONE*
