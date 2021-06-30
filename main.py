@@ -623,20 +623,28 @@ class blocks_manager:
 
     def find_next(self, block, blocks):
         if block.ancillary["next"] is None:
-            return -1
+            return None
         next = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
         for b in blocks:
             if b.hash() == next:
                 return blocks.index(b)
-        return -1
+        return None
 
     def find_last_block(self, blocks):
         index = 0
-        while index != -1:
+        while index is not None:
             block = blocks[index]
             index = self.find_next(block, blocks)
-
         return block
+
+    def traversal_forward(self):
+        index = 42
+        traversal = []
+        while index is not None:
+            traversal.append(index)
+            index = self.find_next(self.blocks[index], self.blocks)
+
+        return traversal
 
     def __str__(self):
         string = "------------------- container ---------------------\n"
@@ -833,8 +841,10 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
-print(manager.accounts[0].last)
+print(manager.traversal_forward())
 
+
+# TODO: Test if all of the block printing and printing acillary works!
 # TODO: Remove all -1
 # TODO: Make sure you can print every block from anywhere
 # TODO: Store account public key not ID
