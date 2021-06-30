@@ -337,12 +337,14 @@ class block_send:
         self.work = work
         self.ancillary = {
             "account": None,
-            "next": None
+            "next": None,
         }
 
     def get_account(self): return self.ancillary["account"]
 
     def get_previous(self): return self.previous
+
+    def get_balance(self): return self.balance
 
     def hash(self):
         data = b"".join([
@@ -390,12 +392,15 @@ class block_receive:
         self.work = work
         self.ancillary = {
             "account": None,
-            "next": None
+            "next": None,
+            "balance": None
         }
 
     def get_account(self): return self.ancillary["account"]
 
     def get_previous(self): return self.previous
+
+    def get_balance(self): return self.ancillary["balance"]
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
     def hash(self):
@@ -443,12 +448,15 @@ class block_open:
         self.work = work
         self.ancillary = {
             "previous": None,
-            "next": None
+            "next": None,
+            "balance": None
         }
 
     def get_previous(self): return self.source
 
     def get_account(self): return self.account
+
+    def get_balance(self): return self.ancillary["balance"]
 
     def hash(self):
         data = b"".join([
@@ -493,12 +501,15 @@ class block_change:
         self.work = work
         self.ancillary = {
             "account": None,
-            "next": None
+            "next": None,
+            "balance": None
         }
 
     def get_account(self): return self.ancillary["account"]
 
     def get_previous(self): return self.previous
+
+    def get_balance(self): return self.ancillary["balance"]
 
     def hash(self):
         data = b"".join([
@@ -549,6 +560,8 @@ class block_state:
     def get_previous(self): return self.previous
 
     def get_account(self): return self.account
+
+    def get_balance(self): return self.balance
 
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
@@ -703,6 +716,7 @@ class blocks_manager:
         string = "------------------- Manager ---------------------\n"
         for i in range(0, len(self.accounts)):
             string += str(self.accounts[i])
+            string += "\n"
         string += "---------------------------------------------------"
         return string
 
