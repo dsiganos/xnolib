@@ -607,11 +607,7 @@ class blocks_manager:
         return traversal_order
 
     def find_prev(self, block, blocks):
-        if isinstance(block, block_open):
-            prev = binascii.hexlify(block.source).decode("utf-8").upper()
-        else:
-            prev = binascii.hexlify(block.previous).decode("utf-8").upper()
-
+        prev = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
         index = 0
         for b in blocks:
             hash = b.hash()
@@ -629,18 +625,16 @@ class blocks_manager:
 
     def assign_account_ids(self):
         for b in self.blocks:
-            if (isinstance(b, block_state) or isinstance(b, block_open)):
-                continue
-            elif b.ancillary["account"] is not None:
+            if b.get_account() is not None:
                 continue
             b.ancillary["account"] = self.find_account_pk(b)
 
     def find_account_pk(self, block):
         prev = binascii.hexlify(block.previous).decode("utf-8").upper()
         prev_block = self.find_block_by_hash(prev)
-        if not (isinstance(prev_block, block_open) or isinstance(prev_block, block_state)):
+        if prev_block.get_account() is None:
             return self.find_account_pk(prev_block)
-        return prev_block.account
+        return prev_block.get_account()
 
     def validate_blocks(self, queue):
         for i in range(0, len(queue)):
@@ -653,23 +647,15 @@ class blocks_manager:
         for a in self.accounts_raw:
             current_blocks = []
             for b in self.blocks:
-                if isinstance(b, block_open) or isinstance(b, block_state):
-                    account = b.account
-                else:
-                    account = b.ancillary["account"]
-                if a == account:
+                if a == b.get_account():
                     current_blocks.append(b)
             self.accounts.append(nano_account(current_blocks, self.find_first_block(current_blocks),
                                               self.find_last_block(current_blocks), a))
 
     def get_all_accounts(self):
         for b in self.blocks:
-            if isinstance(b, block_open) or isinstance(b, block_state):
-                account = b.account
-            else:
-                account = b.ancillary["account"]
-            if account not in self.accounts_raw:
-                self.accounts_raw.append(account)
+            if b.get_account() not in self.accounts_raw:
+                self.accounts_raw.append(b.get_account())
 
     def find_first_block(self, blocks):
         index = 0
@@ -730,9 +716,11 @@ class nano_account:
         self.no_of_blocks = len(blocks)
 
     def get_balance(self, block):
+        # TODO: Unfinished, need to work out how to manage the balances
         if isinstance(block, block_send):
             return block.balance
 
+    # Checks if itself is a subset of another account
     def is_subset(self, account):
         for b in self.blocks:
             if b not in account.blocks:
@@ -740,10 +728,7 @@ class nano_account:
         return True
 
     def find_prev(self, block):
-        if isinstance(block, block_open):
-            prev = binascii.hexlify(block.source).decode("utf-8").upper()
-        else:
-            prev = binascii.hexlify(block.previous).decode("utf-8").upper()
+        prev = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
         for b in self.blocks:
             if b.hash() == prev:
                 return b
