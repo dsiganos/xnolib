@@ -349,11 +349,21 @@ class block_send:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def str_ancillary_data(self):
+        if self.ancillary["account"] is not None:
+            hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+            account = get_account_id(self.ancillary["account"])
+        else:
+            hexacc = None
+            account = self.ancillary["account"]
+        if self.ancillary["next"] is not None:
+            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        else:
+            next = self.ancillary["next"]
         string = ""
-        hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
         string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.ancillary["account"])
-        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        string += "      %s\n" % account
+        string += "Next: %s\n" % next
+        return string
 
 
     def __str__(self):
@@ -388,11 +398,21 @@ class block_receive:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def str_ancillary_data(self):
+        if self.ancillary["account"] is not None:
+            hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+            account = get_account_id(self.ancillary["account"])
+        else:
+            hexacc = None
+            account = self.ancillary["account"]
+        if self.ancillary["next"] is not None:
+            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        else:
+            next = self.ancillary["next"]
         string = ""
-        hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
         string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.ancillary["account"])
-        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        string += "      %s\n" % account
+        string += "Next: %s\n" % next
+        return string
 
 
     def __str__(self):
@@ -427,9 +447,18 @@ class block_open:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def str_ancillary_data(self):
+        if self.ancillary["previous"] is not None:
+            previous = binascii.hexlify(self.ancillary["previous"]).decode("utf-8").upper()
+        else:
+            previous = self.ancillary["previous"]
+        if self.ancillary["next"] is not None:
+            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        else:
+            next = self.ancillary["next"]
         string = ""
-        string += "Prev: %s" % binascii.hexlify(self.ancillary["previous"]).decode("utf-8").upper()
-        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        string += "Prev: %s" % previous
+        string += "Next: %s\n" % next
+        return string
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
@@ -463,11 +492,21 @@ class block_change:
         return blake2b(data, digest_size=32).hexdigest().upper()
 
     def str_ancillary_data(self):
+        if self.ancillary["account"] is not None:
+            hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+            account = get_account_id(self.ancillary["account"])
+        else:
+            hexacc = None
+            account = self.ancillary["account"]
+        if self.ancillary["next"] is not None:
+            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        else:
+            next = self.ancillary["next"]
         string = ""
-        hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
         string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.ancillary["account"])
-        string += "Next: %s\n" % binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        string += "      %s\n" % account
+        string += "Next: %s\n" % next
+        return string
 
     def __str__(self):
         string = "------------- Block Change -------------\n"
@@ -503,6 +542,14 @@ class block_state:
 
         ])
         return blake2b(data, digest_size=32).hexdigest().upper()
+
+    def str_ancillary_data(self):
+        if self.ancillary["next"] is not None:
+            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+        else:
+            next = self.ancillary["next"]
+        string = "Next: %s" % next
+        return string
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
@@ -784,7 +831,6 @@ def read_blocks_from_socket(s):
         else:
             print('received unknown block type %s' % block_type_enum[0])
             break
-
         blocks.append(block)
     return blocks
 
@@ -841,7 +887,8 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
-print(manager.traversal_forward())
+for b in manager.accounts[0].blocks:
+    print(b.str_ancillary_data())
 
 
 # TODO: Test if all of the block printing and printing acillary works!
