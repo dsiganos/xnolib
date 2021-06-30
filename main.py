@@ -937,9 +937,17 @@ bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 req = bulk_pull.serialise()
 s.send(req)
 
-blocks = read_blocks_from_socket(s)
+open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+                        genesis_block_open["account"], genesis_block_open["signature"],
+                        genesis_block_open["work"])
 
+open_block.ancillary["balance"] = genesis_block_open["balance"]
+
+blocks = read_blocks_from_socket(s)
+blocks.append(open_block)
 manager = blocks_manager(blocks)
+
+
 
 # TODO: Test if all of the block printing and printing acillary works! *DONE*
 # TODO: Remove all -1  *DONE*
