@@ -340,6 +340,10 @@ class block_send:
             "next": None
         }
 
+    def get_account(self): return self.ancillary["account"]
+
+    def get_previous(self): return self.previous
+
     def hash(self):
         data = b"".join([
             self.previous,
@@ -388,6 +392,10 @@ class block_receive:
             "account": None,
             "next": None
         }
+
+    def get_account(self): return self.ancillary["account"]
+
+    def get_previous(self): return self.previous
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
     def hash(self):
@@ -438,6 +446,10 @@ class block_open:
             "next": None
         }
 
+    def get_previous(self): return self.source
+
+    def get_account(self): return self.account
+
     def hash(self):
         data = b"".join([
             self.source,
@@ -484,6 +496,10 @@ class block_change:
             "next": None
         }
 
+    def get_account(self): return self.ancillary["account"]
+
+    def get_previous(self): return self.previous
+
     def hash(self):
         data = b"".join([
             self.previous,
@@ -529,6 +545,10 @@ class block_state:
         self.ancillary = {
             "next": None
         }
+
+    def get_previous(self): return self.previous
+
+    def get_account(self): return self.account
 
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
@@ -613,13 +633,13 @@ class blocks_manager:
                 continue
             elif b.ancillary["account"] is not None:
                 continue
-            b.ancillary["account"] = self.find_account_id(b)
+            b.ancillary["account"] = self.find_account_pk(b)
 
-    def find_account_id(self, block):
+    def find_account_pk(self, block):
         prev = binascii.hexlify(block.previous).decode("utf-8").upper()
         prev_block = self.find_block_by_hash(prev)
         if not (isinstance(prev_block, block_open) or isinstance(prev_block, block_state)):
-            return self.find_account_id(prev_block)
+            return self.find_account_pk(prev_block)
         return prev_block.account
 
     def validate_blocks(self, queue):
