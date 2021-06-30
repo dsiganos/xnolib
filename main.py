@@ -701,8 +701,8 @@ class blocks_manager:
 
     def __str__(self):
         string = "------------------- Manager ---------------------\n"
-        for i in range(0, len(self.blocks)):
-            string += str(self.blocks[i])
+        for i in range(0, len(self.accounts)):
+            string += str(self.accounts[i])
         string += "---------------------------------------------------"
         return string
 
@@ -745,10 +745,11 @@ class nano_account:
 
     def __str__(self):
         assert(len(self.blocks) >= 1)
-        string = "------------- Nano Account Start -------------\n\n"
+        string = "Nano Account: %s \n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "------------- Start -------------\n\n"
         for b in self.blocks[::-1]:
             string += str(b) + '\n'
-        string += "------------- Nano Account End   -------------\n"
+        string += "-------------  End   -------------\n"
         return string
 
     # TODO: balance at any point
@@ -893,8 +894,7 @@ blocks = read_blocks_from_socket(s)
 
 manager = blocks_manager(blocks)
 
-for b in manager.accounts[0].blocks:
-    print(b.str_ancillary_data())
+print(manager)
 
 
 # TODO: Test if all of the block printing and printing acillary works! *DONE*
