@@ -812,6 +812,16 @@ class blocks_manager:
             if b.hash() == hash:
                 return b
 
+    def __str__(self):
+        string = "------------- Blocks Manager -------------\n"
+        string += "Blocks Processed: %d\n" % len(self.processed_blocks)
+        string += "Unprocessed Blocks: %d\n" % len(self.unprocessed_blocks)
+        string += "Accounts:\n\n"
+        for a in self.accounts:
+            string += "    Public Key : %s\n" % binascii.hexlify(a.account).decode("utf-8").upper()
+            string += "    ID         : %s\n\n" % get_account_id(a.account)
+        return string
+
 class nano_account:
     def __init__(self, open_block):
         self.account = open_block.get_account()
@@ -858,6 +868,13 @@ class nano_account:
         for b in self.blocks:
             string += str(b)
         return string
+
+    # Checks if itself is a subset of another account
+    def is_subset(self, account):
+        for b in self.blocks:
+            if b not in account.blocks:
+                return False
+        return True
 
     def __str__(self):
         string = "------------- Nano Account -------------\n"
@@ -918,5 +935,5 @@ manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
 
-print(manager.accounts[0])
+print(manager)
 #TODO: Implement functions to print every objects state at any time
