@@ -55,6 +55,9 @@ class SocketClosedByPeer(Exception): pass
 class InvalidBlockHash(Exception): pass
 
 
+class ProcessingErrorAccountAlreadyOpen(Exception): pass
+
+
 def account_id_to_name(acc_id_bin):
     assert (len(acc_id_bin) == 32)
 
@@ -491,6 +494,19 @@ class block_open:
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
+    def __eq__(self, other):
+        if self.source != other.source:
+            return False
+        elif self.representative != other.representative:
+            return False
+        elif self.account != other.account:
+            return False
+        elif self.signature != other.signature:
+            return False
+        elif self.work != other.work:
+            return False
+        return True
+
 
 class block_change:
     def __init__(self, prev, rep, sig, work):
@@ -703,6 +719,8 @@ def valid_block(block):
 class blocks_manager:
     def __init__(self):
         self.accounts = []
+        self.processed_blocks = []
+        self.genesis_block = None
         self.create_genesis_account()
 
     def create_genesis_account(self):
@@ -710,21 +728,40 @@ class blocks_manager:
                                 genesis_block_open["account"], genesis_block_open["signature"],
                                 genesis_block_open["work"])
         open_block.ancillary["balance"] = genesis_block_open["balance"]
-        genesis_account = nano_account(open_block.get_account())
-        genesis_account.add_block(open_block)
+        genesis_account = nano_account(open_block)
         self.accounts.append(genesis_account)
+        self.genesis_block = open_block
+
+    def process(self, block):
+        if isinstance(block, block_open):
+            if block.account == genesis_block_open["account"]:
+                assert(block == self.genesis_block)
+                pass
+            else:
+                if not self.account_exists(block.get_account()):
+                    account = nano_account(block)
+                    self.accounts.append(account)
+                    self.processed_blocks.append(block)
+                else:
+                    raise ProcessingErrorAccountAlreadyOpen()
 
 
+
+    def account_exists(self, account):
+        for a in self.accounts:
+            if a.account == account:
+                return True
+        return False
 
 
 
 class nano_account:
-    def __init__(self, account):
-        self.account = account
-        self.blocks = []
-        pass
+    def __init__(self, open_block):
+        self.account = open_block.get_account()
+        self.blocks = [open_block]
 
     def add_block(self, block):
+        # TODO: Block processing required
         self.blocks.append(block)
 
 
