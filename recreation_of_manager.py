@@ -774,6 +774,7 @@ class blocks_manager:
         else:
             self.unprocessed_blocks.append(block)
             return False
+
         n_account = self.find_nano_account(account_pk)
         if n_account is not None:
             n_account.add_block(block)
@@ -824,12 +825,16 @@ class blocks_manager:
 
 class nano_account:
     def __init__(self, open_block):
+        self.first = open_block
+        self.last = open_block
         self.account = open_block.get_account()
         self.blocks = [open_block]
 
     def add_block(self, block):
         # TODO: Block processing required
         self.blocks.append(block)
+        self.last = block
+
 
     # This method is used for debugging: checking order
     def traverse_backwards(self):
@@ -930,7 +935,6 @@ s.send(req)
 
 blocks = read_blocks_from_socket(s)
 blocks = blocks[::-1]
-print(blocks)
 manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
