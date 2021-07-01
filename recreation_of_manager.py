@@ -721,7 +721,6 @@ def valid_block(block):
 
 class blocks_manager:
     def __init__(self):
-        #TODO: Remember to validate blocks!
         self.accounts = []
         self.processed_blocks = []
         self.unprocessed_blocks = []
@@ -881,6 +880,9 @@ class nano_account:
                 return False
         return True
 
+    def get_balance(self, block):
+        return block.get_balance()
+
     def __str__(self):
         string = "------------- Nano Account -------------\n"
         string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
@@ -940,4 +942,3 @@ while len(blocks) != 0:
     manager.process(blocks.pop())
 
 print(manager)
-#TODO: Implement functions to print every objects state at any time
