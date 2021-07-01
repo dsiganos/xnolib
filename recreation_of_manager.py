@@ -733,26 +733,35 @@ class blocks_manager:
         open_block.ancillary["balance"] = genesis_block_open["balance"]
         genesis_account = nano_account(open_block)
         self.accounts.append(genesis_account)
+        self.processed_blocks.append(open_block)
         self.genesis_block = open_block
 
     def process(self, block):
+        successful = False
         if isinstance(block, block_open):
-            self.process_block_open(block)
+            successful = self.process_block_open(block)
         elif isinstance(block, block_send):
-            self.process_block_send(block)
+            successful = self.process_block_send(block)
+
+
+        if successful:
+            # TODO: Extremely inefficient!
+            self.process_unprocessed_blocks()
 
     def process_block_open(self, block):
         if block.account == genesis_block_open["account"]:
             assert (block == self.genesis_block)
             self.processed_blocks.append(block)
-            pass
+            return True
         else:
             if not self.account_exists(block.get_account()):
                 account = nano_account(block)
                 self.accounts.append(account)
                 self.processed_blocks.append(block)
+                return True
             else:
                 raise ProcessingErrorAccountAlreadyOpen()
+
 
     def process_block_send(self, block):
         account_pk = self.find_blocks_account(block)
@@ -760,14 +769,15 @@ class blocks_manager:
             block.ancillary["account"] = account_pk
         else:
             self.blocks_no_account_pk.append(block)
-            return None
+            return False
         n_account = self.find_nano_account(account_pk)
         if n_account is not None:
             n_account.add_block(block)
         else:
             self.blocks_no_account_open.append(block)
-            return None
+            return False
         self.processed_blocks.append(block)
+        return True
 
 
     def account_exists(self, account):
@@ -789,6 +799,11 @@ class blocks_manager:
                 return a
         return None
 
+    def process_unprocessed_blocks(self):
+        for i in range(0, len(self.blocks_no_account_open)):
+            self.process(self.blocks_no_account_open.pop(0))
+        for i in range(0, len(self.blocks_no_account_pk)):
+            self.process(self.blocks_no_account_pk.pop(0))
 
 class nano_account:
     def __init__(self, open_block):
@@ -849,12 +864,13 @@ req = bulk_pull.serialise()
 s.send(req)
 
 blocks = read_blocks_from_socket(s)
-blocks = blocks[40:]
+blocks = blocks[::-1]
 print(blocks)
 manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
 
-for b in manager.accounts[0].blocks:
-    print(b)
+# for b in manager.accounts[0].blocks:
+#     print(b)
 
+print (len(manager.accounts[0].blocks))
