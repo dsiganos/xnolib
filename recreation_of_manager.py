@@ -718,8 +718,11 @@ def valid_block(block):
 
 class blocks_manager:
     def __init__(self):
+        #TODO: Remember to validate blocks!
         self.accounts = []
         self.processed_blocks = []
+        self.blocks_no_account_pk = []
+        self.blocks_no_account_open = []
         self.genesis_block = None
         self.create_genesis_account()
 
@@ -735,10 +738,13 @@ class blocks_manager:
     def process(self, block):
         if isinstance(block, block_open):
             self.process_block_open(block)
+        elif isinstance(block, block_send):
+            self.process_block_send(block)
 
     def process_block_open(self, block):
         if block.account == genesis_block_open["account"]:
             assert (block == self.genesis_block)
+            self.processed_blocks.append(block)
             pass
         else:
             if not self.account_exists(block.get_account()):
@@ -748,12 +754,40 @@ class blocks_manager:
             else:
                 raise ProcessingErrorAccountAlreadyOpen()
 
+    def process_block_send(self, block):
+        account_pk = self.find_blocks_account(block)
+        if account_pk is not None:
+            block.ancillary["account"] = account_pk
+        else:
+            self.blocks_no_account_pk.append(block)
+            return None
+        n_account = self.find_nano_account(account_pk)
+        if n_account is not None:
+            n_account.add_block(block)
+        else:
+            self.blocks_no_account_open.append(block)
+            return None
+        self.processed_blocks.append(block)
+
+
     def account_exists(self, account):
         for a in self.accounts:
             if a.account == account:
                 return True
         return False
 
+    def find_blocks_account(self, block):
+        for b in self.processed_blocks:
+            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                assert(b.get_account() is not None)
+                return b.get_account()
+        return None
+
+    def find_nano_account(self, account_pk):
+        for a in self.accounts:
+            if a.account == account_pk:
+                return a
+        return None
 
 
 class nano_account:
@@ -775,3 +809,52 @@ genesis_block_open = {
     "work": b'b\xf0T\x17\xdd?\xb6\x91',
     "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
 }
+
+
+
+
+
+
+betactx = {
+    'peeraddr': "peering-beta.nano.org",
+    'peerport': 54000,
+    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+}
+
+livectx = {
+    'net_id': network_id(67),
+    'peeraddr': "peering.nano.org",
+    'peerport': 7075,
+    'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
+}
+
+
+
+
+
+
+ctx = livectx
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+s.connect((peeraddr, ctx['peerport']))
+print('Connected to %s:%s' % s.getpeername())
+s.settimeout(2)
+
+keepalive = message_keepmealive(ctx['net_id'])
+req = keepalive.serialise()
+s.send(req)
+bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
+req = bulk_pull.serialise()
+s.send(req)
+
+blocks = read_blocks_from_socket(s)
+blocks = blocks[40:]
+print(blocks)
+manager = blocks_manager()
+while len(blocks) != 0:
+    manager.process(blocks.pop())
+
+for b in manager.accounts[0].blocks:
+    print(b)
+
