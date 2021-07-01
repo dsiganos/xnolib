@@ -734,18 +734,19 @@ class blocks_manager:
 
     def process(self, block):
         if isinstance(block, block_open):
-            if block.account == genesis_block_open["account"]:
-                assert(block == self.genesis_block)
-                pass
+            self.process_block_open(block)
+
+    def process_block_open(self, block):
+        if block.account == genesis_block_open["account"]:
+            assert (block == self.genesis_block)
+            pass
+        else:
+            if not self.account_exists(block.get_account()):
+                account = nano_account(block)
+                self.accounts.append(account)
+                self.processed_blocks.append(block)
             else:
-                if not self.account_exists(block.get_account()):
-                    account = nano_account(block)
-                    self.accounts.append(account)
-                    self.processed_blocks.append(block)
-                else:
-                    raise ProcessingErrorAccountAlreadyOpen()
-
-
+                raise ProcessingErrorAccountAlreadyOpen()
 
     def account_exists(self, account):
         for a in self.accounts:
