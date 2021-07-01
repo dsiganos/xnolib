@@ -495,15 +495,18 @@ class block_open:
         return string
 
     def __eq__(self, other):
-        if self.source != other.source:
-            return False
-        elif self.representative != other.representative:
-            return False
-        elif self.account != other.account:
-            return False
-        elif self.signature != other.signature:
-            return False
-        elif self.work != other.work:
+        try:
+            if self.source != other.source:
+                return False
+            elif self.representative != other.representative:
+                return False
+            elif self.account != other.account:
+                return False
+            elif self.signature != other.signature:
+                return False
+            elif self.work != other.work:
+                return False
+        except AttributeError:
             return False
         return True
 
@@ -712,7 +715,7 @@ def verify_pow(block):
 
 def valid_block(block):
     work_valid = verify_pow(block)
-    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature)
+    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
     return work_valid and sig_valid
 
 
@@ -721,8 +724,7 @@ class blocks_manager:
         #TODO: Remember to validate blocks!
         self.accounts = []
         self.processed_blocks = []
-        self.blocks_no_account_pk = []
-        self.blocks_no_account_open = []
+        self.unprocessed_blocks = []
         self.genesis_block = None
         self.create_genesis_account()
 
@@ -740,15 +742,15 @@ class blocks_manager:
         successful = False
         if isinstance(block, block_open):
             successful = self.process_block_open(block)
-        elif isinstance(block, block_send):
-            successful = self.process_block_send(block)
-
+        else:
+            successful = self.process_block(block)
 
         if successful:
-            # TODO: Extremely inefficient!
             self.process_unprocessed_blocks()
 
     def process_block_open(self, block):
+        if not valid_block(block):
+            return False
         if block.account == genesis_block_open["account"]:
             assert (block == self.genesis_block)
             self.processed_blocks.append(block)
@@ -762,23 +764,24 @@ class blocks_manager:
             else:
                 raise ProcessingErrorAccountAlreadyOpen()
 
-
-    def process_block_send(self, block):
+    def process_block(self, block):
         account_pk = self.find_blocks_account(block)
         if account_pk is not None:
             block.ancillary["account"] = account_pk
+            if not valid_block(block):
+                return False
+            self.find_prev_block(block).ancillary["next"] = binascii.unhexlify(block.hash())
         else:
-            self.blocks_no_account_pk.append(block)
+            self.unprocessed_blocks.append(block)
             return False
         n_account = self.find_nano_account(account_pk)
         if n_account is not None:
             n_account.add_block(block)
         else:
-            self.blocks_no_account_open.append(block)
+            self.unprocessed_blocks.append(block)
             return False
         self.processed_blocks.append(block)
         return True
-
 
     def account_exists(self, account):
         for a in self.accounts:
@@ -800,10 +803,14 @@ class blocks_manager:
         return None
 
     def process_unprocessed_blocks(self):
-        for i in range(0, len(self.blocks_no_account_open)):
-            self.process(self.blocks_no_account_open.pop(0))
-        for i in range(0, len(self.blocks_no_account_pk)):
-            self.process(self.blocks_no_account_pk.pop(0))
+        for i in range(0, len(self.unprocessed_blocks)):
+            self.process(self.unprocessed_blocks.pop(0))
+
+    def find_prev_block(self, block):
+        hash = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
+        for b in self.processed_blocks:
+            if b.hash() == hash:
+                return b
 
 class nano_account:
     def __init__(self, open_block):
@@ -813,6 +820,52 @@ class nano_account:
     def add_block(self, block):
         # TODO: Block processing required
         self.blocks.append(block)
+
+    # This method is used for debugging: checking order
+    def traverse_backwards(self):
+        block = self.blocks[-1]
+        traversal = []
+        while block is not None:
+            traversal.append(self.blocks.index(block))
+            block = self.find_prev(block)
+        return traversal
+
+    # This method is used for debugging: checking order
+    def traverse_forwards(self):
+        block = self.blocks[0]
+        traversal = []
+        while block is not None:
+            traversal.append(self.blocks.index(block))
+            block = self.find_next(block)
+        return traversal
+
+    def find_prev(self, block):
+        for b in self.blocks:
+            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                return b
+        return None
+
+    def find_next(self, block):
+        if block.ancillary["next"] is None:
+            return None
+        for b in self.blocks:
+            if b.hash() == binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper():
+                return b
+        return None
+
+    def str_blocks(self):
+        string = ""
+        for b in self.blocks:
+            string += str(b)
+        return string
+
+    def __str__(self):
+        string = "------------- Nano Account -------------\n"
+        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "       : %s\n" % get_account_id(self.account)
+        string += "Blocks:  %d\n" % len(self.blocks)
+        string += "Balance: %d\n" % int.from_bytes(self.blocks[-1].get_balance(), "big")
+        return string
 
 
 
@@ -824,11 +877,6 @@ genesis_block_open = {
     "work": b'b\xf0T\x17\xdd?\xb6\x91',
     "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
 }
-
-
-
-
-
 
 betactx = {
     'peeraddr': "peering-beta.nano.org",
@@ -870,7 +918,5 @@ manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
 
-# for b in manager.accounts[0].blocks:
-#     print(b)
-
-print (len(manager.accounts[0].blocks))
+print(manager.accounts[0])
+#TODO: Implement functions to print every objects state at any time
