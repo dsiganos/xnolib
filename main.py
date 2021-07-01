@@ -1,4 +1,3 @@
-#!/bin/env python3
 
 from hashlib import blake2b
 import binascii
@@ -54,6 +53,9 @@ class SocketClosedByPeer(Exception): pass
 
 
 class InvalidBlockHash(Exception): pass
+
+
+class ProcessingErrorAccountAlreadyOpen(Exception): pass
 
 
 def account_id_to_name(acc_id_bin):
@@ -493,15 +495,18 @@ class block_open:
         return string
 
     def __eq__(self, other):
-        if self.source != other.source:
-            return False
-        elif self.representative != other.representative:
-            return False
-        elif self.account != other.account:
-            return False
-        elif self.signature != other.signature:
-            return False
-        elif self.work != other.work:
+        try:
+            if self.source != other.source:
+                return False
+            elif self.representative != other.representative:
+                return False
+            elif self.account != other.account:
+                return False
+            elif self.signature != other.signature:
+                return False
+            elif self.work != other.work:
+                return False
+        except AttributeError:
             return False
         return True
 
@@ -611,228 +616,6 @@ class block_state:
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
-
-class blocks_manager:
-    def __init__(self, queue):
-        self.accounts_raw = []
-        self.accounts = []
-        self.blocks = []
-        self.validate_blocks(queue)
-        self.init_block_ancillary()
-        self.make_accounts()
-
-    def traverse_backwards(self, block):
-        traversal_order = []
-        i = self.blocks.index(block)
-
-        while i is not None:
-            traversal_order.append(i)
-            i = self.find_prev(self.blocks[i], self.blocks)
-
-        return traversal_order
-
-    def find_prev(self, block, blocks):
-        prev = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
-        index = 0
-        for b in blocks:
-            hash = b.hash()
-            if prev == hash:
-                return index
-            index += 1
-
-        return None
-
-    def find_block_by_hash(self, block_hash):
-        for b in self.blocks:
-            if b.hash() == block_hash:
-                return b
-        return None
-
-    def assign_account_ids(self):
-        for b in self.blocks:
-            if b.get_account() is not None:
-                continue
-            b.ancillary["account"] = self.find_account_pk(b)
-
-    def find_account_pk(self, block):
-        prev = binascii.hexlify(block.previous).decode("utf-8").upper()
-        prev_block = self.find_block_by_hash(prev)
-        if prev_block.get_account() is None:
-            return self.find_account_pk(prev_block)
-        return prev_block.get_account()
-
-    def validate_blocks(self, queue):
-        for i in range(0, len(queue)):
-            block = queue.pop(0)
-            if valid_block(block):
-                self.blocks.append(block)
-
-    def make_accounts(self):
-        self.get_all_accounts()
-        for a in self.accounts_raw:
-            current_blocks = []
-            for b in self.blocks:
-                if a == b.get_account():
-                    current_blocks.append(b)
-            self.accounts.append(nano_account(current_blocks, self.find_first_block(current_blocks),
-                                              self.find_last_block(current_blocks), a))
-
-    def get_all_accounts(self):
-        for b in self.blocks:
-            if b.get_account() not in self.accounts_raw:
-                self.accounts_raw.append(b.get_account())
-
-    def find_first_block(self, blocks):
-        index = 0
-        block = None
-        while index is not None:
-            block = blocks[index]
-            index = self.find_prev(block, blocks)
-        return block
-
-    def assign_blocks_next(self):
-        for b in self.blocks:
-            i = self.find_prev(b, self.blocks)
-            #TODO: Remember to review this section, not sure if this works properly!
-            if i is None:
-                continue
-            if self.blocks[i].ancillary["next"] is None:
-                self.blocks[i].ancillary["next"] = binascii.unhexlify(b.hash())
-
-    def find_next(self, block, blocks):
-        if block.ancillary["next"] is None:
-            return None
-        next = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
-        for b in blocks:
-            if b.hash() == next:
-                return blocks.index(b)
-        return None
-
-    def find_last_block(self, blocks):
-        index = 0
-        while index is not None:
-            block = blocks[index]
-            index = self.find_next(block, blocks)
-        return block
-
-    def traversal_forward(self):
-        index = 42
-        traversal = []
-        while index is not None:
-            traversal.append(index)
-            index = self.find_next(self.blocks[index], self.blocks)
-
-        return traversal
-
-    def init_block_ancillary(self):
-        self.assign_account_ids()
-        self.assign_blocks_next()
-
-    def __str__(self):
-        string = "------------------- Manager ---------------------\n"
-        for i in range(0, len(self.accounts)):
-            string += str(self.accounts[i])
-            string += "\n"
-        string += "---------------------------------------------------"
-        return string
-
-
-class nano_account:
-    def __init__(self, blocks, first, last, account):
-        self.blocks = blocks
-        self.first = first
-        self.last = last
-        self.account = account
-        self.no_of_blocks = len(blocks)
-        self.assign_balances()
-
-    def get_balance(self, block): return block.get_balance()
-
-    # Checks if itself is a subset of another account
-    def is_subset(self, account):
-        for b in self.blocks:
-            if b not in account.blocks:
-                return False
-        return True
-
-    def find_prev(self, block):
-        prev = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
-        for b in self.blocks:
-            if b.hash() == prev:
-                return b
-        return None
-
-    def find_next(self, block):
-        if block.ancillary["next"] is None:
-            return None
-        next = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
-        for b in self.blocks:
-            if b.hash() == next:
-                return b
-        raise InvalidBlockHash()
-
-    def assign_balances(self):
-        for b in self.blocks:
-            if b.get_balance() is None:
-                b.ancillary["balance"] = self.find_block_balance(b)
-
-    def find_block_balance(self, block):
-        open_block = False
-        if isinstance(block, block_open):
-            open_block = True
-            relevant_block = self.find_next(block)
-        else:
-            relevant_block = self.find_prev(block)
-        balance = relevant_block.get_balance()
-        while balance is None:
-            if open_block:
-                relevant_block = self.find_next(relevant_block)
-                balance = relevant_block.get_balance()
-                print(balance)
-            if not open_block:
-                relevant_block = self.find_prev(relevant_block)
-                balance = relevant_block.get_balance()
-        return balance
-
-    def __str__(self):
-        assert(len(self.blocks) >= 1)
-        string = "Nano Account: %s \n" % binascii.hexlify(self.account).decode("utf-8").upper()
-        string += "------------- Start -------------\n\n"
-        for b in self.blocks[::-1]:
-            string += str(b) + '\n'
-        string += "-------------  End   -------------\n"
-        return string
-
-    # TODO: balance at any point
-    # TODO: how many blocks
-    # TODO: next / previous block
-    # TODO: first block
-    # TODO: last block
-
-betactx = {
-    'peeraddr': "peering-beta.nano.org",
-    'peerport': 54000,
-    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
-}
-
-livectx = {
-    'net_id': network_id(67),
-    'peeraddr': "peering.nano.org",
-    'peerport': 7075,
-    'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
-    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
-}
-
-genesis_block_open = {
-    "source": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "representative": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
-    "work": b'b\xf0T\x17\xdd?\xb6\x91',
-    "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
-}
-
-
 def read_socket(socket, bytes):
     data = b''
     while len(data) != bytes:
@@ -932,8 +715,209 @@ def verify_pow(block):
 
 def valid_block(block):
     work_valid = verify_pow(block)
-    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature)
+    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
     return work_valid and sig_valid
+
+
+class blocks_manager:
+    def __init__(self):
+        self.accounts = []
+        self.processed_blocks = []
+        self.unprocessed_blocks = []
+        self.genesis_block = None
+        self.create_genesis_account()
+
+    def create_genesis_account(self):
+        open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+                                genesis_block_open["account"], genesis_block_open["signature"],
+                                genesis_block_open["work"])
+        open_block.ancillary["balance"] = genesis_block_open["balance"]
+        genesis_account = nano_account(open_block)
+        self.accounts.append(genesis_account)
+        self.processed_blocks.append(open_block)
+        self.genesis_block = open_block
+
+    def process(self, block):
+        successful = False
+        if isinstance(block, block_open):
+            successful = self.process_block_open(block)
+        else:
+            successful = self.process_block(block)
+
+        if successful:
+            self.process_unprocessed_blocks()
+
+    def process_block_open(self, block):
+        if not valid_block(block):
+            return False
+        if block.account == genesis_block_open["account"]:
+            assert (block == self.genesis_block)
+            self.processed_blocks.append(block)
+            return True
+        else:
+            if not self.account_exists(block.get_account()):
+                account = nano_account(block)
+                self.accounts.append(account)
+                self.processed_blocks.append(block)
+                return True
+            else:
+                raise ProcessingErrorAccountAlreadyOpen()
+
+    def process_block(self, block):
+        account_pk = self.find_blocks_account(block)
+        if account_pk is not None:
+            block.ancillary["account"] = account_pk
+            if not valid_block(block):
+                return False
+            self.find_prev_block(block).ancillary["next"] = binascii.unhexlify(block.hash())
+        else:
+            self.unprocessed_blocks.append(block)
+            return False
+
+        n_account = self.find_nano_account(account_pk)
+        if n_account is not None:
+            n_account.add_block(block)
+        else:
+            self.unprocessed_blocks.append(block)
+            return False
+        self.processed_blocks.append(block)
+        return True
+
+    def account_exists(self, account):
+        for a in self.accounts:
+            if a.account == account:
+                return True
+        return False
+
+    def find_blocks_account(self, block):
+        for b in self.processed_blocks:
+            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                assert(b.get_account() is not None)
+                return b.get_account()
+        return None
+
+    def find_nano_account(self, account_pk):
+        for a in self.accounts:
+            if a.account == account_pk:
+                return a
+        return None
+
+    def process_unprocessed_blocks(self):
+        for i in range(0, len(self.unprocessed_blocks)):
+            self.process(self.unprocessed_blocks.pop(0))
+
+    def find_prev_block(self, block):
+        hash = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
+        for b in self.processed_blocks:
+            if b.hash() == hash:
+                return b
+
+    def __str__(self):
+        string = "------------- Blocks Manager -------------\n"
+        string += "Blocks Processed: %d\n" % len(self.processed_blocks)
+        string += "Unprocessed Blocks: %d\n" % len(self.unprocessed_blocks)
+        string += "Accounts:\n\n"
+        for a in self.accounts:
+            string += "    Public Key : %s\n" % binascii.hexlify(a.account).decode("utf-8").upper()
+            string += "    ID         : %s\n\n" % get_account_id(a.account)
+        return string
+
+class nano_account:
+    def __init__(self, open_block):
+        self.first = open_block
+        self.last = open_block
+        self.account = open_block.get_account()
+        self.blocks = [open_block]
+
+    def add_block(self, block):
+        # TODO: Block processing required
+        self.blocks.append(block)
+        self.last = block
+
+
+    # This method is used for debugging: checking order
+    def traverse_backwards(self):
+        block = self.blocks[-1]
+        traversal = []
+        while block is not None:
+            traversal.append(self.blocks.index(block))
+            block = self.find_prev(block)
+        return traversal
+
+    # This method is used for debugging: checking order
+    def traverse_forwards(self):
+        block = self.blocks[0]
+        traversal = []
+        while block is not None:
+            traversal.append(self.blocks.index(block))
+            block = self.find_next(block)
+        return traversal
+
+    def find_prev(self, block):
+        for b in self.blocks:
+            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                return b
+        return None
+
+    def find_next(self, block):
+        if block.ancillary["next"] is None:
+            return None
+        for b in self.blocks:
+            if b.hash() == binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper():
+                return b
+        return None
+
+    def str_blocks(self):
+        string = ""
+        for b in self.blocks:
+            string += str(b)
+        return string
+
+    # Checks if itself is a subset of another account
+    def is_subset(self, account):
+        for b in self.blocks:
+            if b not in account.blocks:
+                return False
+        return True
+
+    def get_balance(self, block): return block.get_balance()
+
+    def __str__(self):
+        string = "------------- Nano Account -------------\n"
+        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "       : %s\n" % get_account_id(self.account)
+        string += "Blocks:  %d\n" % len(self.blocks)
+        string += "Balance: %d\n" % int.from_bytes(self.blocks[-1].get_balance(), "big")
+        return string
+
+
+
+genesis_block_open = {
+    "source": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
+    "representative": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
+    "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
+    "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
+    "work": b'b\xf0T\x17\xdd?\xb6\x91',
+    "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
+}
+
+betactx = {
+    'peeraddr': "peering-beta.nano.org",
+    'peerport': 54000,
+    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+}
+
+livectx = {
+    'net_id': network_id(67),
+    'peeraddr': "peering.nano.org",
+    'peerport': 7075,
+    'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
+}
+
+
+
+
 
 
 ctx = livectx
@@ -950,21 +934,10 @@ bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 req = bulk_pull.serialise()
 s.send(req)
 
-open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-                        genesis_block_open["account"], genesis_block_open["signature"],
-                        genesis_block_open["work"])
-open_block.ancillary["balance"] = genesis_block_open["balance"]
-
 blocks = read_blocks_from_socket(s)
-blocks.append(open_block) 
-manager = blocks_manager(blocks)
+blocks = blocks[::-1]
+manager = blocks_manager()
+while len(blocks) != 0:
+    manager.process(blocks.pop())
 
-
-
-# TODO: Test if all of the block printing and printing acillary works! *DONE*
-# TODO: Remove all -1  *DONE*
-# TODO: Make sure you can print every block from anywhere *DONE*
-# TODO: Store account public key not ID *DONE*
-# TODO: Give every class a __str__ *DONE*
-# TODO: Not sure if it should be possible to traverse the block open, look into it! *DONE*
-# TODO: Bugs while setting the -1 to None fix them *DONE*
+print(manager)
