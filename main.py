@@ -492,6 +492,19 @@ class block_open:
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         return string
 
+    def __eq__(self, other):
+        if self.source != other.source:
+            return False
+        elif self.representative != other.representative:
+            return False
+        elif self.account != other.account:
+            return False
+        elif self.signature != other.signature:
+            return False
+        elif self.work != other.work:
+            return False
+        return True
+
 
 class block_change:
     def __init__(self, prev, rep, sig, work):
@@ -940,11 +953,10 @@ s.send(req)
 open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
                         genesis_block_open["account"], genesis_block_open["signature"],
                         genesis_block_open["work"])
-
 open_block.ancillary["balance"] = genesis_block_open["balance"]
 
 blocks = read_blocks_from_socket(s)
-blocks.append(open_block)
+blocks.append(open_block) 
 manager = blocks_manager(blocks)
 
 
