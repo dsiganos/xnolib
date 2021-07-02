@@ -785,7 +785,7 @@ class blocks_manager:
         else:
             self.unprocessed_blocks.append(block)
             return False
-        self.processed_blocks.append(block)
+
         if isinstance(block, block_send):
             amount = self.find_amount_sent(block)
             if amount is not None:
@@ -793,7 +793,14 @@ class blocks_manager:
             else:
                 self.unprocessed_blocks.append(block)
                 return False
-
+        if block.get_balance() is None:
+            balance = self.find_balance(block)
+            if balance is not None:
+                block.ancillary["balance"] = balance.to_bytes(16, "big")
+            else:
+                self.unprocessed_blocks.append(block)
+                return False
+        self.processed_blocks.append(block)
         return True
 
     def find_amount_sent(self, block):
@@ -806,6 +813,21 @@ class blocks_manager:
                     return amount.to_bytes(16, "big")
                 else:
                     return None
+
+    def find_balance(self, block):
+        if isinstance(block, block_open):
+            for b in self.processed_blocks:
+                if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                    return b.ancillary["amount_sent"]
+        elif isinstance(block, block_receive):
+            before = int.from_bytes(self.find_prev_block(block).get_balance, "big")
+            for b in self.processed_blocks:
+                if b.hash() == binascii.hexlify(block.source).decode("utf-8").upper():
+                    amount = int.from_bytes(b.ancillary["amount_sent"], "big")
+                    return before + amount
+        return None
+
+
 
 
     def account_exists(self, account):
@@ -989,8 +1011,4 @@ manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
 
-for b in manager.accounts[0].blocks:
-    print("\n")
-    print(b.hash())
-    print(b.str_ancillary_data())
-    print("")
+print("")
