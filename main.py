@@ -369,7 +369,7 @@ class block_send:
         else:
             next = self.ancillary["next"]
         if self.ancillary["amount_sent"] is not None:
-            amount = int.from_bytes(self.ancillary["amount_sent"])
+            amount = int.from_bytes(self.ancillary["amount_sent"], "big")
         else:
             amount = None
         string = ""
@@ -779,8 +779,6 @@ class blocks_manager:
             self.unprocessed_blocks.append(block)
             return False
 
-
-
         n_account = self.find_nano_account(account_pk)
         if n_account is not None:
             n_account.add_block(block)
@@ -788,7 +786,27 @@ class blocks_manager:
             self.unprocessed_blocks.append(block)
             return False
         self.processed_blocks.append(block)
+        if isinstance(block, block_send):
+            amount = self.find_amount_sent(block)
+            if amount is not None:
+                block.ancillary["amount_sent"] = amount
+            else:
+                self.unprocessed_blocks.append(block)
+                return False
+
         return True
+
+    def find_amount_sent(self, block):
+        for b in self.processed_blocks:
+            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                if b.get_balance() is not None:
+                    before = int.from_bytes(b.get_balance(), "big")
+                    after = int.from_bytes(block.get_balance(), "big")
+                    amount = before - after
+                    return amount.to_bytes(16, "big")
+                else:
+                    return None
+
 
     def account_exists(self, account):
         for a in self.accounts:
@@ -959,20 +977,20 @@ keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
 bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
-bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
-# req = bulk_pull.serialise()
-# s.send(req)
-req = bulk_pull2.serialise()
+# bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
+req = bulk_pull.serialise()
 s.send(req)
+# req = bulk_pull2.serialise()
+# s.send(req)
 
 blocks = read_blocks_from_socket(s)
-blocks = blocks[873600:]
 
 manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
-open_block = block_open(second_open_block["source"], second_open_block["representative"],
-                        second_open_block["account"], second_open_block["signature"],
-                        second_open_block["work"])
 
-print("")
+for b in manager.accounts[0].blocks:
+    print("\n")
+    print(b.hash())
+    print(b.str_ancillary_data())
+    print("")
