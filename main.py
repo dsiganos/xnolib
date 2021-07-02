@@ -371,7 +371,7 @@ class block_send:
         if self.ancillary["amount_sent"] is not None:
             amount = int.from_bytes(self.ancillary["amount_sent"], "big")
         else:
-            amount = None
+            amount = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
@@ -389,6 +389,7 @@ class block_send:
         string += "Bal:  %d\n" % int(self.balance.hex(), 16)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += self.str_ancillary_data()
         return string
 
 
@@ -429,10 +430,15 @@ class block_receive:
             next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
         else:
             next = self.ancillary["next"]
+        if self.ancillary["balance"] is not None:
+            balance = int.from_bytes(self.ancillary["balance"], "big")
+        else:
+            balance = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
+        string += "Balance: %d\n" % balance
         return string
 
 
@@ -443,6 +449,7 @@ class block_receive:
         string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += self.str_ancillary_data()
         return string
 
 
@@ -482,9 +489,14 @@ class block_open:
             next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
         else:
             next = self.ancillary["next"]
+        if self.ancillary["balance"] is not None:
+            balance = int.from_bytes(self.ancillary["balance"], "big")
+        else:
+            balance = -1
         string = ""
         string += "Prev: %s\n" % previous
         string += "Next: %s\n" % next
+        string += "Balance: %d\n" % balance
         return string
 
     def __str__(self):
@@ -497,6 +509,7 @@ class block_open:
         string += "      %s\n" % get_account_id(self.account)
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += self.str_ancillary_data()
         return string
 
     def __eq__(self, other):
@@ -552,10 +565,15 @@ class block_change:
             next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
         else:
             next = self.ancillary["next"]
+        if self.ancillary["balance"] is not None:
+            balance = int.from_bytes(self.ancillary["balance"], "big")
+        else:
+            balance = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
+        string += "Balance: %d" % balance
         return string
 
     def __str__(self):
@@ -565,6 +583,8 @@ class block_change:
         string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += self.str_ancillary_data()
+        return string
 
 
 class block_state:
@@ -619,6 +639,7 @@ class block_state:
         string += "Link: %s\n" % binascii.hexlify(self.link).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += self.str_ancillary_data()
         return string
 
 def read_socket(socket, bytes):
@@ -864,12 +885,14 @@ class blocks_manager:
         string = ""
         for b in self.processed_blocks:
             string += str(b)
+            string += "\n"
         return string
 
     def str_unprocessed_blocks(self):
         string = ""
         for b in self.unprocessed_blocks:
             string += str(b)
+            string += "\n"
         return string
 
     def __str__(self):
@@ -931,6 +954,7 @@ class nano_account:
         string = ""
         for b in self.blocks:
             string += str(b)
+            string += "\n"
         return string
 
     # Checks if itself is a subset of another account
@@ -1012,4 +1036,4 @@ manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
 
-print("")
+print(manager.accounts[0].str_blocks())
