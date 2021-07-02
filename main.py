@@ -808,7 +808,7 @@ class blocks_manager:
         if isinstance(block, block_send):
             amount = self.find_amount_sent(block)
             if amount is not None:
-                block.ancillary["amount_sent"] = amount
+                block.ancillary["amount_sent"] = amount.to_bytes(16, "big")
             else:
                 self.unprocessed_blocks.append(block)
                 return False
@@ -816,7 +816,7 @@ class blocks_manager:
         if block.get_balance() is None:
             balance = self.find_balance(block)
             if balance is not None:
-                block.ancillary["balance"] = balance.to_bytes(16, "big")
+                block.ancillary["balance"] = balance
             else:
                 self.unprocessed_blocks.append(block)
                 return False
@@ -832,7 +832,7 @@ class blocks_manager:
                     before = int.from_bytes(b.get_balance(), "big")
                     after = int.from_bytes(block.get_balance(), "big")
                     amount = before - after
-                    return amount.to_bytes(16, "big")
+                    return amount
                 else:
                     return None
 
@@ -840,17 +840,18 @@ class blocks_manager:
         if isinstance(block, block_open):
             for b in self.processed_blocks:
                 if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
-                    return b.ancillary["amount_sent"]
+                    return b.ancillary["amount_sent"].to_bytes(16, "big")
         elif isinstance(block, block_receive):
             before = int.from_bytes(self.find_prev_block(block).get_balance, "big")
             for b in self.processed_blocks:
                 if b.hash() == binascii.hexlify(block.source).decode("utf-8").upper():
                     amount = int.from_bytes(b.ancillary["amount_sent"], "big")
-                    return before + amount
+                    return (before + amount).to_bytes(16, "big")
+        elif isinstance(block, block_change):
+            for b in self.processed_blocks:
+                if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                    return b.get_balance()
         return None
-
-
-
 
     def account_exists(self, account):
         for a in self.accounts:
