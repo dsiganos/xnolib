@@ -340,6 +340,7 @@ class block_send:
         self.ancillary = {
             "account": None,
             "next": None,
+            "amount_sent": None
         }
 
     def get_account(self): return self.ancillary["account"]
@@ -367,10 +368,15 @@ class block_send:
             next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
         else:
             next = self.ancillary["next"]
+        if self.ancillary["amount_sent"] is not None:
+            amount = int.from_bytes(self.ancillary["amount_sent"])
+        else:
+            amount = None
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
+        string += "Amount Sent: %d" % amount
         return string
 
 
@@ -437,7 +443,6 @@ class block_receive:
         string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
-
         return string
 
 
@@ -708,7 +713,7 @@ def verify(hash, signature, public_key=b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\
 
 def verify_pow(block):
     if isinstance(block, block_open):
-        return pow_validate(block.work, block.source)
+        return pow_validate(block.work, block.account)
     else:
         return pow_validate(block.work, block.previous)
 
@@ -773,6 +778,8 @@ class blocks_manager:
         else:
             self.unprocessed_blocks.append(block)
             return False
+
+
 
         n_account = self.find_nano_account(account_pk)
         if n_account is not None:
@@ -913,6 +920,14 @@ genesis_block_open = {
     "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
 }
 
+second_open_block = {
+    "source": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
+    "representative": binascii.unhexlify('2399A083C600AA0572F5E36247D978FCFC840405F8D4B6D33161C0066A55F431'),
+    "account": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+    "signature": binascii.unhexlify('E950FFDF0C9C4DAF43C27AE3993378E4D8AD6FA591C24497C53E07A3BC80468539B0A467992A916F0DDA6F267AD764A3C1A5BDBD8F489DFAE8175EEE0E337402'),
+    "work": binascii.unhexlify('E997C097A452A1B1')
+}
+
 betactx = {
     'peeraddr': "peering-beta.nano.org",
     'peerport': 54000,
@@ -943,7 +958,7 @@ s.settimeout(2)
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
-# bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
+bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
 # req = bulk_pull.serialise()
 # s.send(req)
@@ -951,9 +966,13 @@ req = bulk_pull2.serialise()
 s.send(req)
 
 blocks = read_blocks_from_socket(s)
-blocks = blocks[::-1]
+blocks = blocks[873600:]
+
 manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
+open_block = block_open(second_open_block["source"], second_open_block["representative"],
+                        second_open_block["account"], second_open_block["signature"],
+                        second_open_block["work"])
 
-print(manager.accounts[0].str_blocks())
+print("")
