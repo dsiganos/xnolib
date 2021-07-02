@@ -780,9 +780,7 @@ class blocks_manager:
             return False
 
         n_account = self.find_nano_account(account_pk)
-        if n_account is not None:
-            n_account.add_block(block)
-        else:
+        if n_account is None:
             self.unprocessed_blocks.append(block)
             return False
 
@@ -793,6 +791,7 @@ class blocks_manager:
             else:
                 self.unprocessed_blocks.append(block)
                 return False
+
         if block.get_balance() is None:
             balance = self.find_balance(block)
             if balance is not None:
@@ -800,6 +799,8 @@ class blocks_manager:
             else:
                 self.unprocessed_blocks.append(block)
                 return False
+
+        n_account.add_block(block)
         self.processed_blocks.append(block)
         return True
 
