@@ -812,6 +812,18 @@ class blocks_manager:
             if b.hash() == hash:
                 return b
 
+    def str_processed_blocks(self):
+        string = ""
+        for b in self.processed_blocks:
+            string += str(b)
+        return string
+
+    def str_unprocessed_blocks(self):
+        string = ""
+        for b in self.unprocessed_blocks:
+            string += str(b)
+        return string
+
     def __str__(self):
         string = "------------- Blocks Manager -------------\n"
         string += "Blocks Processed: %d\n" % len(self.processed_blocks)
@@ -912,6 +924,7 @@ livectx = {
     'peeraddr': "peering.nano.org",
     'peerport': 7075,
     'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+    'another_pub': '059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5',
     'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
 }
 
@@ -930,8 +943,11 @@ s.settimeout(2)
 keepalive = message_keepmealive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
-bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
-req = bulk_pull.serialise()
+# bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
+bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
+# req = bulk_pull.serialise()
+# s.send(req)
+req = bulk_pull2.serialise()
 s.send(req)
 
 blocks = read_blocks_from_socket(s)
@@ -940,4 +956,4 @@ manager = blocks_manager()
 while len(blocks) != 0:
     manager.process(blocks.pop())
 
-print(manager)
+print(manager.accounts[0].str_blocks())
