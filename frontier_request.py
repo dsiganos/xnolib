@@ -1,8 +1,7 @@
 import binascii
 import random
 import socket
-
-from main import message_header, network_id, message_type, livectx, read_socket, get_all_dns_addresses, get_account_id
+from pull_blocks import message_header, network_id, message_type, livectx, read_socket, get_all_dns_addresses, get_account_id
 
 
 class frontier_request:
