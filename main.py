@@ -332,7 +332,7 @@ class message_bulk_pull:
 class message_handshake_query:
     def __init__(self, net_id=network_id(67)):
         self.header = message_header(net_id, [18, 18, 18], message_type(10), '0001')
-        self.cookie = b'\x00' * 32
+        self.cookie = os.urandom(32)
 
     def serialise(self):
         string = self.header.serialise_header()
@@ -341,9 +341,9 @@ class message_handshake_query:
 
 
 class message_handshake_response:
-    def __init__(self, node_id, sig, cookie = None,
+    def __init__(self, node_vk, sig, cookie = None,
                  header=message_header(network_id(67), [18, 18, 18], message_type(10), '0003')):
-        self.node_id = node_id
+        self.node_vk = node_vk
         self.sig = sig
         self.cookie = cookie
         self.header = header
@@ -352,17 +352,17 @@ class message_handshake_response:
     def parse_msg_handshake_response(cls, data):
         if len(data) == 136:
             header = b''.join([data[0:6], data[6:8][::-1]])
-            account = data[8:40]
-            sig = data[40:104]
-            cookie = data[104:]
+            cookie = data[8:40]
+            node_vk = data[40:72]
+            sig = data[72:]
             msg_header = message_header.parse_header(header)
-            return message_handshake_response(account, sig, cookie, msg_header)
+            return message_handshake_response(node_vk, sig, cookie, msg_header)
         else:
             header = b''.join([data[0:6], data[6:8][::-1]])
             header = message_header.parse_header(header)
-            account = data[8:40]
+            node_vk = data[8:40]
             sig = data[40:]
-            return message_handshake_response(account, sig, header=header)
+            return message_handshake_response(node_vk, sig, header=header)
 
     @classmethod
     def create_handshake_response(cls, cookie):
@@ -374,14 +374,18 @@ class message_handshake_response:
 
     def serialise(self):
         data = self.header.serialise_header()
-        data += self.node_id
+        data += self.node_vk
         data += self.sig
         if self.cookie is not None:
             data += self.cookie
         return data
 
+    @classmethod
+    def is_valid(cls, peer_vk, peer_sig, cookie):
+        return eddsa.verify(peer_vk, peer_sig, cookie)
+
     def __str__(self):
-        string = "Node ID: %s\n" % binascii.hexlify(self.node_id).decode("utf-8").upper()
+        string = "Node ID: %s\n" % binascii.hexlify(self.node_vk).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
         if self.cookie is not None:
             string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
@@ -1059,31 +1063,42 @@ livectx = {
     'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
 }
 
+handshake_exchange_data = {
+    "response_vk": binascii.unhexlify('9d17bf0a2571377c4a1d10eb1330266a5d8c6898bb7dfc487242e419ac9852e0'),
+    "response_sig": binascii.unhexlify('eb52b3182359562259f4634287e9b4857c86339e18d8cfdb7b45237662993d1448673bf3075771744ecb62e14774f267ed26f6e4c1913eb571bb8b2e3b8fd909'),
+    "cookie": binascii.unhexlify('05851093f35a90be9f1c8a48539d70b48d1a2f2787a1158904d15c38f86188e2')
+}
 
+print(eddsa.verify(handshake_exchange_data["response_vk"], handshake_exchange_data["response_sig"],
+                   handshake_exchange_data["cookie"]))
 
+# ctx = livectx
+# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+# s.connect((peeraddr, ctx['peerport']))
+# print('Connected to %s:%s' % s.getpeername())
+# s.settimeout(2)
+#
+# msg_handshake = message_handshake_query()
+# print (msg_handshake.serialise()[6])
+# s.send(msg_handshake.serialise())
+# data = read_socket(s, 136)
+# print(data[6])
+# recvd_response = message_handshake_response.parse_msg_handshake_response(data)
+#
+# 
+#
+# response = message_handshake_response.create_handshake_response(recvd_response.cookie)
+# s.send(response.serialise())
+# data = read_socket(s, 104)
+# print(data[6])
+# recvd_response2 = message_handshake_response.parse_msg_handshake_response(data)
 
-
-ctx = livectx
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-s.connect((peeraddr, ctx['peerport']))
-print('Connected to %s:%s' % s.getpeername())
-s.settimeout(2)
-
-msg_handshake = message_handshake_query()
-s.send(msg_handshake.serialise())
-data = read_socket(s, 136)
-recvd_response = message_handshake_response.parse_msg_handshake_response(data)
-response = message_handshake_response.create_handshake_response(recvd_response.cookie)
-s.send(response.serialise())
-data = read_socket(s, 104)
-recvd_response2 = message_handshake_response.parse_msg_handshake_response(data)
-
-
-keepalive = message_keepalive(ctx['net_id'])
-req = keepalive.serialise()
-s.send(req)
-print(s.recv(1000))
+#
+# keepalive = message_keepalive(ctx['net_id'])
+# req = keepalive.serialise()
+# s.send(req)
+# print(s.recv(1000))
 # bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 # # bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
 # req = bulk_pull.serialise()
