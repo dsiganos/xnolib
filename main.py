@@ -207,7 +207,7 @@ class message_header:
         str += "VerUsing:%s, " % self.ver_using
         str += "VerMin:%s, " % self.ver_min
         str += "MsgType:%s, " % self.msg_type
-        str += "Extensions:%s, %s" % (self.ext[0], self.ext[1])
+        str += "Extensions: %s" % self.ext[::-1]
         return str
 
 
@@ -287,7 +287,7 @@ class peers():
         return string
 
 
-class message_keepmealive:
+class message_keepalive:
     def __init__(self, net_id):
         self.header = message_header(net_id, [18, 18, 18], message_type(2), '0000')
         ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
@@ -338,18 +338,24 @@ class message_handshake_query:
         string += self.cookie
         return string
 class message_handshake_response:
-    def __init__(self):
-        pass
+    def __init__(self, node_id, sig, header=message_header(network_id(67), [18, 18, 18], message_type(10), '0003')):
+        self.node_id = node_id
+        self.sig = sig
+        self.header = header
 
     @classmethod
     def parse_msg_handshake_response(cls, data):
-        header = data[0:8]
+        header = b''.join([data[0:6], data[6:8][::-1]])
+        print(header)
         account = data[8:40]
         sig = data[40:]
-        print("Header: %s" % binascii.hexlify(header).decode("utf-8").upper())
-        print("Account: %s" % binascii.hexlify(account).decode("utf-8").upper())
-        print("       : %s" % get_account_id(account))
-        print("Signature: %s" % binascii.hexlify(sig).decode("utf-8").upper())
+        msg_header = message_header.parse_header(header)
+        return message_handshake_response(account, sig, msg_header)
+
+    def __str__(self):
+        string = "Node ID: %s\n" % binascii.hexlify(self.node_id).decode("utf-8").upper()
+        string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
+        return string
 
 
 class block_send:
