@@ -1086,7 +1086,7 @@ print(eddsa.verify(handshake_exchange_data["response_vk"], handshake_exchange_da
 # print(data[6])
 # recvd_response = message_handshake_response.parse_msg_handshake_response(data)
 #
-# 
+#
 #
 # response = message_handshake_response.create_handshake_response(recvd_response.cookie)
 # s.send(response.serialise())
