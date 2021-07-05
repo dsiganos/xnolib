@@ -704,108 +704,6 @@ class block_state:
         string += self.str_ancillary_data()
         return string
 
-def read_socket(socket, bytes):
-    data = b''
-    while len(data) != bytes:
-        data += socket.recv(1)
-    return data
-
-
-def read_block_send(s):
-    data = read_socket(s, 152)
-    block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:][::-1])
-    return block
-
-
-def read_block_receive(s):
-    data = read_socket(s, 136)
-    block = block_receive(data[:32], data[32:64], data[64:128], data[128:][::-1])
-    return block
-
-
-def read_block_open(s):
-    data = read_socket(s, 168)
-    block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:][::-1])
-    return block
-
-
-def read_block_change(s):
-    data = read_socket(s, 136)
-    block = block_change(data[:32], data[32:64], data[64:128], data[128:][::-1])
-    return block
-
-
-def read_block_state(s):
-    data = read_socket(s, 216)
-    block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
-                        data[208:])
-    return block
-
-
-def read_blocks_from_socket(s):
-    blocks = []
-    while True:
-        block_type = s.recv(1)
-        if len(block_type) == 0:
-            print('socket closed by peer')
-            break
-
-        if block_type[0] == block_type_enum.send:
-            block = read_block_send(s)
-        elif block_type[0] == block_type_enum.receive:
-            block = read_block_receive(s)
-        elif block_type[0] == block_type_enum.open:
-            block = read_block_open(s)
-        elif block_type[0] == block_type_enum.change:
-            block = read_block_change(s)
-        elif block_type[0] == block_type_enum.state:
-            block = read_block_state(s)
-        elif block_type[0] == block_type_enum.invalid:
-            print('received block type invalid')
-            break
-        elif block_type[0] == block_type_enum.not_a_block:
-            print('received block type not a block')
-            break
-        else:
-            print('received unknown block type %s' % block_type_enum[0])
-            break
-        blocks.append(block)
-    return blocks
-
-
-def pow_validate(work, prev):
-    # It didn't want to create bytearrays with the raw bytes so I had to use the list()
-    work = bytearray(list(work))
-    prev = bytearray(list(prev))
-    h = blake2b(digest_size=8)
-    work.reverse()
-    h.update(work)
-    h.update(prev)
-    final = bytearray(h.digest())
-    final.reverse()
-    return final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
-
-
-def verify(hash, signature, public_key):
-    try:
-        ed25519_blake2.checkvalid(signature, hash, public_key)
-    except ed25519_blake2.SignatureMismatch:
-        return False
-    return True
-
-
-def verify_pow(block):
-    if isinstance(block, block_open):
-        return pow_validate(block.work, block.account)
-    else:
-        return pow_validate(block.work, block.previous)
-
-
-def valid_block(block):
-    work_valid = verify_pow(block)
-    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
-    return work_valid and sig_valid
-
 
 class blocks_manager:
     def __init__(self):
@@ -968,6 +866,7 @@ class blocks_manager:
             string += "    ID         : %s\n\n" % get_account_id(a.account)
         return string
 
+
 class nano_account:
     def __init__(self, open_block):
         self.first = open_block
@@ -1038,21 +937,108 @@ class nano_account:
         return string
 
 
+def read_socket(socket, bytes):
+    data = b''
+    while len(data) != bytes:
+        data += socket.recv(1)
+    return data
 
-genesis_block_open = {
-    "source": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "representative": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
-    "work": b'b\xf0T\x17\xdd?\xb6\x91',
-    "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
-}
 
-betactx = {
-    'peeraddr': "peering-beta.nano.org",
-    'peerport': 54000,
-    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
-}
+def read_block_send(s):
+    data = read_socket(s, 152)
+    block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:][::-1])
+    return block
+
+
+def read_block_receive(s):
+    data = read_socket(s, 136)
+    block = block_receive(data[:32], data[32:64], data[64:128], data[128:][::-1])
+    return block
+
+
+def read_block_open(s):
+    data = read_socket(s, 168)
+    block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:][::-1])
+    return block
+
+
+def read_block_change(s):
+    data = read_socket(s, 136)
+    block = block_change(data[:32], data[32:64], data[64:128], data[128:][::-1])
+    return block
+
+
+def read_block_state(s):
+    data = read_socket(s, 216)
+    block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
+                        data[208:])
+    return block
+
+
+def read_blocks_from_socket(s):
+    blocks = []
+    while True:
+        block_type = s.recv(1)
+        if len(block_type) == 0:
+            print('socket closed by peer')
+            break
+
+        if block_type[0] == block_type_enum.send:
+            block = read_block_send(s)
+        elif block_type[0] == block_type_enum.receive:
+            block = read_block_receive(s)
+        elif block_type[0] == block_type_enum.open:
+            block = read_block_open(s)
+        elif block_type[0] == block_type_enum.change:
+            block = read_block_change(s)
+        elif block_type[0] == block_type_enum.state:
+            block = read_block_state(s)
+        elif block_type[0] == block_type_enum.invalid:
+            print('received block type invalid')
+            break
+        elif block_type[0] == block_type_enum.not_a_block:
+            print('received block type not a block')
+            break
+        else:
+            print('received unknown block type %s' % block_type_enum[0])
+            break
+        blocks.append(block)
+    return blocks
+
+
+def pow_validate(work, prev):
+    # It didn't want to create bytearrays with the raw bytes so I had to use the list()
+    work = bytearray(list(work))
+    prev = bytearray(list(prev))
+    h = blake2b(digest_size=8)
+    work.reverse()
+    h.update(work)
+    h.update(prev)
+    final = bytearray(h.digest())
+    final.reverse()
+    return final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
+
+
+def verify(hash, signature, public_key):
+    try:
+        ed25519_blake2.checkvalid(signature, hash, public_key)
+    except ed25519_blake2.SignatureMismatch:
+        return False
+    return True
+
+
+def verify_pow(block):
+    if isinstance(block, block_open):
+        return pow_validate(block.work, block.account)
+    else:
+        return pow_validate(block.work, block.previous)
+
+
+def valid_block(block):
+    work_valid = verify_pow(block)
+    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
+    return work_valid and sig_valid
+
 
 livectx = {
     'net_id': network_id(67),
@@ -1063,53 +1049,19 @@ livectx = {
     'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
 }
 
-handshake_exchange_data = {
-    "response_vk": binascii.unhexlify('9d17bf0a2571377c4a1d10eb1330266a5d8c6898bb7dfc487242e419ac9852e0'),
-    "response_sig": binascii.unhexlify('eb52b3182359562259f4634287e9b4857c86339e18d8cfdb7b45237662993d1448673bf3075771744ecb62e14774f267ed26f6e4c1913eb571bb8b2e3b8fd909'),
-    "cookie": binascii.unhexlify('05851093f35a90be9f1c8a48539d70b48d1a2f2787a1158904d15c38f86188e2')
+
+genesis_block_open = {
+    "source": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
+    "representative": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
+    "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
+    "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
+    "work": b'b\xf0T\x17\xdd?\xb6\x91',
+    "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
 }
 
-print(eddsa.verify(handshake_exchange_data["response_vk"], handshake_exchange_data["response_sig"],
-                   handshake_exchange_data["cookie"]))
 
-# ctx = livectx
-# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-# s.connect((peeraddr, ctx['peerport']))
-# print('Connected to %s:%s' % s.getpeername())
-# s.settimeout(2)
-#
-# msg_handshake = message_handshake_query()
-# print (msg_handshake.serialise()[6])
-# s.send(msg_handshake.serialise())
-# data = read_socket(s, 136)
-# print(data[6])
-# recvd_response = message_handshake_response.parse_msg_handshake_response(data)
-#
-#
-#
-# response = message_handshake_response.create_handshake_response(recvd_response.cookie)
-# s.send(response.serialise())
-# data = read_socket(s, 104)
-# print(data[6])
-# recvd_response2 = message_handshake_response.parse_msg_handshake_response(data)
-
-#
-# keepalive = message_keepalive(ctx['net_id'])
-# req = keepalive.serialise()
-# s.send(req)
-# print(s.recv(1000))
-# bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
-# # bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
-# req = bulk_pull.serialise()
-# s.send(req)
-# # req = bulk_pull2.serialise()
-# # s.send(req)
-#
-# blocks = read_blocks_from_socket(s)
-#
-# manager = blocks_manager()
-# while len(blocks) != 0:
-#     manager.process(blocks.pop())
-#
-# print(manager.accounts[0].str_blocks())
+betactx = {
+    'peeraddr': "peering-beta.nano.org",
+    'peerport': 54000,
+    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+}
