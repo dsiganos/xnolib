@@ -1,4 +1,4 @@
-
+import os
 from hashlib import blake2b
 import binascii
 import ipaddress
@@ -6,8 +6,8 @@ import socket
 import base64
 import dns.resolver
 import random
-
 import ed25519_blake2
+from pure25519 import eddsa
 
 
 class ParseErrorBadMagicNumber(Exception): pass
@@ -328,6 +328,7 @@ class message_bulk_pull:
         data += (0).to_bytes(32, "big")
         return data
 
+
 class message_handshake_query:
     def __init__(self, net_id=network_id(67)):
         self.header = message_header(net_id, [18, 18, 18], message_type(10), '0001')
@@ -337,25 +338,39 @@ class message_handshake_query:
         string = self.header.serialise_header()
         string += self.cookie
         return string
+
+
 class message_handshake_response:
-    def __init__(self, node_id, sig, header=message_header(network_id(67), [18, 18, 18], message_type(10), '0003')):
+    def __init__(self, node_id, sig, cookie,
+                 header=message_header(network_id(67), [18, 18, 18], message_type(10), '0003')):
         self.node_id = node_id
         self.sig = sig
+        self.cookie = cookie
         self.header = header
 
     @classmethod
     def parse_msg_handshake_response(cls, data):
         header = b''.join([data[0:6], data[6:8][::-1]])
-        print(header)
         account = data[8:40]
-        sig = data[40:]
+        sig = data[40:104]
+        cookie = data[104:]
         msg_header = message_header.parse_header(header)
-        return message_handshake_response(account, sig, msg_header)
+        return message_handshake_response(account, sig, cookie, msg_header)
+
+    @classmethod
+    def create_handshake_response(cls, cookie):
+        node_sk = eddsa.create_signing_key()
+        node_vk = eddsa.create_verifying_key(node_sk)
+        node_id = os.urandom(32)
+        return message_handshake_response(node_id, node_vk, eddsa.sign(node_sk, cookie))
+
 
     def serialise(self):
         data = self.header.serialise_header()
         data += self.node_id
         data += self.sig
+        data += self.cookie
+        assert(len(data) == 136)
         return data
 
     def __str__(self):
@@ -1047,10 +1062,15 @@ print('Connected to %s:%s' % s.getpeername())
 s.settimeout(2)
 
 msg_handshake = message_handshake_query()
+print(msg_handshake.serialise()[6])
 s.send(msg_handshake.serialise())
-data = read_socket(s, 104)
-print(len(data))
-message_handshake_response.parse_msg_handshake_response(data)
+data = read_socket(s, 136)
+print(data[6])
+recvd_response = message_handshake_response.parse_msg_handshake_response(data)
+response = message_handshake_response.create_handshake_response(recvd_response.cookie)
+s.send(response.serialise())
+data = s.recv(1000)
+print(data[6])
 
 # keepalive = message_keepmealive(ctx['net_id'])
 # req = keepalive.serialise()
