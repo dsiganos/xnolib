@@ -341,7 +341,7 @@ class message_handshake_query:
 
 
 class message_handshake_response:
-    def __init__(self, node_id, sig, cookie,
+    def __init__(self, node_id, sig, cookie = None,
                  header=message_header(network_id(67), [18, 18, 18], message_type(10), '0003')):
         self.node_id = node_id
         self.sig = sig
@@ -350,12 +350,19 @@ class message_handshake_response:
 
     @classmethod
     def parse_msg_handshake_response(cls, data):
-        header = b''.join([data[0:6], data[6:8][::-1]])
-        account = data[8:40]
-        sig = data[40:104]
-        cookie = data[104:]
-        msg_header = message_header.parse_header(header)
-        return message_handshake_response(account, sig, cookie, msg_header)
+        if len(data) == 136:
+            header = b''.join([data[0:6], data[6:8][::-1]])
+            account = data[8:40]
+            sig = data[40:104]
+            cookie = data[104:]
+            msg_header = message_header.parse_header(header)
+            return message_handshake_response(account, sig, cookie, msg_header)
+        else:
+            header = b''.join([data[0:6], data[6:8][::-1]])
+            header = message_header.parse_header(header)
+            account = data[8:40]
+            sig = data[40:]
+            return message_handshake_response(account, sig, header=header)
 
     @classmethod
     def create_handshake_response(cls, cookie):
@@ -369,13 +376,15 @@ class message_handshake_response:
         data = self.header.serialise_header()
         data += self.node_id
         data += self.sig
-        data += self.cookie
-        assert(len(data) == 136)
+        if self.cookie is not None:
+            data += self.cookie
         return data
 
     def __str__(self):
         string = "Node ID: %s\n" % binascii.hexlify(self.node_id).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
+        if self.cookie is not None:
+            string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
         return string
 
 
@@ -1062,19 +1071,19 @@ print('Connected to %s:%s' % s.getpeername())
 s.settimeout(2)
 
 msg_handshake = message_handshake_query()
-print(msg_handshake.serialise()[6])
 s.send(msg_handshake.serialise())
 data = read_socket(s, 136)
-print(data[6])
 recvd_response = message_handshake_response.parse_msg_handshake_response(data)
 response = message_handshake_response.create_handshake_response(recvd_response.cookie)
 s.send(response.serialise())
-data = s.recv(1000)
-print(data[6])
+data = read_socket(s, 104)
+recvd_response2 = message_handshake_response.parse_msg_handshake_response(data)
 
-# keepalive = message_keepmealive(ctx['net_id'])
-# req = keepalive.serialise()
-# s.send(req)
+
+keepalive = message_keepalive(ctx['net_id'])
+req = keepalive.serialise()
+s.send(req)
+print(s.recv(1000))
 # bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
 # # bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
 # req = bulk_pull.serialise()
