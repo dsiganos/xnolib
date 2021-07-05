@@ -352,6 +352,12 @@ class message_handshake_response:
         msg_header = message_header.parse_header(header)
         return message_handshake_response(account, sig, msg_header)
 
+    def serialise(self):
+        data = self.header.serialise_header()
+        data += self.node_id
+        data += self.sig
+        return data
+
     def __str__(self):
         string = "Node ID: %s\n" % binascii.hexlify(self.node_id).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
