@@ -178,8 +178,7 @@ class message_header:
         header += self.ver_using.to_bytes(1, "big")
         header += self.ver_min.to_bytes(1, "big")
         header += self.msg_type.type.to_bytes(1, "big")
-        header += (00).to_bytes(1, "big")
-        header += (00).to_bytes(1, "big")
+        header += binascii.unhexlify(self.ext)[::-1]
         return header
 
     # this need to become a class method
@@ -290,7 +289,7 @@ class peers():
 
 class message_keepmealive:
     def __init__(self, net_id):
-        self.header = message_header(net_id, [18, 18, 18], message_type(2), [0, 0])
+        self.header = message_header(net_id, [18, 18, 18], message_type(2), '0000')
         ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
         ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
         ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
@@ -320,7 +319,7 @@ class message_keepmealive:
 
 class message_bulk_pull:
     def __init__(self, block_hash, net_id):
-        self.header = message_header(net_id, [18, 18, 18], message_type(6), [0, 0])
+        self.header = message_header(net_id, [18, 18, 18], message_type(6), '0000')
         self.public_key = binascii.unhexlify(block_hash)
 
     def serialise(self):
@@ -328,6 +327,29 @@ class message_bulk_pull:
         data += self.public_key
         data += (0).to_bytes(32, "big")
         return data
+
+class message_handshake_query:
+    def __init__(self, net_id=network_id(67)):
+        self.header = message_header(net_id, [18, 18, 18], message_type(10), '0001')
+        self.cookie = b'\x00' * 32
+
+    def serialise(self):
+        string = self.header.serialise_header()
+        string += self.cookie
+        return string
+class message_handshake_response:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def parse_msg_handshake_response(cls, data):
+        header = data[0:8]
+        account = data[8:40]
+        sig = data[40:]
+        print("Header: %s" % binascii.hexlify(header).decode("utf-8").upper())
+        print("Account: %s" % binascii.hexlify(account).decode("utf-8").upper())
+        print("       : %s" % get_account_id(account))
+        print("Signature: %s" % binascii.hexlify(sig).decode("utf-8").upper())
 
 
 class block_send:
@@ -724,7 +746,7 @@ def pow_validate(work, prev):
     return final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
 
 
-def verify(hash, signature, public_key=b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba'):
+def verify(hash, signature, public_key):
     try:
         ed25519_blake2.checkvalid(signature, hash, public_key)
     except ed25519_blake2.SignatureMismatch:
@@ -986,14 +1008,6 @@ genesis_block_open = {
     "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
 }
 
-second_open_block = {
-    "source": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
-    "representative": binascii.unhexlify('2399A083C600AA0572F5E36247D978FCFC840405F8D4B6D33161C0066A55F431'),
-    "account": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
-    "signature": binascii.unhexlify('E950FFDF0C9C4DAF43C27AE3993378E4D8AD6FA591C24497C53E07A3BC80468539B0A467992A916F0DDA6F267AD764A3C1A5BDBD8F489DFAE8175EEE0E337402'),
-    "work": binascii.unhexlify('E997C097A452A1B1')
-}
-
 betactx = {
     'peeraddr': "peering-beta.nano.org",
     'peerport': 54000,
@@ -1013,7 +1027,6 @@ livectx = {
 
 
 
-
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
@@ -1021,20 +1034,26 @@ s.connect((peeraddr, ctx['peerport']))
 print('Connected to %s:%s' % s.getpeername())
 s.settimeout(2)
 
-keepalive = message_keepmealive(ctx['net_id'])
-req = keepalive.serialise()
-s.send(req)
-bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
-# bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
-req = bulk_pull.serialise()
-s.send(req)
-# req = bulk_pull2.serialise()
+msg_handshake = message_handshake_query()
+s.send(msg_handshake.serialise())
+data = read_socket(s, 104)
+print(len(data))
+message_handshake_response.parse_msg_handshake_response(data)
+
+# keepalive = message_keepmealive(ctx['net_id'])
+# req = keepalive.serialise()
 # s.send(req)
-
-blocks = read_blocks_from_socket(s)
-
-manager = blocks_manager()
-while len(blocks) != 0:
-    manager.process(blocks.pop())
-
-print(manager.accounts[0].str_blocks())
+# bulk_pull = message_bulk_pull(ctx['genesis_pub'], network_id(67))
+# # bulk_pull2 = message_bulk_pull('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5', network_id(67))
+# req = bulk_pull.serialise()
+# s.send(req)
+# # req = bulk_pull2.serialise()
+# # s.send(req)
+#
+# blocks = read_blocks_from_socket(s)
+#
+# manager = blocks_manager()
+# while len(blocks) != 0:
+#     manager.process(blocks.pop())
+#
+# print(manager.accounts[0].str_blocks())
