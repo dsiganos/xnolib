@@ -17,4 +17,5 @@ print(recvd_response)
 
 
 response = message_handshake_response.create_handshake_response(recvd_response.cookie)
+print(response)
 s.send(response.serialise())
