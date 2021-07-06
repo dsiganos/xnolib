@@ -334,6 +334,10 @@ class message_handshake_query:
         string += self.cookie
         return string
 
+    def __str__(self):
+        string = "Header: [%s]\n" % str(self.header)
+        string += "Cookie: %s" % binascii.hexlify(self.cookie).decode("utf-8").upper()
+
 
 class message_handshake_response:
     def __init__(self, node_vk, sig, cookie=None,
