@@ -202,7 +202,7 @@ class message_header:
         str += "VerUsing:%s, " % self.ver_using
         str += "VerMin:%s, " % self.ver_min
         str += "MsgType:%s, " % self.msg_type
-        str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "little")).decode("utf-8").upper()
+        str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "little")[::-1]).decode("utf-8").upper()
         return str
 
 
@@ -337,6 +337,18 @@ class message_handshake_query:
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
         string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
+        is_query = False
+        is_response = False
+        if self.header.ext == 3:
+            is_query = True
+            is_response = True
+        elif self.header.ext == 2:
+            is_response = True
+        elif self.header.ext == 1:
+            is_query = True
+        string += "Is query: %s\n" % is_query
+        string += "Is response: %s\n" % is_response
+
         return string
 
 
@@ -401,7 +413,6 @@ class message_handshake_response:
             is_query = True
         string += "Is query: %s\n" % is_query
         string += "Is response: %s\n" % is_response
-
         return string
 
 
