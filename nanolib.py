@@ -186,7 +186,6 @@ class message_header:
         assert(len(data) == 8)
         if data[0] != ord('R'):
             raise ParseErrorBadMagicNumber()
-        ext = None
         net_id = network_id(data[1])
         versions = [data[2], data[3], data[4]]
         msg_type = message_type(data[5])
@@ -337,7 +336,7 @@ class message_handshake_query:
 
 
 class message_handshake_response:
-    def __init__(self, node_vk, sig, cookie = None,
+    def __init__(self, node_vk, sig, cookie=None,
                  header=message_header(network_id(67), [18, 18, 18], message_type(10), 3)):
         self.node_vk = node_vk
         self.sig = sig
@@ -352,7 +351,6 @@ class message_handshake_response:
             node_vk = data[40:72]
             sig = data[72:]
             msg_header = message_header.parse_header(header)
-            print(msg_header)
             return message_handshake_response(node_vk, sig, cookie, msg_header)
         else:
             header = b''.join([data[0:6], data[6:8]])
