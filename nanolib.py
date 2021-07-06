@@ -465,6 +465,14 @@ class block_send:
         string += "Amount Sent: %d" % amount
         return string
 
+    def serialise(self):
+        data = self.previous
+        data += self.destination
+        data += self.balance
+        data += self.signature
+        data += self.work
+        return data
+
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
@@ -527,6 +535,13 @@ class block_receive:
         string += "Balance: %d\n" % balance
         return string
 
+    def serialise(self):
+        data = self.previous
+        data += self.source
+        data += self.signature
+        data += self.work
+        return data
+
 
     def __str__(self):
         string = "------------- Block Receive -------------\n"
@@ -584,6 +599,14 @@ class block_open:
         string += "Next: %s\n" % next
         string += "Balance: %d\n" % balance
         return string
+
+    def serialise(self):
+        data = self.source
+        data += self.representative
+        data += self.account
+        data += self.signature
+        data += self.work
+        return data
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
@@ -662,6 +685,13 @@ class block_change:
         string += "Balance: %d" % balance
         return string
 
+    def serialise(self):
+        data = self.previous
+        data += self.representative
+        data += self.signature
+        data += self.work
+        return data
+
     def __str__(self):
         string = "------------- Block Change -------------\n"
         string += "Hash: %s\n" % self.hash()
@@ -712,6 +742,16 @@ class block_state:
             next = self.ancillary["next"]
         string = "Next: %s" % next
         return string
+
+    def serialise(self):
+        data = self.account
+        data += self.previous
+        data += self.representative
+        data += self.balance
+        data += self.link
+        data += self.signature
+        data += self.work
+        return data
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
