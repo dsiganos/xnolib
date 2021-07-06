@@ -202,7 +202,7 @@ class message_header:
         str += "VerUsing:%s, " % self.ver_using
         str += "VerMin:%s, " % self.ver_min
         str += "MsgType:%s, " % self.msg_type
-        str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "little")[::-1]).decode("utf-8").upper()
+        str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "big")).decode("utf-8").upper()
         return str
 
 
