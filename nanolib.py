@@ -178,23 +178,19 @@ class message_header:
         header += self.ver_using.to_bytes(1, "big")
         header += self.ver_min.to_bytes(1, "big")
         header += self.msg_type.type.to_bytes(1, "big")
-        header += binascii.unhexlify(self.ext)[::-1]
+        header += self.ext.to_bytes(2, "little")
         return header
 
-    # this need to become a class method
     @classmethod
     def parse_header(cls, data):
-        # if data[0] != ord('R'):
-        #     raise ParseErrorBadMagicNumber()
-        ext = []
+        assert(len(data) == 8)
+        if data[0] != ord('R'):
+            raise ParseErrorBadMagicNumber()
+        ext = None
         net_id = network_id(data[1])
-        versions = []
-        versions.append(data[2])
-        versions.append(data[3])
-        versions.append(data[4])
+        versions = [data[2], data[3], data[4]]
         msg_type = message_type(data[5])
-        ext.append(data[6])
-        ext.append(data[7])
+        ext = int.from_bytes(data[6:], "little")
         return message_header(net_id, versions, msg_type, ext)
 
     def __eq__(self, other):
@@ -207,7 +203,7 @@ class message_header:
         str += "VerUsing:%s, " % self.ver_using
         str += "VerMin:%s, " % self.ver_min
         str += "MsgType:%s, " % self.msg_type
-        str += "Extensions: %s" % self.ext[::-1]
+        str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "little")).decode("utf-8").upper()
         return str
 
 
@@ -289,7 +285,7 @@ class peers():
 
 class message_keepalive:
     def __init__(self, net_id):
-        self.header = message_header(net_id, [18, 18, 18], message_type(2), '0000')
+        self.header = message_header(net_id, [18, 18, 18], message_type(2), 0)
         ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
         ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
         ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
@@ -319,7 +315,7 @@ class message_keepalive:
 
 class message_bulk_pull:
     def __init__(self, block_hash, net_id):
-        self.header = message_header(net_id, [18, 18, 18], message_type(6), '0000')
+        self.header = message_header(net_id, [18, 18, 18], message_type(6), 0)
         self.public_key = binascii.unhexlify(block_hash)
 
     def serialise(self):
@@ -331,7 +327,7 @@ class message_bulk_pull:
 
 class message_handshake_query:
     def __init__(self, net_id=network_id(67)):
-        self.header = message_header(net_id, [18, 18, 18], message_type(10), '0001')
+        self.header = message_header(net_id, [18, 18, 18], message_type(10), 1)
         self.cookie = os.urandom(32)
 
     def serialise(self):
@@ -342,7 +338,7 @@ class message_handshake_query:
 
 class message_handshake_response:
     def __init__(self, node_vk, sig, cookie = None,
-                 header=message_header(network_id(67), [18, 18, 18], message_type(10), '0003')):
+                 header=message_header(network_id(67), [18, 18, 18], message_type(10), 3)):
         self.node_vk = node_vk
         self.sig = sig
         self.cookie = cookie
@@ -356,6 +352,7 @@ class message_handshake_response:
             node_vk = data[40:72]
             sig = data[72:]
             msg_header = message_header.parse_header(header)
+            print(msg_header)
             return message_handshake_response(node_vk, sig, cookie, msg_header)
         else:
             header = b''.join([data[0:6], data[6:8][::-1]])
@@ -369,7 +366,8 @@ class message_handshake_response:
         node_sk = eddsa.create_signing_key()
         node_vk = eddsa.create_verifying_key(node_sk)
         node_id = os.urandom(32)
-        return message_handshake_response(node_id, node_vk, eddsa.sign(node_sk, cookie))
+        header = message_header(network_id(67), [18, 18, 18], message_type(10), 2)
+        return message_handshake_response(node_id, node_vk, eddsa.sign(node_sk, cookie), header=header)
 
 
     def serialise(self):
@@ -389,6 +387,18 @@ class message_handshake_response:
         string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
         if self.cookie is not None:
             string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
+        is_query = False
+        is_response = False
+        if self.header.ext == 3:
+            is_query = True
+            is_response = True
+        elif self.header.ext == 2:
+            is_response = True
+        elif self.header.ext == 1:
+            is_query = True
+        string += "Is query: %s\n" % is_query
+        string += "Is response: %s\n" % is_response
+
         return string
 
 
