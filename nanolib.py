@@ -347,7 +347,7 @@ class message_handshake_response:
     @classmethod
     def parse_msg_handshake_response(cls, data):
         if len(data) == 136:
-            header = b''.join([data[0:6], data[6:8][::-1]])
+            header = b''.join([data[0:6], data[6:8]])
             cookie = data[8:40]
             node_vk = data[40:72]
             sig = data[72:]
@@ -355,7 +355,7 @@ class message_handshake_response:
             print(msg_header)
             return message_handshake_response(node_vk, sig, cookie, msg_header)
         else:
-            header = b''.join([data[0:6], data[6:8][::-1]])
+            header = b''.join([data[0:6], data[6:8]])
             header = message_header.parse_header(header)
             node_vk = data[8:40]
             sig = data[40:]
