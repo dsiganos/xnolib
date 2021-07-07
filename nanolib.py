@@ -362,27 +362,28 @@ class message_handshake_response:
 
     @classmethod
     def parse_msg_handshake_response(cls, data):
-        if len(data) == 136:
-            header = b''.join([data[0:6], data[6:8]])
+        if data[6] == 3:
+            header = data[0:8]
             cookie = data[8:40]
             node_vk = data[40:72]
             sig = data[72:]
             msg_header = message_header.parse_header(header)
             return message_handshake_response(node_vk, sig, cookie, msg_header)
-        else:
-            header = b''.join([data[0:6], data[6:8]])
+        elif data[6] == 2:
+            header = data[0:8]
             header = message_header.parse_header(header)
             node_vk = data[8:40]
             sig = data[40:]
             return message_handshake_response(node_vk, sig, header=header)
 
     @classmethod
-    def create_handshake_response(cls, cookie):
+    def create_handshake_response_to_query(cls, cookie):
         node_sk = eddsa.create_signing_key()
         node_vk = eddsa.create_verifying_key(node_sk)
         node_id = os.urandom(32)
         header = message_header(network_id(67), [18, 18, 18], message_type(10), 2)
-        return message_handshake_response(node_id, node_vk, eddsa.sign(node_sk, cookie), header=header)
+        # cookie = eddsa.sign(node_sk, cookie)
+        return message_handshake_response(node_id, node_vk, None, header=header)
 
 
     def serialise(self):
@@ -465,8 +466,11 @@ class block_send:
         string += "Amount Sent: %d" % amount
         return string
 
-    def serialise(self):
-        data = self.previous
+    def serialise(self, include_block_type):
+        data = b''
+        if include_block_type:
+            data += (2).to_bytes(1, "big")
+        data += self.previous
         data += self.destination
         data += self.balance
         data += self.signature
@@ -535,8 +539,11 @@ class block_receive:
         string += "Balance: %d\n" % balance
         return string
 
-    def serialise(self):
-        data = self.previous
+    def serialise(self, include_block_type):
+        data = b''
+        if include_block_type:
+            data += (3).to_bytes(1, "big")
+        data += self.previous
         data += self.source
         data += self.signature
         data += self.work
@@ -600,8 +607,11 @@ class block_open:
         string += "Balance: %d\n" % balance
         return string
 
-    def serialise(self):
-        data = self.source
+    def serialise(self, include_block_type):
+        data = b''
+        if include_block_type:
+            data += (4).to_bytes(1, "big")
+        data += self.source
         data += self.representative
         data += self.account
         data += self.signature
@@ -685,8 +695,11 @@ class block_change:
         string += "Balance: %d" % balance
         return string
 
-    def serialise(self):
-        data = self.previous
+    def serialise(self, include_block_type):
+        data = b''
+        if include_block_type:
+            data += (5).to_bytes(1, "big")
+        data += self.previous
         data += self.representative
         data += self.signature
         data += self.work
@@ -743,8 +756,11 @@ class block_state:
         string = "Next: %s" % next
         return string
 
-    def serialise(self):
-        data = self.account
+    def serialise(self, include_block_type):
+        data = b''
+        if include_block_type:
+            data += (6).to_bytes(1, "big")
+        data += self.account
         data += self.previous
         data += self.representative
         data += self.balance
