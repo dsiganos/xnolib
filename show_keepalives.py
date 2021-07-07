@@ -1,3 +1,5 @@
+import time
+
 from nanolib import *
 
 handshake_exchange_data = {
@@ -6,30 +8,23 @@ handshake_exchange_data = {
     "cookie": binascii.unhexlify('05851093f35a90be9f1c8a48539d70b48d1a2f2787a1158904d15c38f86188e2')
 }
 
-print(eddsa.verify(handshake_exchange_data["response_vk"], handshake_exchange_data["response_sig"],
-                   handshake_exchange_data["cookie"]))
-
 
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
 s.connect((peeraddr, ctx['peerport']))
+s.settimeout(3)
 
-
-msg_handshake = message_handshake_query()
-print (msg_handshake.serialise()[6])
-s.send(msg_handshake.serialise())
-data = read_socket(s, 136)
-print(data[6])
-recvd_response = message_handshake_response.parse_msg_handshake_response(data)
-
-response = message_handshake_response.create_handshake_response(recvd_response.cookie)
-s.send(response.serialise())
-data = read_socket(s, 104)
-print(data[6])
-recvd_response2 = message_handshake_response.parse_msg_handshake_response(data)
+perform_handshake_exchange(s)
 
 keepalive = message_keepalive(ctx['net_id'])
 req = keepalive.serialise()
 s.send(req)
+time.sleep(5)
 print(s.recv(1000))
+print(s.recv(1000))
+print(s.recv(1000))
+print(s.recv(1000))
+print(s.recv(1000))
+print(s.recv(1000))
+
