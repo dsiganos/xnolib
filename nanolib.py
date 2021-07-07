@@ -324,97 +324,96 @@ class message_bulk_pull:
         return data
 
 
-class message_handshake_query:
-    def __init__(self, net_id=network_id(67)):
-        self.header = message_header(net_id, [18, 18, 18], message_type(10), 1)
-        self.cookie = os.urandom(32)
+class handshake_query:
+    def __init__(self, cookie=os.urandom(32)):
+        self.header = message_header(network_id(67), [18, 18, 18], message_type(10), 1)
+        self.cookie = cookie
 
     def serialise(self):
-        string = self.header.serialise_header()
-        string += self.cookie
-        return string
+        data = self.header.serialise_header()
+        data += self.cookie
+        return data
+
+    @classmethod
+    def parse_query(cls, data):
+        assert(len(data) == 40)
+        cookie = data[8:]
+        assert(len(cookie) == 32)
+        return handshake_query(cookie)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
         string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
-        is_query = False
-        is_response = False
-        if self.header.ext == 3:
-            is_query = True
-            is_response = True
-        elif self.header.ext == 2:
-            is_response = True
-        elif self.header.ext == 1:
-            is_query = True
-        string += "Is query: %s\n" % is_query
-        string += "Is response: %s\n" % is_response
-
+        string += "Is query: True\n"
+        string += "Is response: False\n"
         return string
 
 
-class message_handshake_response:
-    def __init__(self, node_vk, sig, cookie=None,
-                 header=message_header(network_id(67), [18, 18, 18], message_type(10), 3)):
-        self.node_vk = node_vk
-        self.sig = sig
-        self.cookie = cookie
-        self.header = header
-
-    @classmethod
-    def parse_msg_handshake_response(cls, data):
-        if data[6] == 3:
-            print(len(data))
-            header = data[0:8]
-            cookie = data[8:40]
-            node_vk = data[40:72]
-            sig = data[72:]
-            msg_header = message_header.parse_header(header)
-            return message_handshake_response(node_vk, sig, cookie, msg_header)
-        elif data[6] == 2:
-            assert(len(data) == 104)
-            header = data[0:8]
-            header = message_header.parse_header(header)
-            node_vk = data[8:40]
-            sig = data[40:]
-            return message_handshake_response(node_vk, sig, header=header)
-
-    @classmethod
-    def create_handshake_response_to_query(cls, cookie):
-        node_sk = eddsa.create_signing_key()
-        node_vk = eddsa.create_verifying_key(node_sk)
-        header = message_header(network_id(67), [18, 18, 18], message_type(10), 2)
-        sig = eddsa.sign(node_sk, cookie)
-        return message_handshake_response(node_vk, sig, cookie=None, header=header)
-
+class handshake_response:
+    def __init__(self, account, signature):
+        self.header = message_header(network_id(67), [18, 18, 18], message_type(10), 2)
+        self.account = account
+        self.sig = signature
 
     def serialise(self):
         data = self.header.serialise_header()
-        data += self.node_vk
+        data += self.account
         data += self.sig
-        if self.cookie is not None:
-            data += self.cookie
         return data
 
     @classmethod
-    def is_valid(cls, peer_vk, peer_sig, cookie):
-        return eddsa.verify(peer_vk, peer_sig, cookie)
+    def create_response(cls, cookie):
+        signing_key = eddsa.create_signing_key()
+        verifying_key = eddsa.create_verifying_key(signing_key)
+        sig = eddsa.sign(signing_key, cookie)
+        return handshake_response(verifying_key, sig)
+
+    @classmethod
+    def parse_response(cls, data):
+        assert(len(data) == 104)
+        account = data[8:32]
+        sig = data[32:]
+        assert(len(sig) == 64)
+        return handshake_response(account, sig)
 
     def __str__(self):
-        string = "Node ID: %s\n" % binascii.hexlify(self.node_vk).decode("utf-8").upper()
+        string = "Header: [%s]\n" % str(self.header)
+        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
         string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
-        if self.cookie is not None:
-            string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
-        is_query = False
-        is_response = False
-        if self.header.ext == 3:
-            is_query = True
-            is_response = True
-        elif self.header.ext == 2:
-            is_response = True
-        elif self.header.ext == 1:
-            is_query = True
-        string += "Is query: %s\n" % is_query
-        string += "Is response: %s\n" % is_response
+        string += "Is query: False\n"
+        string += "Is response: True\n"
+        return string
+
+
+class handshake_response_query:
+    def __init__(self, cookie, account, signature):
+        self.header = message_header(network_id(67), [18, 18, 18], message_type(10), 3)
+        self.cookie = cookie
+        self.account = account
+        self.sig = signature
+
+    def serialise(self):
+        data = self.header.serialise_header()
+        data += self.cookie
+        data += self.account
+        data += self.sig
+        return data
+
+    @classmethod
+    def parse_query_response(cls, data):
+        assert(len(data) == 136)
+        cookie = data[8:40]
+        account = data[40:72]
+        sig = data[72:]
+        return handshake_response_query(cookie, account, sig)
+
+    def __str__(self):
+        string = "Header: [%s]\n" % str(self.header)
+        string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
+        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
+        string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
+        string += "Is query: True\n"
+        string += "Is response: True\n"
         return string
 
 
