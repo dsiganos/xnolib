@@ -42,6 +42,7 @@ def read_frontier_response(s):
         frontiers.append(frontier)
         print(frontier)
         counter += 1
+        print("counter: {}".format(counter))
 
 
 
