@@ -17,6 +17,8 @@ recvd_response = message_handshake_response.parse_msg_handshake_response(data)
 print(recvd_response)
 
 
-response = message_handshake_response.create_handshake_response(recvd_response.cookie)
+response = message_handshake_response.create_handshake_response_to_query(recvd_response.cookie)
 print(response)
 s.send(response.serialise())
+
+# print(eddsa.verify(recvd_response.node_vk, recvd_response.sig, msg_handshake.cookie))
