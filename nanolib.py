@@ -363,6 +363,7 @@ class message_handshake_response:
     @classmethod
     def parse_msg_handshake_response(cls, data):
         if data[6] == 3:
+            print(len(data))
             header = data[0:8]
             cookie = data[8:40]
             node_vk = data[40:72]
@@ -370,6 +371,7 @@ class message_handshake_response:
             msg_header = message_header.parse_header(header)
             return message_handshake_response(node_vk, sig, cookie, msg_header)
         elif data[6] == 2:
+            assert(len(data) == 104)
             header = data[0:8]
             header = message_header.parse_header(header)
             node_vk = data[8:40]
@@ -380,10 +382,9 @@ class message_handshake_response:
     def create_handshake_response_to_query(cls, cookie):
         node_sk = eddsa.create_signing_key()
         node_vk = eddsa.create_verifying_key(node_sk)
-        node_id = os.urandom(32)
         header = message_header(network_id(67), [18, 18, 18], message_type(10), 2)
-        # cookie = eddsa.sign(node_sk, cookie)
-        return message_handshake_response(node_id, node_vk, None, header=header)
+        sig = eddsa.sign(node_sk, cookie)
+        return message_handshake_response(node_vk, sig, cookie=None, header=header)
 
 
     def serialise(self):
