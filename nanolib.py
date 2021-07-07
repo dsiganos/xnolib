@@ -1119,6 +1119,20 @@ def valid_block(block):
     sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
     return work_valid and sig_valid
 
+def perform_handshake_exchange(s):
+    # TODO: Remove print statements after everything is completed
+    msg_handshake = handshake_query()
+    s.send(msg_handshake.serialise())
+    print(msg_handshake)
+
+    data = read_socket(s, 136)
+    recvd_response = handshake_response_query.parse_query_response(data)
+    print(recvd_response)
+
+    response = handshake_response.create_response(recvd_response.cookie)
+    print(response)
+    s.send(response.serialise())
+
 
 livectx = {
     'net_id': network_id(67),
