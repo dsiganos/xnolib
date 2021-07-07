@@ -7,6 +7,7 @@ import base64
 import dns.resolver
 import random
 import ed25519_blake2
+import ed25519_blake2b
 from pure25519 import eddsa
 
 
@@ -363,10 +364,9 @@ class handshake_response:
 
     @classmethod
     def create_response(cls, cookie):
-        signing_key = eddsa.create_signing_key()
-        verifying_key = eddsa.create_verifying_key(signing_key)
-        sig = eddsa.sign(signing_key, cookie)
-        return handshake_response(verifying_key, sig)
+        signing_key, verifying_key = ed25519_blake2b.create_keypair()
+        sig = signing_key.sign(cookie)
+        return handshake_response(verifying_key.to_bytes(), sig)
 
     @classmethod
     def parse_response(cls, data):
@@ -1123,15 +1123,15 @@ def perform_handshake_exchange(s):
     # TODO: Remove print statements after everything is completed
     msg_handshake = handshake_query()
     s.send(msg_handshake.serialise())
-    print(msg_handshake)
 
     data = read_socket(s, 136)
     recvd_response = handshake_response_query.parse_query_response(data)
-    print(recvd_response)
 
     response = handshake_response.create_response(recvd_response.cookie)
-    print(response)
     s.send(response.serialise())
+    
+    vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
+    vk.verify(recvd_response.sig, msg_handshake.cookie)
 
 
 livectx = {
