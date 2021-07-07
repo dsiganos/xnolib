@@ -9,4 +9,3 @@ s.settimeout(2)
 
 perform_handshake_exchange(s)
 
-# print(eddsa.verify(recvd_response.account, recvd_response.sig, msg_handshake.cookie))
