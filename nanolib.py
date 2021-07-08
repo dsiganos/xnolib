@@ -241,6 +241,9 @@ class peer_address:
         string += str(self.port)
         return string
 
+    def __eq__(self, other):
+        return str(self) == str(other)
+
 
 # Creates, stores and manages all of the peer_address objects (from the raw data)
 class peers():
@@ -284,28 +287,18 @@ class peers():
 
 
 class message_keepalive:
-    def __init__(self, net_id):
-        self.header = message_header(net_id, [18, 18, 18], message_type(2), 0)
-        ip1 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9df5:d11e")), 54000)
-        ip2 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:18fb:4f64")), 54000)
-        ip3 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:405a:48c2")), 54000)
-        ip4 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:9538:2eec")), 54000)
-        ip5 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:2e04:4970")), 54000)
-        ip6 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:68cd:cd53")), 54000)
-        ip7 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:b3a2:bdef")), 54000)
-        ip8 = peer_address(ipv6addresss(ipaddress.IPv6Address("::ffff:74ca:6b61")), 54000)
-        peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
-        self.peers = peers(peer_list)
+    def __init__(self):
+        pass
 
     def serialise(self):
-        data = self.header.serialise_header()
-        data += self.peers.serialise()
+        data = message_header(network_id(67), [18, 18, 18], message_type(2), 0).serialise_header()
+        data += b'\x00' * 144
         return data
 
-    def __str__(self):
-        string = str(self.header)
-        string += "\n" + str(self.peers)
-        return string
+    # def __str__(self):
+    #     string = str(self.header)
+    #     string += "\n" + str(self.peers)
+    #     return string
 
     def __eq__(self, other):
         if str(self) == str(other):
