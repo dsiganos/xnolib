@@ -149,16 +149,18 @@ class network_id:
 
 
 class message_type:
-    def __init__(self, data):
-        self.parse_type(data)
-
-    def parse_type(self, data):
-        # if not (data in range(2, 13)):
-        #      raise ParseErrorBadMessageType()
-        self.type = data
+    def __init__(self, num):
+        if not (num in range(2, 14)):
+             raise ParseErrorBadMessageType()
+        self.type = num
 
     def __str__(self):
         return str(self.type)
+
+    def __eq__(self, other):
+        if not isinstance(other, message_type):
+            return False
+        return self.type == other.type
 
 
 class message_header:
@@ -1036,10 +1038,13 @@ class nano_account:
 
 
 def read_socket(socket, bytes):
-    data = b''
-    while len(data) != bytes:
-        data += socket.recv(1)
-    return data
+    try:
+        data = b''
+        while len(data) != bytes:
+            data += socket.recv(1)
+        return data
+    except:
+        return None
 
 
 def read_block_send(s):

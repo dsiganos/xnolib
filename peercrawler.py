@@ -1,11 +1,11 @@
 from nanolib import *
 
 block_type_lengths = {
-    2 : 152,
-    3 : 136,
-    4 : 168,
-    5 : 136,
-    6 : 216
+    2: 152,
+    3: 136,
+    4: 168,
+    5: 136,
+    6: 216
 }
 
 
@@ -38,6 +38,11 @@ class peer_manager:
             return False
         return True
 
+    def str_peers(self):
+        string = ""
+        for p in self.peers:
+            string += str(p) + "\n"
+        return string
 
 def calculate_item_count(extensions):
     return(extensions & 0xf000) >> 12
@@ -69,7 +74,10 @@ def clear_next_packet(s, header):
                 read_socket(s, block_type_lengths.get(data[0]))
 
 def get_next_peers(s):
-    header = message_header.parse_header(read_socket(s, 8))
+    data = read_socket(s, 8)
+    if data is None:
+        return None
+    header = message_header.parse_header(data)
     if header.msg_type != message_type(2):
         clear_next_packet(s, header)
     return read_socket(s, 144)
@@ -92,6 +100,10 @@ perform_handshake_exchange(s)
 s.send(message_keepalive().serialise())
 
 manager = peer_manager()
-manager.parse_and_add_peers(get_next_peers(s))
-for p in manager.peers:
-    print(str(p))
+recvd_peers = get_next_peers(s)
+while recvd_peers is not None:
+    manager.parse_and_add_peers(recvd_peers)
+    print(manager.str_peers())
+    recvd_peers = get_next_peers(s)
+# for p in manager.peers:
+#     print(str(p))
