@@ -85,7 +85,7 @@ def get_next_peers(s):
         return None
     try:
         header = message_header.parse_header(data)
-    except:
+    except ParseErrorBadMagicNumber:
         print(s.recv(200))
         print("stop here")
         return None
