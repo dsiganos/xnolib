@@ -58,6 +58,7 @@ def clear_next_packet(s, header):
         i_count = calculate_item_count(header.ext)
         for i in range(0, i_count):
             data = read_socket(s, 1)
+            print(data[0])
             if data[0] not in range(2, 7):
                 read_socket(s, 71)
             else:
@@ -66,18 +67,28 @@ def clear_next_packet(s, header):
     elif header.msg_type == message_type(5):
         i_count = calculate_item_count(header.ext)
         read_socket(s, 104)
-        for i in range(0, i_count):
-            data = read_socket(s, 1)
-            if data[0] not in range(2, 7):
-                read_socket(s, 31)
-            else:
-                read_socket(s, block_type_lengths.get(data[0]))
+        data = read_socket(s, 1)
+        if data[0] not in range(2, 7):
+            print("Clearing: {}".format(read_socket(s, 31)))
+            for i in range(1, i_count):
+                print("Clearing 2: {}".format(read_socket(s, 32)))
+
+        else:
+            assert(i_count == 1)
+            read_socket(s, block_type_lengths.get(data[0]))
+
 
 def get_next_peers(s):
     data = read_socket(s, 8)
+    print(data)
     if data is None:
         return None
-    header = message_header.parse_header(data)
+    try:
+        header = message_header.parse_header(data)
+    except:
+        print(s.recv(200))
+        print("stop here")
+        return None
     if header.msg_type != message_type(2):
         clear_next_packet(s, header)
     return read_socket(s, 144)
@@ -85,10 +96,17 @@ def get_next_peers(s):
 
 
 
+# test = b'RC\x12\x12\x12\x05\x001\xbdbg\xd6\xec\xd8\x03\x83\'\xd2\xbc\xc0\x85\x0b\xdf\x8fV\xec\x04\x14\x91"\x07\xe8\x1b\xcf\x90\xdf\xac\x8aJ\xaa\x15#\x98T\x8d6\xbf\\ \x03G\x87\x14L\x0e"\'\xd2H\x17\xb9\xd8k\x9a\xefKe\xdb\xe1\xd2.\n?h.\xf1\xbc[\x8d\xf1a\xdd\xdc\x14\\\xdf\x9a\\\xff\x9f\xbc EL\xa8\xc2\xda\x9f=Iep\xa6\x06\xff\xff\xff\xff\xff\xff\xff\xff^LeT\x05d\x86\x0f\xb2;8\x9aL%c|\xa5\x98b\xc1\x8c\xda\xc2Z\xe5\xd2yu\x85\xceY\t{\x91\xdax\x96\x9d\xc7\x01\xf9\xd8m\\\xfab:\xb8\xa1%V\xbd\x11\xe5RyE\xa2\xac{k"\x800>UK%\x9d8\x9aR\x90\xe6\x1c\x11D\x9b\xe1\xacd\x05"h>I?\xc7q\xbeZs\xcb0\xfa\x06'
+# header = message_header.parse_header(test[0:8])
+# print(calculate_item_count(header.ext))
 
+# test = b'\x1c\x07\x15\xe7\xee\xbd/\x85'
+# print(len(test))
 
+# test = b'H\xab)L\xec\xbdE\x87\xf3\x15\x04I\xa6h@\x86\xaa\xb7\xdf\xd6\xfbb\x88{\x8c/^\xa0Bk\x98\xbb'
+# print(len(test))
 
-
+# --------------------------------------------- End of Analysis Code ---------------------------------------------
 
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -105,5 +123,7 @@ while recvd_peers is not None:
     manager.parse_and_add_peers(recvd_peers)
     print(manager.str_peers())
     recvd_peers = get_next_peers(s)
+
+
 # for p in manager.peers:
 #     print(str(p))
