@@ -86,6 +86,7 @@ def get_next_peers(s):
     try:
         header = message_header.parse_header(data)
     except ParseErrorBadMagicNumber:
+        # Here is where the bad magic number is detected!
         print(s.recv(200))
         print("stop here")
         return None
