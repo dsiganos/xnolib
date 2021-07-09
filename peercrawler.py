@@ -12,6 +12,7 @@ block_type_lengths = {
 
 BLOCK_TYPE_MASK = 0x0f00
 COUNT_MASK = 0xf000
+EXTENDED_PARAM_MASK = 0x0001
 
 
 class peer_manager:
@@ -92,6 +93,8 @@ def calculate_item_count(extensions):
 def calculate_block_type(extensions):
     return (extensions & BLOCK_TYPE_MASK) >> 8
 
+def calculate_extended_params(extensions):
+    return extensions & EXTENDED_PARAM_MASK
 
 def confirm_ack_size(ext):
     size = 104
@@ -120,12 +123,38 @@ def report_warning():
 
 
 def clear_next_packet(s, header):
-    if header.msg_type == message_type(4):
+    assert(header.msg_type != message_type(9))
+    assert(header.msg_type != message_type(13))
+    assert(header.msg_type != message_type(7))
+
+    if header.msg_type == message_type(3):
+        block_type = calculate_block_type(header.ext)
+        assert(block_type in range(2, 7))
+        read_socket(s, block_type_lengths.get(block_type))
+
+    elif header.msg_type == message_type(4):
         size = confirm_req_size(header.ext)
         read_socket(s, size)
 
     elif header.msg_type == message_type(5):
         read_socket(s, confirm_ack_size(header.ext))
+
+    elif header.msg_type == message_type(6):
+        read_socket(s, 64)
+        if calculate_extended_params(header.ext) != 0:
+            read_socket(s, 8)
+
+    # elif header.msg_type == message_type(7):
+    #     print("******** Detected a bulk push ********")
+
+    elif header.msg_type == message_type(10):
+        read_socket(s, 32)
+
+    elif header.msg_type == message_type(11):
+        read_socket(s, 49)
+
+    elif header.msg_type != message_type(13):
+        read_socket(s, 202)
 
 
 def get_next_peers(s):
@@ -182,5 +211,5 @@ while recvd_peers is not None:
 # for p in manager.peers:
 #     print(str(p))
 
-#TODO: Make sure the program can clear any message that could potentially come through (all of them)
+# TODO: Make sure the program can clear any message that could potentially come through (all of them)
 # TODO: Remember to report warning for any invalid peers
