@@ -45,6 +45,19 @@ class peer_manager:
             return False
         return True
 
+    def crawl(self):
+        for n in self.nodes:
+            for p in n.peers:
+
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                print(p.ip.ip)
+                s.connect((str(p.ip.ip.exploded), p.port))
+                perform_handshake_exchange(s)
+                peers = get_next_peers(s)
+                self.parse_and_add_peers(peers, str(p.ip))
+                s.close()
+
+
     def find_node(self, addr):
         for n in self.nodes:
             if addr == n.node:
@@ -189,10 +202,8 @@ perform_handshake_exchange(s)
 
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
-while recvd_peers is not None:
-    manager.parse_and_add_peers(recvd_peers, peeraddr)
-    print(manager.str_peers())
-    recvd_peers = get_next_peers(s)
+manager.parse_and_add_peers(recvd_peers, peeraddr)
+manager.crawl()
 
 
 # for p in manager.peers:
