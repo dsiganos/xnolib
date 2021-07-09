@@ -17,23 +17,23 @@ COUNT_MASK = 0xf000
 class peer_manager:
     def __init__(self):
         self.peers = []
+        self.nodes = []
         self.count = 1
 
-    def parse_and_add_peers(self, data, node):
+    def parse_and_add_peers(self, data, addr):
+        node = self.find_node(addr)
+        if node is None:
+            node = node_peers(addr)
+            self.nodes.append(node)
         assert(len(data) % 18 == 0)
         n = int(len(data) / 18)
         start_index = 0
         end_index = 18
         for i in range(0, n):
-            # if not self.valid_peer_data(data[start_index:end_index]):
-            #     start_index = end_index
-            #     end_index += 18
-            #     continue
             ip = ipv6addresss.parse_address(data[start_index:end_index - 2])
             port = int.from_bytes(data[end_index - 2:end_index], "little")
             p = peer_address(ip, port)
-            if p not in self.peers:
-                self.peers.append(p)
+            node.add_peer(p)
             start_index = end_index
             end_index += 18
 
@@ -44,31 +44,54 @@ class peer_manager:
             return False
         return True
 
+    def find_node(self, addr):
+        for n in self.nodes:
+            if addr == n.node:
+                return n
+        return None
+
+    #TODO: Broken for now, print the nodes and their peers
     def str_peers(self):
         string = ""
-        for p in self.peers:
-            string += str(p) + "\n"
+        for n in self.nodes:
+            string += str(n) + "\n"
         string += "Count: %d\n" % self.count
         self.count += 1
         return string
 
 
-# class node_peers:
-#     def __init__(self, node):
-#         self.peers = []
-#         self.bad_peers = []
-#         self.node = node
-#
-#     def add_peer(self, peer):
-#         if isinstance(peer, ipv6addresss):
+class node_peers:
+    def __init__(self, node):
+        self.peers = []
+        self.bad_peers = []
+        self.node = node
+
+    def add_peer(self, peer):
+        if not peer.is_valid():
+            self.bad_peers.append(peer)
+        elif peer not in self.peers:
+            self.peers.append(peer)
+
+
+    def __str__(self):
+        string = "----------- Node: %s ----------\n" % self.node
+        string += "---- Peers ----\n"
+        for p in self.peers:
+            string += "  " + str(p) + "\n"
+        string += "---- Bad Peers ----\n"
+        for p in self.bad_peers:
+            string += "  " + str(p) + "\n"
+        return string
 
 
 
 def calculate_item_count(extensions):
     return(extensions & COUNT_MASK) >> 12
 
+
 def calculate_block_type(extensions):
     return (extensions & BLOCK_TYPE_MASK) >> 8
+
 
 def confirm_ack_size(ext):
     size = 104
@@ -147,11 +170,6 @@ s.settimeout(3600)
 
 perform_handshake_exchange(s)
 
-s.send(message_keepalive().serialise())
-s.send(message_keepalive().serialise())
-s.send(message_keepalive().serialise())
-s.send(message_keepalive().serialise())
-
 
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
@@ -163,3 +181,6 @@ while recvd_peers is not None:
 
 # for p in manager.peers:
 #     print(str(p))
+
+#TODO: Make sure the program can clear any message that could potentially come through (all of them)
+# TODO: Remember to report warning for any invalid peers
