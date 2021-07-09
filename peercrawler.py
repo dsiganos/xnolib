@@ -17,6 +17,7 @@ COUNT_MASK = 0xf000
 class peer_manager:
     def __init__(self):
         self.peers = []
+        self.count = 1
 
     def parse_and_add_peers(self, data, node):
         assert(len(data) % 18 == 0)
@@ -47,6 +48,8 @@ class peer_manager:
         string = ""
         for p in self.peers:
             string += str(p) + "\n"
+        string += "Count: %d\n" % self.count
+        self.count += 1
         return string
 
 
