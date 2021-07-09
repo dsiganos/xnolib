@@ -1,3 +1,5 @@
+import time
+
 from nanolib import *
 
 block_type_lengths = {
@@ -91,6 +93,7 @@ def clear_next_packet(s, header):
 
 
 def get_next_peers(s):
+    time.sleep(2)
     data = read_socket(s, 8)
     print(data)
     if data is None:
@@ -98,6 +101,7 @@ def get_next_peers(s):
     header = message_header.parse_header(data)
     if header.msg_type != message_type(2):
         clear_next_packet(s, header)
+        return get_next_peers(s)
     return read_socket(s, 144)
 
 
