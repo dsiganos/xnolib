@@ -18,7 +18,7 @@ class peer_manager:
     def __init__(self):
         self.peers = []
 
-    def parse_and_add_peers(self, data):
+    def parse_and_add_peers(self, data, node):
         assert(len(data) % 18 == 0)
         n = int(len(data) / 18)
         start_index = 0
@@ -49,11 +49,23 @@ class peer_manager:
             string += str(p) + "\n"
         return string
 
+
+# class node_peers:
+#     def __init__(self, node):
+#         self.peers = []
+#         self.bad_peers = []
+#         self.node = node
+#
+#     def add_peer(self, peer):
+#         if isinstance(peer, ipv6addresss):
+
+
+
 def calculate_item_count(extensions):
-    return(extensions & 0xf000) >> 12
+    return(extensions & COUNT_MASK) >> 12
 
 def calculate_block_type(extensions):
-    return (extensions & 0x0f00) >> 8
+    return (extensions & BLOCK_TYPE_MASK) >> 8
 
 def confirm_ack_size(ext):
     size = 104
@@ -84,7 +96,6 @@ def report_warning():
 def clear_next_packet(s, header):
     if header.msg_type == message_type(4):
         size = confirm_req_size(header.ext)
-        print(size)
         read_socket(s, size)
 
 
@@ -93,7 +104,6 @@ def clear_next_packet(s, header):
 
 
 def get_next_peers(s):
-    time.sleep(2)
     data = read_socket(s, 8)
     print(data)
     if data is None:
@@ -129,14 +139,14 @@ ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
 s.connect((peeraddr, ctx['peerport']))
-s.settimeout(5)
+s.settimeout(3600)
 
 perform_handshake_exchange(s)
-s.send(message_keepalive().serialise())
+
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
 while recvd_peers is not None:
-    manager.parse_and_add_peers(recvd_peers)
+    manager.parse_and_add_peers(recvd_peers, peeraddr)
     print(manager.str_peers())
     recvd_peers = get_next_peers(s)
 
