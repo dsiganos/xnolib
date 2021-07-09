@@ -101,7 +101,6 @@ def clear_next_packet(s, header):
         size = confirm_req_size(header.ext)
         read_socket(s, size)
 
-
     elif header.msg_type == message_type(5):
         read_socket(s, confirm_ack_size(header.ext))
 
@@ -112,9 +111,11 @@ def get_next_peers(s):
     if data is None:
         return None
     header = message_header.parse_header(data)
-    if header.msg_type != message_type(2):
+    while header.msg_type != message_type(2):
         clear_next_packet(s, header)
-        return get_next_peers(s)
+        data = read_socket(s, 8)
+        header = message_header.parse_header(data)
+        print(data)
     return read_socket(s, 144)
 
 
@@ -145,6 +146,12 @@ s.connect((peeraddr, ctx['peerport']))
 s.settimeout(3600)
 
 perform_handshake_exchange(s)
+
+s.send(message_keepalive().serialise())
+s.send(message_keepalive().serialise())
+s.send(message_keepalive().serialise())
+s.send(message_keepalive().serialise())
+
 
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
