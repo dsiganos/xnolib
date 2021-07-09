@@ -120,7 +120,7 @@ class block_type_enum:
 
 class message_type_enum:
     invalid = 0x0
-    not_a_type = 0x1
+    not_a_block = 0x1
     keepalive = 0x2
     publish = 0x3
     confirm_req = 0x4
@@ -236,6 +236,15 @@ class peer_address:
         data += self.ip.ip.packed
         data += self.port.to_bytes(2, "little")
         return data
+
+    def is_valid(self):
+        data = self.ip.ip.packed
+        data += self.port.to_bytes(2, "little")
+        if int.from_bytes(data[0:16], "big") == 0:
+            return False
+        elif int.from_bytes(data[16:], "little") == 0:
+            return False
+        return True
 
     def __str__(self):
         string = "["
