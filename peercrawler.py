@@ -8,6 +8,9 @@ block_type_lengths = {
     6: 216
 }
 
+BLOCK_TYPE_MASK = 0x0f00
+COUNT_MASK = 0xf000
+
 
 class peer_manager:
     def __init__(self):
@@ -47,6 +50,29 @@ class peer_manager:
 def calculate_item_count(extensions):
     return(extensions & 0xf000) >> 12
 
+def calculate_block_type(extensions):
+    return (extensions & 0x0f00) >> 8
+
+def confirm_ack_size(ext):
+    size = 104
+    i_count = calculate_item_count(ext)
+    block_type = calculate_block_type(ext)
+    if block_type == message_type_enum.not_a_block:
+        size += i_count * 32
+    else:
+        assert(i_count == 1)
+        size += block_type_lengths.get(block_type)
+    return size
+
+def confirm_req_size(ext):
+    i_count = calculate_item_count(ext)
+    block_type = calculate_block_type(ext)
+    if block_type == message_type_enum.not_a_block:
+        size = 64 * i_count
+    else:
+        assert(i_count == 1)
+        size = block_type_lengths.get(block_type)
+    return size
 
 def report_warning():
     print("Warning: Bad Peer")
@@ -55,27 +81,13 @@ def report_warning():
 
 def clear_next_packet(s, header):
     if header.msg_type == message_type(4):
-        i_count = calculate_item_count(header.ext)
-        for i in range(0, i_count):
-            data = read_socket(s, 1)
-            print(data[0])
-            if data[0] not in range(2, 7):
-                read_socket(s, 71)
-            else:
-                read_socket(s, block_type_lengths.get(data[0]))
+        size = confirm_req_size(header.ext)
+        print(size)
+        read_socket(s, size)
+
 
     elif header.msg_type == message_type(5):
-        i_count = calculate_item_count(header.ext)
-        read_socket(s, 104)
-        data = read_socket(s, 1)
-        if data[0] not in range(2, 7):
-            print("Clearing: {}".format(read_socket(s, 31)))
-            for i in range(1, i_count):
-                print("Clearing 2: {}".format(read_socket(s, 32)))
-
-        else:
-            assert(i_count == 1)
-            read_socket(s, block_type_lengths.get(data[0]))
+        read_socket(s, confirm_ack_size(header.ext))
 
 
 def get_next_peers(s):
@@ -83,13 +95,7 @@ def get_next_peers(s):
     print(data)
     if data is None:
         return None
-    try:
-        header = message_header.parse_header(data)
-    except ParseErrorBadMagicNumber:
-        # Here is where the bad magic number is detected!
-        print(s.recv(200))
-        print("stop here")
-        return None
+    header = message_header.parse_header(data)
     if header.msg_type != message_type(2):
         clear_next_packet(s, header)
     return read_socket(s, 144)
@@ -104,20 +110,25 @@ def get_next_peers(s):
 # test = b'\x1c\x07\x15\xe7\xee\xbd/\x85'
 # print(len(test))
 
-# test = b'H\xab)L\xec\xbdE\x87\xf3\x15\x04I\xa6h@\x86\xaa\xb7\xdf\xd6\xfbb\x88{\x8c/^\xa0Bk\x98\xbb'
+# test = b"\xbd\xe7\x1e\x90S%\xde\xfd\x18\xdd\x01M\x94\xa7\x04\xdb\x0b\xd0\xfc\xf9?c\x02\xa9,V\xc9\xdd\xfe\xed'\xa8\xd1\xc8\xf4.\xf6\xdbt\x90qe|\xf5\x8d\xa7w\xc9;<\xd0[\x86\x94\xc9\xd2;\xbc\xc9\x06=\xce\nc"
 # print(len(test))
 
+# test = b'RC\x12\x12\x12\x04\x00\x11\x15O\x9f\xa2\x1eL\xe2\xe9e\xaa\xf8\xb2.\x18\xe6\xd7%~\x9c\x1d\x96\n\x9b\xa5\xb6\xc2\xcda\x98I\xd5\x94S\x86\xa0$x\x14Z\xf3\xdb\x15\xe2\xa2\x0eM\xebG#V\xec\xf4G\x9b\xe6\xa7E\xe3\x80\x00\x8f4\x1b\x15'
+# print(len(test))
 # --------------------------------------------- End of Analysis Code ---------------------------------------------
+
+
+
+
 
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
 s.connect((peeraddr, ctx['peerport']))
-s.settimeout(3)
+s.settimeout(5)
 
 perform_handshake_exchange(s)
 s.send(message_keepalive().serialise())
-
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
 while recvd_peers is not None:
