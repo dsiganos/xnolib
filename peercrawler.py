@@ -1,3 +1,5 @@
+import random
+import socket
 import time
 
 from nanolib import *
@@ -31,7 +33,7 @@ class peer_manager:
         start_index = 0
         end_index = 18
         for i in range(0, n):
-            ip = ipv6addresss.parse_address(data[start_index:end_index - 2])
+            ip = parse_ipv6(data[start_index:end_index - 2])
             port = int.from_bytes(data[end_index - 2:end_index], "little")
             p = peer_address(ip, port)
             node.add_peer(p)
@@ -50,8 +52,8 @@ class peer_manager:
             for p in n.peers:
 
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                print(p.ip.ip)
-                s.connect((str(p.ip.ip.exploded), p.port))
+                print(p.ip)
+                s.connect((str(p.ip.exploded), p.port))
                 perform_handshake_exchange(s)
                 peers = get_next_peers(s)
                 self.parse_and_add_peers(peers, str(p.ip))
@@ -188,7 +190,10 @@ def get_next_peers(s):
         print(data)
     return read_socket(s, 144)
 
-
+def parse_ipv6(data):
+    if len(data) != 16:
+        raise ParseErrorBadIPv6()
+    return ipaddress.IPv6Address(data)
 
 
 ctx = livectx
@@ -203,7 +208,8 @@ perform_handshake_exchange(s)
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
 manager.parse_and_add_peers(recvd_peers, peeraddr)
-manager.crawl()
+# manager.crawl()
+print(manager.str_peers())
 
 
 # for p in manager.peers:

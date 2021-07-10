@@ -206,21 +206,6 @@ class message_header:
         return str
 
 
-class ipv6addresss:
-    def __init__(self, ip):
-        self.ip = ip
-
-    @classmethod
-    def parse_address(cls, data):
-        if len(data) < 16:
-            raise ParseErrorBadIPv6
-        address_int = int.from_bytes(data[0:16], "big")
-        return ipv6addresss(ipaddress.IPv6Address(address_int))
-
-    def __str__(self):
-        return str(self.ip)
-
-
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class peer_address:
@@ -230,12 +215,12 @@ class peer_address:
 
     def serialise(self):
         data = b""
-        data += self.ip.ip.packed
+        data += self.ip.packed
         data += self.port.to_bytes(2, "little")
         return data
 
     def is_valid(self):
-        data = self.ip.ip.packed
+        data = self.ip.packed
         data += self.port.to_bytes(2, "little")
         if int.from_bytes(data[0:16], "big") == 0:
             return False
