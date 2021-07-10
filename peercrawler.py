@@ -53,7 +53,7 @@ class peer_manager:
 
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 print(p.ip)
-                s.connect((str(p.ip.exploded), p.port))
+                s.connect((str(p.ip.ipv4_mapped), p.port))
                 perform_handshake_exchange(s)
                 peers = get_next_peers(s)
                 self.parse_and_add_peers(peers, str(p.ip))
@@ -208,8 +208,8 @@ perform_handshake_exchange(s)
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
 manager.parse_and_add_peers(recvd_peers, peeraddr)
-# manager.crawl()
-print(manager.str_peers())
+manager.crawl()
+# print(manager.str_peers())
 
 
 # for p in manager.peers:
