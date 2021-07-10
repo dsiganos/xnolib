@@ -137,10 +137,6 @@ def confirm_req_size(ext):
         size = block_type_lengths.get(block_type)
     return size
 
-def report_warning():
-    print("Warning: Bad Peer")
-    # TODO: Add the peer and the address the socket was connected to
-
 
 def clear_next_packet(s, header):
     assert(header.msg_type != message_type(9))
