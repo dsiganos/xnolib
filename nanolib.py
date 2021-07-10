@@ -2,13 +2,10 @@ import os
 from hashlib import blake2b
 import binascii
 import ipaddress
-import socket
 import base64
 import dns.resolver
-import random
 import ed25519_blake2
 import ed25519_blake2b
-from pure25519 import eddsa
 
 
 class ParseErrorBadMagicNumber(Exception): pass
