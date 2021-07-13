@@ -47,16 +47,14 @@ class peer_manager:
                 print(p.ip)
                 try:
                     s.connect((str(p.ip.ipv4_mapped), p.port))
+                    perform_handshake_exchange(s)
+                    peers = get_next_peers(s)
+                    self.parse_and_add_peers(peers, str(p.ip))
                 except (ConnectionRefusedError, socket.gaierror, TimeoutError):
                     self.add_node(p.ip, 0)
                     s.close()
                     continue
-
-                perform_handshake_exchange(s)
-                peers = get_next_peers(s)
-                try:
-                    self.parse_and_add_peers(peers, str(p.ip))
-                except TypeError:
+                except (TypeError, HandshakeExchangeFail):
                     self.add_node(p.ip, 1)
                 s.close()
 
