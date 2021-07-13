@@ -1170,6 +1170,11 @@ def extensions_to_block_type(extensions):
     return (extensions & BLOCK_TYPE_MASK) >> 8
 
 
+def extensions_to_extented_params(extensions):
+    EXTENDED_PARAM_MASK = 0x0001
+    return extensions & EXTENDED_PARAM_MASK
+
+
 livectx = {
     'net_id': network_id(67),
     'peeraddr': "peering.nano.org",

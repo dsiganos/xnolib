@@ -4,8 +4,6 @@ import socket
 
 from nanolib import *
 
-EXTENDED_PARAM_MASK = 0x0001
-
 
 class peer_manager:
     def __init__(self):
@@ -114,9 +112,6 @@ class node_peers:
         return string
 
 
-def calculate_extended_params(extensions):
-    return extensions & EXTENDED_PARAM_MASK
-
 def confirm_ack_size(ext):
     size = 104
     i_count = extensions_to_count(ext)
@@ -158,7 +153,7 @@ def clear_next_packet(s, header):
 
     elif header.msg_type == message_type(6):
         read_socket(s, 64)
-        if calculate_extended_params(header.ext) != 0:
+        if extensions_to_extented_params(header.ext) != 0:
             read_socket(s, 8)
 
     # elif header.msg_type == message_type(7):
