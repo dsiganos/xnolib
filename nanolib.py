@@ -56,6 +56,9 @@ class InvalidBlockHash(Exception): pass
 class ProcessingErrorAccountAlreadyOpen(Exception): pass
 
 
+class HandshakeExchangeFail(Exception): pass
+
+
 class CommsError(Exception): pass
 
 
@@ -1256,15 +1259,17 @@ def perform_handshake_exchange(s):
     # TODO: Remove print statements after everything is completed
     msg_handshake = handshake_query()
     s.send(msg_handshake.serialise())
+    try:
+        data = read_socket(s, 136)
+        recvd_response = handshake_response_query.parse_query_response(data)
 
-    data = read_socket(s, 136)
-    recvd_response = handshake_response_query.parse_query_response(data)
+        response = handshake_response.create_response(recvd_response.cookie)
+        s.send(response.serialise())
 
-    response = handshake_response.create_response(recvd_response.cookie)
-    s.send(response.serialise())
-
-    vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
-    vk.verify(recvd_response.sig, msg_handshake.cookie)
+        vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
+        vk.verify(recvd_response.sig, msg_handshake.cookie)
+    except TypeError:
+        raise HandshakeExchangeFail()
 
 
 def block_length_by_type(blktype):
