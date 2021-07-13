@@ -421,7 +421,7 @@ class message_keepalive:
 
 
 class message_bulk_pull:
-    def __init__(self, block_hash, net_id):
+    def __init__(self, block_hash, net_id=network_id(67)):
         self.header = message_header(net_id, [18, 18, 18], message_type(6), 0)
         self.public_key = binascii.unhexlify(block_hash)
 
