@@ -209,7 +209,7 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class peer:
-    def __init__(self, ip, port):
+    def __init__(self, ip = ipaddress.IPv6Address(0), port = 0):
         self.ip = ip
         self.port = port
 
@@ -233,6 +233,9 @@ class peer:
         string += str(self.ip) + "]:"
         string += str(self.port)
         return string
+
+    def __repr__(self):
+        return str(self)
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -283,12 +286,16 @@ class peers():
 
 
 class message_keepalive:
-    def __init__(self):
-        pass
+    def __init__(self, net_id):
+        self.header = message_header(net_id, [18, 18, 18], message_type(2), 0)
+        self.peers = []
+        for i in range(0, 8):
+            self.peers.append(peer())
 
     def serialise(self):
-        data = message_header(network_id(67), [18, 18, 18], message_type(2), 0).serialise_header()
-        data += b'\x00' * 144
+        data = self.header.serialise_header()
+        for p in self.peers:
+            data += p.serialise()
         return data
 
     def __str__(self):
