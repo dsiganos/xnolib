@@ -345,6 +345,9 @@ class peer:
     def __hash__(self):
         return hash((self.ip, self.port))
 
+    def get_ipv4(self):
+        return self.ip.ipv4_mapped
+
 
 class message_keepalive:
     def __init__(self, hdr, peers=None):
@@ -1142,7 +1145,7 @@ class nano_account:
                     continue
                 elif b1.previous == b2.previous:
                     return b1, b2
-        return None
+        return None, None
 
 
     def get_balance(self, block): return block.get_balance()
