@@ -240,47 +240,6 @@ class peer_address:
         return str(self) == str(other)
 
 
-# Creates, stores and manages all of the peer_address objects (from the raw data)
-class peers():
-    def __init__(self, peers):
-        self.peers = peers
-
-    @classmethod
-    def parse_peers(cls, rawdata):
-        if len(rawdata) % 18 != 0:
-            raise ParseErrorBadMessageBody()
-        no_of_peers = int(len(rawdata) / 18)
-        start_index = 0
-        end_index = 18
-        peers_list = []
-        for i in range(0, no_of_peers):
-            ip = ipv6addresss.parse_address(rawdata[start_index:end_index - 2])
-            port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
-            p = peer_address(ip, port)
-            peers_list.append(p)
-            start_index = end_index
-            end_index += 18
-        return peers(peers_list)
-
-    def serialise(self):
-        data = b""
-        for i in range(0, len(self.peers)):
-            data += self.peers[i].serialise()
-        return data
-
-    def __eq__(self, other):
-        if str(self) == str(other):
-            return True
-
-    def __str__(self):
-        string = ""
-        for i in range(0, len(self.peers)):
-            string += "Peer %d:" % (i + 1)
-            string += str(self.peers[i])
-            string += "\n"
-        return string
-
-
 class message_keepalive:
     def __init__(self):
         pass
@@ -1027,7 +986,6 @@ class nano_account:
                 elif b1.previous == b2.previous:
                     return b1, b2
         return None
-
 
     def get_balance(self, block): return block.get_balance()
 
