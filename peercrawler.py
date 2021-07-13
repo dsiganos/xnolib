@@ -97,7 +97,6 @@ class node_peers:
     def set_score(self, num):
         self.score = num
 
-
     def report_warning(self, peer):
         print("Bad peer: %s in node: %s" % (str(peer), self.node))
 
@@ -181,6 +180,7 @@ def get_next_peers(s):
         header = message_header.parse_header(data)
         print(data)
     return read_socket(s, 144)
+
 
 def parse_ipv6(data):
     if len(data) != 16:
