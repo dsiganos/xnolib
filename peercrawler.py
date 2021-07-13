@@ -4,14 +4,6 @@ import socket
 
 from nanolib import *
 
-block_type_lengths = {
-    2: 152,
-    3: 136,
-    4: 168,
-    5: 136,
-    6: 216
-}
-
 BLOCK_TYPE_MASK = 0x0f00
 COUNT_MASK = 0xf000
 EXTENDED_PARAM_MASK = 0x0001
@@ -143,7 +135,7 @@ def confirm_ack_size(ext):
         size += i_count * 32
     else:
         assert(i_count == 1)
-        size += block_type_lengths.get(block_type)
+        size += block_length_by_type.get(block_type)
     return size
 
 def confirm_req_size(ext):
@@ -153,7 +145,7 @@ def confirm_req_size(ext):
         size = 64 * i_count
     else:
         assert(i_count == 1)
-        size = block_type_lengths.get(block_type)
+        size = block_length_by_type.get(block_type)
     return size
 
 
@@ -165,7 +157,7 @@ def clear_next_packet(s, header):
     if header.msg_type == message_type(3):
         block_type = calculate_block_type(header.ext)
         assert(block_type in range(2, 7))
-        read_socket(s, block_type_lengths.get(block_type))
+        read_socket(s, block_length_by_type.get(block_type))
 
     elif header.msg_type == message_type(4):
         size = confirm_req_size(header.ext)

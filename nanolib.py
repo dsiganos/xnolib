@@ -1148,6 +1148,16 @@ def perform_handshake_exchange(s):
     vk.verify(recvd_response.sig, msg_handshake.cookie)
 
 
+def block_length_by_type(blktype):
+    lengths = {
+        2: 152,
+        3: 136,
+        4: 168,
+        5: 136,
+        6: 216
+    }
+    return lengths[blktype]
+
 livectx = {
     'net_id': network_id(67),
     'peeraddr': "peering.nano.org",
