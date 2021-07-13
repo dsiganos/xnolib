@@ -239,6 +239,9 @@ class peer_address:
     def __eq__(self, other):
         return str(self) == str(other)
 
+    def get_ipv4(self):
+        return self.ip.ipv4_mapped
+
 
 class message_keepalive:
     def __init__(self):
@@ -985,7 +988,7 @@ class nano_account:
                     continue
                 elif b1.previous == b2.previous:
                     return b1, b2
-        return None
+        return None, None
 
     def get_balance(self, block): return block.get_balance()
 
