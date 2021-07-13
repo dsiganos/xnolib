@@ -1,3 +1,4 @@
+import ipaddress
 import random
 import socket
 
@@ -54,18 +55,18 @@ class peer_manager:
             for p in n.peers:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(30)
-                print(p.ip)
+                print(p)
                 try:
-                    s.connect((str(p.ip.ipv4_mapped), p.port))
+                    s.connect((str(p.get_ipv4()), p.port))
                     perform_handshake_exchange(s)
                     peers = get_next_peers(s)
-                    self.parse_and_add_peers(peers, str(p.ip))
+                    self.parse_and_add_peers(peers, p)
                 except (ConnectionRefusedError, socket.gaierror, TimeoutError):
-                    self.add_node(p.ip, 0)
+                    self.add_node(p, 0)
                     s.close()
                     continue
                 except (TypeError, HandshakeExchangeFail):
-                    self.add_node(p.ip, 1)
+                    self.add_node(p, 1)
                 s.close()
 
 
@@ -91,6 +92,7 @@ class peer_manager:
 
 class node_peers:
     def __init__(self, node, score=1000):
+        assert(isinstance(node, peer_address))
         self.peers = []
         self.bad_peers = []
         self.node = node
@@ -219,5 +221,5 @@ perform_handshake_exchange(s)
 
 manager = peer_manager()
 recvd_peers = get_next_peers(s)
-manager.parse_and_add_peers(recvd_peers, peeraddr)
+manager.parse_and_add_peers(recvd_peers, peer_address(peeraddr, ctx["peerport"]))
 manager.crawl()
