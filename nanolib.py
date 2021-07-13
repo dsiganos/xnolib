@@ -237,6 +237,9 @@ class peer_address:
     def __eq__(self, other):
         return str(self) == str(other)
 
+    def __hash__(self):
+        return hash((self.ip, self.port))
+
 
 # Creates, stores and manages all of the peer_address objects (from the raw data)
 class peers():

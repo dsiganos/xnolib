@@ -1,6 +1,7 @@
 #!/bin/env python3
 import random
 import socket
+import copy
 
 from nanolib import *
 
@@ -40,7 +41,7 @@ class peer_manager:
 
     def crawl(self):
         for n in self.nodes:
-            for p in n.peers:
+            for p in copy.copy(n.get_peers()):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(30)
                 print(p.ip)
@@ -82,23 +83,26 @@ class peer_manager:
 
 class node_peers:
     def __init__(self, node, score=1000):
-        self.peers = []
-        self.bad_peers = []
+        self.peers = set()
+        self.bad_peers = set()
         self.node = node
         self.score = score
 
     def add_peer(self, peer):
         if not peer.is_valid():
-            self.bad_peers.append(peer)
+            self.bad_peers.add(peer)
             self.report_warning(peer)
-        elif peer not in self.peers:
-            self.peers.append(peer)
+        else:
+            self.peers.add(peer)
 
     def set_score(self, num):
         self.score = num
 
     def report_warning(self, peer):
         print("Bad peer: %s in node: %s" % (str(peer), self.node))
+
+    def get_peers(self):
+        return self.peers
 
     def __str__(self):
         string = "----------- Node: %s ----------\n" % self.node
