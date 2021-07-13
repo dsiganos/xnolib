@@ -188,16 +188,21 @@ def parse_ipv6(data):
     return ipaddress.IPv6Address(data)
 
 
-ctx = livectx
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-s.connect((peeraddr, ctx['peerport']))
-s.settimeout(3600)
+def main():
+    ctx = livectx
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+    s.connect((peeraddr, ctx['peerport']))
+    s.settimeout(3600)
 
-perform_handshake_exchange(s)
+    perform_handshake_exchange(s)
 
 
-manager = peer_manager()
-recvd_peers = get_next_peers(s)
-manager.parse_and_add_peers(recvd_peers, peeraddr)
-manager.crawl()
+    manager = peer_manager()
+    recvd_peers = get_next_peers(s)
+    manager.parse_and_add_peers(recvd_peers, peeraddr)
+    manager.crawl()
+
+
+if __name__ == "__main__":
+    main()
