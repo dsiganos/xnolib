@@ -291,10 +291,10 @@ class message_keepalive:
         data += b'\x00' * 144
         return data
 
-    # def __str__(self):
-    #     string = str(self.header)
-    #     string += "\n" + str(self.peers)
-    #     return string
+    def __str__(self):
+        string = str(self.header)
+        string += "\n" + str(self.peers)
+        return string
 
     def __eq__(self, other):
         if str(self) == str(other):
