@@ -4,7 +4,6 @@ import socket
 
 from nanolib import *
 
-BLOCK_TYPE_MASK = 0x0f00
 EXTENDED_PARAM_MASK = 0x0001
 
 
@@ -115,17 +114,13 @@ class node_peers:
         return string
 
 
-
-def calculate_block_type(extensions):
-    return (extensions & BLOCK_TYPE_MASK) >> 8
-
 def calculate_extended_params(extensions):
     return extensions & EXTENDED_PARAM_MASK
 
 def confirm_ack_size(ext):
     size = 104
     i_count = extensions_to_count(ext)
-    block_type = calculate_block_type(ext)
+    block_type = extensions_to_block_type(ext)
     if block_type == message_type_enum.not_a_block:
         size += i_count * 32
     else:
@@ -135,7 +130,7 @@ def confirm_ack_size(ext):
 
 def confirm_req_size(ext):
     i_count = extensions_to_count(ext)
-    block_type = calculate_block_type(ext)
+    block_type = extensions_to_block_type(ext)
     if block_type == message_type_enum.not_a_block:
         size = 64 * i_count
     else:

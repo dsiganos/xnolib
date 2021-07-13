@@ -1165,6 +1165,11 @@ def extensions_to_count(extensions):
     return (extensions & COUNT_MASK) >> 12
 
 
+def extensions_to_block_type(extensions):
+    BLOCK_TYPE_MASK = 0x0f00
+    return (extensions & BLOCK_TYPE_MASK) >> 8
+
+
 livectx = {
     'net_id': network_id(67),
     'peeraddr': "peering.nano.org",
