@@ -1,7 +1,6 @@
 import os
 from hashlib import blake2b
 import binascii
-import ipaddress
 import base64
 import dns.resolver
 import ed25519_blake2
