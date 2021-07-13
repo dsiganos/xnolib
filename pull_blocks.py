@@ -1,3 +1,6 @@
+import random
+import socket
+
 from nanolib import *
 
 ctx = livectx
