@@ -1019,6 +1019,16 @@ class nano_account:
                 return False
         return True
 
+    def check_forks(self):
+        for b1 in self.blocks:
+            for b2 in self.blocks:
+                if b1 == b2:
+                    continue
+                elif b1.previous == b2.previous:
+                    return b1, b2
+        return None
+
+
     def get_balance(self, block): return block.get_balance()
 
     def __str__(self):
