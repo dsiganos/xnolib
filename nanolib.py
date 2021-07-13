@@ -1,3 +1,4 @@
+import ipaddress
 import os
 from hashlib import blake2b
 import binascii
@@ -312,6 +313,7 @@ class message_header:
 # it into a readable string format
 class peer:
     def __init__(self, ip = ipaddress.IPv6Address(0), port = 0):
+        assert(isinstance(ip, ipaddress.IPv6Address) or isinstance(ip, ipaddress.IPv4Address))
         self.ip = ip
         self.port = port
 
@@ -346,6 +348,8 @@ class peer:
         return hash((self.ip, self.port))
 
     def get_ipv4(self):
+        if isinstance(self.ip, ipaddress.IPv4Address):
+            return self.ip
         return self.ip.ipv4_mapped
 
 
