@@ -1,6 +1,5 @@
 import random
 import socket
-import time
 
 from nanolib import *
 
@@ -19,14 +18,13 @@ EXTENDED_PARAM_MASK = 0x0001
 
 class peer_manager:
     def __init__(self):
-        self.peers = []
         self.nodes = []
         self.count = 1
 
     def parse_and_add_peers(self, data, addr):
         node = self.find_node(addr)
         if node is None:
-            node = node_peers(addr)
+            node = node_peers(addr, score=1000)
             self.nodes.append(node)
         assert(len(data) % 18 == 0)
         n = int(len(data) / 18)
@@ -47,16 +45,29 @@ class peer_manager:
             return False
         return True
 
+    def add_node(self, ip, score):
+        node = node_peers(ip, score=score)
+        self.nodes.append(node)
+
     def crawl(self):
         for n in self.nodes:
             for p in n.peers:
-
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(30)
                 print(p.ip)
-                s.connect((str(p.ip.ipv4_mapped), p.port))
+                try:
+                    s.connect((str(p.ip.ipv4_mapped), p.port))
+                except (ConnectionRefusedError, socket.gaierror, TimeoutError):
+                    self.add_node(p.ip, 0)
+                    s.close()
+                    continue
+
                 perform_handshake_exchange(s)
                 peers = get_next_peers(s)
-                self.parse_and_add_peers(peers, str(p.ip))
+                try:
+                    self.parse_and_add_peers(peers, str(p.ip))
+                except TypeError:
+                    self.add_node(p.ip, 1)
                 s.close()
 
 
@@ -66,8 +77,12 @@ class peer_manager:
                 return n
         return None
 
-    #TODO: Broken for now, print the nodes and their peers
-    def str_peers(self):
+    def __str__(self):
+        string = "---------- Manager ----------\n"
+        string += "Number of Nodes: %d\n" % len(self.nodes)
+        return string
+
+    def str_nodes(self):
         string = ""
         for n in self.nodes:
             string += str(n) + "\n"
@@ -77,10 +92,11 @@ class peer_manager:
 
 
 class node_peers:
-    def __init__(self, node):
+    def __init__(self, node, score=1000):
         self.peers = []
         self.bad_peers = []
         self.node = node
+        self.score = score
 
     def add_peer(self, peer):
         if not peer.is_valid():
@@ -89,6 +105,8 @@ class node_peers:
         elif peer not in self.peers:
             self.peers.append(peer)
 
+    def set_score(self, num):
+        self.score = num
 
 
     def report_warning(self, peer):
@@ -205,11 +223,3 @@ manager = peer_manager()
 recvd_peers = get_next_peers(s)
 manager.parse_and_add_peers(recvd_peers, peeraddr)
 manager.crawl()
-# print(manager.str_peers())
-
-
-# for p in manager.peers:
-#     print(str(p))
-
-# TODO: Make sure the program can clear any message that could potentially come through (all of them)
-# TODO: Remember to report warning for any invalid peers
