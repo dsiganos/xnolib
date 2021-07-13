@@ -1,12 +1,13 @@
 import binascii
 import random
 import socket
-from pull_blocks import message_header, network_id, message_type, livectx, read_socket, get_all_dns_addresses, get_account_id
+from nanolib import message_header, network_id, message_type, livectx, read_socket, get_all_dns_addresses, \
+    get_account_id
 
 
 class frontier_request:
     def __init__(self, start_account='00'*32):
-        self.header = message_header(network_id(67), [18, 18, 18], message_type(8), '0000')
+        self.header = message_header(network_id(67), [18, 18, 18], message_type(8), 0)
         self.start_account = binascii.unhexlify(start_account)
         self.max_age = binascii.unhexlify('FFFFFFFF')
         self.max_acc = binascii.unhexlify("FFFFFFFF")
