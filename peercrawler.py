@@ -23,7 +23,7 @@ class peer_manager:
         for i in range(0, n):
             ip = parse_ipv6(data[start_index:end_index - 2])
             port = int.from_bytes(data[end_index - 2:end_index], "little")
-            p = peer_address(ip, port)
+            p = peer(ip, port)
             node.add_peer(p)
             start_index = end_index
             end_index += 18

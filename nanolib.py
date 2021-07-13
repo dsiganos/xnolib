@@ -208,7 +208,7 @@ class message_header:
 
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
-class peer_address:
+class peer:
     def __init__(self, ip, port):
         self.ip = ip
         self.port = port
@@ -241,7 +241,7 @@ class peer_address:
         return hash((self.ip, self.port))
 
 
-# Creates, stores and manages all of the peer_address objects (from the raw data)
+# Creates, stores and manages all of the peer objects (from the raw data)
 class peers():
     def __init__(self, peers):
         self.peers = peers
@@ -257,7 +257,7 @@ class peers():
         for i in range(0, no_of_peers):
             ip = ipv6addresss.parse_address(rawdata[start_index:end_index - 2])
             port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
-            p = peer_address(ip, port)
+            p = peer(ip, port)
             peers_list.append(p)
             start_index = end_index
             end_index += 18
