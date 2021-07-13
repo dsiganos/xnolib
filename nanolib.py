@@ -1133,6 +1133,7 @@ def valid_block(block):
     sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
     return work_valid and sig_valid
 
+
 def perform_handshake_exchange(s):
     # TODO: Remove print statements after everything is completed
     msg_handshake = handshake_query()
@@ -1157,6 +1158,12 @@ def block_length_by_type(blktype):
         6: 216
     }
     return lengths[blktype]
+
+
+def extensions_to_count(extensions):
+    COUNT_MASK = 0xf000
+    return (extensions & COUNT_MASK) >> 12
+
 
 livectx = {
     'net_id': network_id(67),
