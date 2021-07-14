@@ -1151,8 +1151,8 @@ class nano_account:
                     return b1, b2
         return None, None
 
-
-    def get_balance(self, block): return block.get_balance()
+    def get_balance(self, block):
+        return block.get_balance()
 
     def __str__(self):
         string = "------------- Nano Account -------------\n"
