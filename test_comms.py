@@ -179,5 +179,43 @@ class TestComms(unittest.TestCase):
         expected = '6875C0DBFE5C44D8F8CFF431BC69ED5587C68F89F0663F2BC1FBBFCB46DC5989'
         self.assertEqual(expected, b.hash())
 
+    def test_blocks_manager_traversals(self):
+        block1 = {
+            "prev" : binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
+            "dest" : binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal" : (337010421085160209006996005437231978653).to_bytes(16, "big"),
+            "sig" : binascii.unhexlify('5B11B17DB9C8FE0CC58CAC6A6EECEF9CB122DA8A81C6D3DB1B5EE3AB065AA8F8CB1D6765C8EB91B58530C5FF5987AD95E6D34BB57F44257E20795EE412E61600'),
+            "work" : binascii.unhexlify('3C82CC724905EE95')
+        }
+
+        block2 = {
+            "prev": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
+            "dest": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal": (333738475249381954550617403442695745851).to_bytes(16, "big"),
+            "sig": binascii.unhexlify('D6CAB5845050A058806D18C38E022322664A7E169498206420619F2ED031E7ED6FC80D5F33701B54B34B4DF2B65F02ECD8B5E26E44EC11B17570E1EE008EEC0E'),
+            "work": binascii.unhexlify('96B201F33F0394AE')
+        }
+
+        block3 = {
+            "prev": binascii.unhexlify('28129ABCAB003AB246BA22702E0C218794DFFF72AD35FD56880D8E605C0798F6'),
+            "dest": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal": (330466529413603700094238801448159513049).to_bytes(16, "big"),
+            "sig": binascii.unhexlify('7F5ABE59D6C25EEEFE28174A6646D6E228FFDE3ACBA1293EDFFA057CE739AF9DAC89A4D1783BD30E2B4F0154815A959A57424C5EA35EA3ADF0CD2AF981BF7103'),
+            "work": binascii.unhexlify('6B8567274385A390')
+        }
+        b1 = block_send(block1["prev"], block1["dest"], block1["bal"], block1["sig"], block1["work"])
+        b2 = block_send(block2["prev"], block2["dest"], block2["bal"], block2["sig"], block2["work"])
+        b3 = block_send(block3["prev"], block3["dest"], block3["bal"], block3["sig"], block3["work"])
+        manager = blocks_manager()
+        manager.process(b1)
+        manager.process(b2)
+        manager.process(b3)
+        self.assertTrue(len(manager.processed_blocks) == 4)
+        fwdt = manager.accounts[0].traverse_forwards()
+        bkwdt = manager.accounts[0].traverse_backwards()
+        self.assertEqual([0, 1, 2, 3], fwdt)
+        self.assertEqual([3, 2, 1, 0], bkwdt)
+
+
 if __name__ == '__main__':
     unittest.main()
