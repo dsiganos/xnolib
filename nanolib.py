@@ -132,6 +132,10 @@ class message_type_enum:
     telemetry_ack = 0x0d
 
 
+def message_type_enum_to_str(msg_type):
+    return next(name for name, value in vars(message_type_enum).items() if value == msg_type)
+
+
 class network_id:
     def __init__(self, rawbyte):
         self.parse_header(int(rawbyte))
