@@ -82,7 +82,7 @@ class peer_manager:
 
 class node_peers:
     def __init__(self, node, score=1000):
-        assert(isinstance(node, peer_address))
+        assert(isinstance(node, peer))
         self.peers = set()
         self.bad_peers = set()
         self.node = node
@@ -195,10 +195,9 @@ def main():
 
     perform_handshake_exchange(s)
 
-
     manager = peer_manager()
     recvd_peers = get_next_peers(s)
-    manager.parse_and_add_peers(recvd_peers, peer_address(peeraddr, ctx["peerport"]))
+    manager.parse_and_add_peers(recvd_peers, peer(ipaddress.IPv4Address(peeraddr), ctx["peerport"]))
     manager.crawl()
 
 
