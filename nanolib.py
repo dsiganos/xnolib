@@ -332,6 +332,13 @@ class peer:
             return False
         return True
 
+    @classmethod
+    def parse_peer(cls, data):
+        assert(len(data) == 18)
+        ip = parse_ipv6(data[0:16])
+        port = int.from_bytes(data[16:], "little")
+        return peer(ip, port)
+
     def __str__(self):
         string = "["
         string += str(self.ip) + "]:"
@@ -389,9 +396,7 @@ class message_keepalive:
         end_index = 18
         peers_list = []
         for i in range(0, no_of_peers):
-            ip = parse_ipv6(rawdata[start_index:end_index - 2])
-            port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
-            p = peer(ip, port)
+            p = peer.parse_peer(rawdata[start_index:end_index])
             peers_list.append(p)
             start_index = end_index
             end_index += 18
