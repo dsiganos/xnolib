@@ -1265,7 +1265,7 @@ def perform_handshake_exchange(s):
 
 # wait for the next message, parse the header but not the payload
 # the header is retruned as an object and the payload as raw bytes
-def get_next_hdr_payload():
+def get_next_hdr_payload(s):
     # read and parse header
     data = read_socket(s, 8)
     if data is None:
