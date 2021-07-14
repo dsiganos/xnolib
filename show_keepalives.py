@@ -24,7 +24,7 @@ s.send(req)
 s.settimeout(60 * 60)
 
 while True:
-    hdr, payload = get_next_hdr_payload()
+    hdr, payload = get_next_hdr_payload(s)
     if hdr.msg_type == message_type(message_type_enum.keepalive):
         keepalive = message_keepalive.parse_payload(hdr, payload)
         print(keepalive)
