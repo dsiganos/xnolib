@@ -202,11 +202,9 @@ class message_header:
             return True
 
     def __str__(self):
-        str = "NetID:%s, " % self.net_id
-        str += "VerMax:%s, " % self.ver_max
-        str += "VerUsing:%s, " % self.ver_using
-        str += "VerMin:%s, " % self.ver_min
-        str += "MsgType:%s, " % self.msg_type
+        str  = "NetID: %s, " % self.net_id
+        str += "VerMaxUsingMin: %s/%s/%s, " % (self.ver_max, self.ver_using, self.ver_min)
+        str += "MsgType: %s, " % self.msg_type
         str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "big")).decode("utf-8").upper()
         return str
 
