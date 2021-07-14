@@ -1039,13 +1039,15 @@ class nano_account:
         return string
 
 
-def read_socket(socket, bytes):
+def read_socket(socket, numbytes):
     try:
         data = b''
-        while len(data) != bytes:
+        while len(data) < numbytes:
             data += socket.recv(1)
         return data
     except:
+        print('read_socket] Exception whilst waiting for %d bytes')
+        print('  %s bytes in buffer: %s "%s"' % (len(data), binascii.hexlify(data), data))
         return None
 
 
