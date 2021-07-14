@@ -56,6 +56,15 @@ class InvalidBlockHash(Exception): pass
 class ProcessingErrorAccountAlreadyOpen(Exception): pass
 
 
+class CommsError(Exception): pass
+
+
+def parse_ipv6(data):
+    if len(data) != 16:
+        raise ParseErrorBadIPv6()
+    return ipaddress.IPv6Address(data)
+
+
 def account_id_to_name(acc_id_bin):
     assert (len(acc_id_bin) == 32)
 
@@ -75,6 +84,33 @@ def account_id_to_name(acc_id_bin):
 def get_all_dns_addresses(url):
     result = dns.resolver.resolve(url, 'A')
     return [x.to_text() for x in result]
+
+
+def confirm_req_size(block_type, i_count):
+    if block_type == message_type_enum.not_a_block:
+        size = 64 * i_count
+    else:
+        assert(i_count == 1)
+        size = block_length_by_type.get(block_type)
+    return size
+
+
+def confirm_ack_size(block_type, i_count):
+    size = 104
+    if block_type == message_type_enum.not_a_block:
+        size += i_count * 32
+    else:
+        assert(i_count == 1)
+        size += block_length_by_type.get(block_type)
+    return size
+
+def node_id_handshake_size(is_query, is_response):
+    size = 0
+    if is_query:
+        size += 32
+    if is_response:
+        size += 32 + 64
+    return size
 
 
 # this function expects account to be a 32 byte bytearray
@@ -151,7 +187,7 @@ class network_id:
 
 class message_type:
     def __init__(self, num):
-        if not (num in range(2, 14)):
+        if not (num in range(0, 14)):
              raise ParseErrorBadMessageType()
         self.type = num
 
@@ -186,6 +222,24 @@ class message_header:
         header += self.ext.to_bytes(2, "little")
         return header
 
+    def is_handshake_query(self):
+        return self.ext& 1
+
+    def is_handshake_response(self):
+        return self.ext& 2
+
+    def count_get(self):
+        COUNT_MASK = 0xf000
+        return (self.ext & COUNT_MASK) >> 12
+
+    def block_type(self):
+        BLOCK_TYPE_MASK = 0x0f00
+        return (self.ext & BLOCK_TYPE_MASK) >> 8
+
+    def block_type(self):
+        BLOCK_TYPE_MASK = 0x0f00
+        return (self.ext & BLOCK_TYPE_MASK) >> 8
+
     @classmethod
     def parse_header(cls, data):
         assert(len(data) == 8)
@@ -196,6 +250,49 @@ class message_header:
         msg_type = message_type(data[5])
         ext = int.from_bytes(data[6:], "little")
         return message_header(net_id, versions, msg_type, ext)
+
+    def telemetry_ack_size(self):
+        telemetry_size_mask = 0x3ff
+        return self.ext & telemetry_size_mask
+
+    def payload_length_bytes(self):
+        if self.msg_type == message_type(message_type_enum.bulk_pull):
+            print('we do not yet support a bulk pull')
+            assert(0)
+
+        elif self.msg_type == message_type(message_type_enum.bulk_push):
+            return 0
+
+        elif self.msg_type == message_type(message_type_enum.telemetry_req):
+            return 0
+
+        elif self.msg_type == message_type(message_type_enum.frontier_req):
+            return 32 + 4 + 4
+
+        elif self.msg_type == message_type(message_type_enum.bulk_pull_account):
+            return 32 + 16 + 1
+
+        elif self.msg_type == message_type(message_type_enum.keepalive):
+            return 8 * (16 + 2);
+
+        elif self.msg_type == message_type(message_type_enum.publish):
+            return block_length_by_type(self.block_type())
+
+        elif self.msg_type == message_type(message_type_enum.confirm_ack):
+            return confirm_ack_size(self.block_type(), self.count_get());
+
+        elif self.msg_type == message_type(message_type_enum.confirm_req):
+            return confirm_req_size(self.block_type(), self.count_get());
+
+        elif self.msg_type == message_type(message_type_enum.node_id_handshake):
+            return node_id_handshake_size(self.is_handshake_query(), self.is_handshake_response());
+
+        elif self.msg_type == message_type(message_type_enum.telemetry_ack):
+            return self.telemetry_ack_size()
+
+        else:
+            print('unhandled message type: %s' % self.msg_type)
+            assert(0);
 
     def __eq__(self, other):
         if str(self) == str(other):
@@ -247,53 +344,16 @@ class peer:
         return hash((self.ip, self.port))
 
 
-# Creates, stores and manages all of the peer objects (from the raw data)
-class peers():
-    def __init__(self, peers):
-        self.peers = peers
-
-    @classmethod
-    def parse_peers(cls, rawdata):
-        if len(rawdata) % 18 != 0:
-            raise ParseErrorBadMessageBody()
-        no_of_peers = int(len(rawdata) / 18)
-        start_index = 0
-        end_index = 18
-        peers_list = []
-        for i in range(0, no_of_peers):
-            ip = ipv6addresss.parse_address(rawdata[start_index:end_index - 2])
-            port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
-            p = peer(ip, port)
-            peers_list.append(p)
-            start_index = end_index
-            end_index += 18
-        return peers(peers_list)
-
-    def serialise(self):
-        data = b""
-        for i in range(0, len(self.peers)):
-            data += self.peers[i].serialise()
-        return data
-
-    def __eq__(self, other):
-        if str(self) == str(other):
-            return True
-
-    def __str__(self):
-        string = ""
-        for i in range(0, len(self.peers)):
-            string += "Peer %d:" % (i + 1)
-            string += str(self.peers[i])
-            string += "\n"
-        return string
-
-
 class message_keepalive:
-    def __init__(self, net_id):
-        self.header = message_header(net_id, [18, 18, 18], message_type(2), 0)
-        self.peers = []
-        for i in range(0, 8):
-            self.peers.append(peer())
+    def __init__(self, hdr, peers=None):
+        self.header = hdr
+        self.header.msg_type = message_type(message_type_enum.keepalive)
+        if peers == None:
+            self.peers = []
+            for i in range(0, 8):
+                self.peers.append(peer())
+        else:
+            self.peers = peers
 
     def serialise(self):
         data = self.header.serialise_header()
@@ -308,6 +368,51 @@ class message_keepalive:
         if str(self) == str(other):
             return True
         return False
+
+    @classmethod
+    def parse_payload(cls, hdr, rawdata):
+        peers = message_keepalive.peers.parse_peers(rawdata)
+        return message_keepalive(hdr, peers)
+
+    # Creates, stores and manages all of the peer objects (from the raw data)
+    class peers:
+        def __init__(self, peers):
+            self.peers = peers
+
+        @classmethod
+        def parse_peers(cls, rawdata):
+            if len(rawdata) % 18 != 0:
+                raise ParseErrorBadMessageBody()
+            no_of_peers = int(len(rawdata) / 18)
+            start_index = 0
+            end_index = 18
+            peers_list = []
+            for i in range(0, no_of_peers):
+                ip = parse_ipv6(rawdata[start_index:end_index - 2])
+                port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
+                p = peer(ip, port)
+                peers_list.append(p)
+                start_index = end_index
+                end_index += 18
+            return message_keepalive.peers(peers_list)
+
+        def serialise(self):
+            data = b""
+            for i in range(0, len(self.peers)):
+                data += self.peers[i].serialise()
+            return data
+
+        def __eq__(self, other):
+            if str(self) == str(other):
+                return True
+
+        def __str__(self):
+            string = ""
+            for i in range(0, len(self.peers)):
+                string += "Peer %d:" % (i + 1)
+                string += str(self.peers[i])
+                string += "\n"
+            return string
 
 
 class message_bulk_pull:

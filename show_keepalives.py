@@ -1,30 +1,47 @@
+#!/bin/env python3
 import time
+import socket
+import random
 
 from nanolib import *
 
-handshake_exchange_data = {
-    "response_vk": binascii.unhexlify('9d17bf0a2571377c4a1d10eb1330266a5d8c6898bb7dfc487242e419ac9852e0'),
-    "response_sig": binascii.unhexlify('eb52b3182359562259f4634287e9b4857c86339e18d8cfdb7b45237662993d1448673bf3075771744ecb62e14774f267ed26f6e4c1913eb571bb8b2e3b8fd909'),
-    "cookie": binascii.unhexlify('05851093f35a90be9f1c8a48539d70b48d1a2f2787a1158904d15c38f86188e2')
-}
+
+def get_next_hdr_payload():
+    # read and parse header
+    data = read_socket(s, 8)
+    if data is None:
+        raise CommsError()
+    header = message_header.parse_header(data)
+
+    # we can determine the size of the payload from the header
+    size = header.payload_length_bytes()
+
+    # read and parse payload
+    data = read_socket(s, size)
+    return header, data
 
 
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-s.connect((peeraddr, ctx['peerport']))
 s.settimeout(3)
+s.connect((peeraddr, ctx['peerport']))
 
 perform_handshake_exchange(s)
 
-keepalive = message_keepalive(ctx['net_id'])
+# send a keepalive, this is not necessary, just doing it as an example
+hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.keepalive), 0)
+keepalive = message_keepalive(hdr)
 req = keepalive.serialise()
 s.send(req)
-time.sleep(5)
-print(s.recv(1000))
-print(s.recv(1000))
-print(s.recv(1000))
-print(s.recv(1000))
-print(s.recv(1000))
-print(s.recv(1000))
 
+# now we are waiting for keepalives, so set a long timeout (60 minutes)
+s.settimeout(60 * 60)
+
+while True:
+    hdr, payload = get_next_hdr_payload()
+    if hdr.msg_type == message_type(message_type_enum.keepalive):
+        keepalive = message_keepalive.parse_payload(hdr, payload)
+        print(keepalive)
+    else:
+        print(hdr)

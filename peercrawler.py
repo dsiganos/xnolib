@@ -186,12 +186,6 @@ def get_next_peers(s):
     return read_socket(s, 144)
 
 
-def parse_ipv6(data):
-    if len(data) != 16:
-        raise ParseErrorBadIPv6()
-    return ipaddress.IPv6Address(data)
-
-
 def main():
     ctx = livectx
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
