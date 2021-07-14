@@ -364,7 +364,7 @@ class message_keepalive:
     def __init__(self, hdr, peers=None):
         self.header = hdr
         self.header.msg_type = message_type(message_type_enum.keepalive)
-        if peers == None:
+        if peers is None:
             self.peers = []
             for i in range(0, 8):
                 self.peers.append(peer())
