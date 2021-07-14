@@ -371,7 +371,10 @@ class message_keepalive:
         return data
 
     def __str__(self):
-        return '%s\n%s' % (self.header, self.peers)
+        string = '%s\n' % self.header
+        for p in self.peers:
+            string += "%s\n" % str(p)
+        return string
 
     def __eq__(self, other):
         if str(self) == str(other):
@@ -380,48 +383,20 @@ class message_keepalive:
 
     @classmethod
     def parse_payload(cls, hdr, rawdata):
-        peers = message_keepalive.peers.parse_peers(rawdata)
-        return message_keepalive(hdr, peers)
+        assert(len(rawdata) % 18 == 0)
+        no_of_peers = int(len(rawdata) / 18)
+        start_index = 0
+        end_index = 18
+        peers_list = []
+        for i in range(0, no_of_peers):
+            ip = parse_ipv6(rawdata[start_index:end_index - 2])
+            port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
+            p = peer(ip, port)
+            peers_list.append(p)
+            start_index = end_index
+            end_index += 18
+        return message_keepalive(hdr, peers_list)
 
-    # Creates, stores and manages all of the peer objects (from the raw data)
-    class peers:
-        def __init__(self, peers):
-            self.peers = peers
-
-        @classmethod
-        def parse_peers(cls, rawdata):
-            if len(rawdata) % 18 != 0:
-                raise ParseErrorBadMessageBody()
-            no_of_peers = int(len(rawdata) / 18)
-            start_index = 0
-            end_index = 18
-            peers_list = []
-            for i in range(0, no_of_peers):
-                ip = parse_ipv6(rawdata[start_index:end_index - 2])
-                port = int.from_bytes(rawdata[end_index - 2:end_index], "little")
-                p = peer(ip, port)
-                peers_list.append(p)
-                start_index = end_index
-                end_index += 18
-            return message_keepalive.peers(peers_list)
-
-        def serialise(self):
-            data = b""
-            for i in range(0, len(self.peers)):
-                data += self.peers[i].serialise()
-            return data
-
-        def __eq__(self, other):
-            if str(self) == str(other):
-                return True
-
-        def __str__(self):
-            string = ""
-            for i in range(0, len(self.peers)):
-                string += "Peer %d:" % (i + 1)
-                string += str(self.peers[i])
-                string += "\n"
-            return string
 
 
 class message_bulk_pull:
