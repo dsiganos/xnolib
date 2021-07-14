@@ -5,11 +5,12 @@ from nanolib import *
 peer_list = []
 addresses = get_all_dns_addresses("peering.nano.org")
 for addr in addresses:
-    peer_list.append(peer_address(ipaddress.IPv4Address(addr), 7075))
+    addr = '::ffff:' + addr
+    peer_list.append(peer_address(ipaddress.IPv6Address(addr), 7075))
 
 for p in peer_list:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((str(p.get_ipv4()), p.port))
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.connect((str(p.ip), p.port))
     manager = blocks_manager()
     bulk_pull = message_bulk_pull(livectx["genesis_pub"])
     s.send(bulk_pull.serialise())

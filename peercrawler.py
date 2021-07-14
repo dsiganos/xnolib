@@ -43,11 +43,10 @@ class peer_manager:
     def crawl(self):
         for n in self.nodes:
             for p in copy.copy(n.get_peers()):
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
                 s.settimeout(30)
-                print(p)
                 try:
-                    s.connect((str(p.get_ipv4()), p.port))
+                    s.connect((str(p.ip), p.port))
                     perform_handshake_exchange(s)
                     peers = get_next_peers(s)
                     self.parse_and_add_peers(peers, p)
@@ -188,8 +187,9 @@ def get_next_peers(s):
 
 def main():
     ctx = livectx
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+    peeraddr = '::ffff:' + peeraddr
     s.connect((peeraddr, ctx['peerport']))
     s.settimeout(3600)
 
@@ -197,7 +197,7 @@ def main():
 
     manager = peer_manager()
     recvd_peers = get_next_peers(s)
-    manager.parse_and_add_peers(recvd_peers, peer(ipaddress.IPv4Address(peeraddr), ctx["peerport"]))
+    manager.parse_and_add_peers(recvd_peers, peer(ipaddress.IPv6Address(peeraddr), ctx["peerport"]))
     manager.crawl()
 
 

@@ -10,8 +10,9 @@ msg += block.serialise(True)
 print(len(msg))
 
 ctx = livectx
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+peeraddr = '::ffff:' + peeraddr
 s.connect((peeraddr, ctx['peerport']))
 s.settimeout(2)
 perform_handshake_exchange(s)

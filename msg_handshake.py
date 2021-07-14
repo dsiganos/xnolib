@@ -1,11 +1,14 @@
+import socket
+import random
+
 from nanolib import *
 
 
 ctx = livectx
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+peeraddr = '::ffff:' + peeraddr
+s.settimeout(3)
 s.connect((peeraddr, ctx['peerport']))
-s.settimeout(2)
 
 perform_handshake_exchange(s)
-

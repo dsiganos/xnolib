@@ -48,11 +48,14 @@ def read_frontier_response(s):
 
 
 ctx = livectx
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
+peeraddr = '::ffff:' + peeraddr
+s.settimeout(3)
 s.connect((peeraddr, ctx['peerport']))
-print('Connected to %s:%s' % s.getpeername())
-s.settimeout(2)
+print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
+
 frontier = frontier_request()
 s.send(frontier.serialise())
 frontiers = read_frontier_response(s)
