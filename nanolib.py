@@ -302,9 +302,7 @@ class message_keepalive:
         return data
 
     def __str__(self):
-        string = str(self.header)
-        string += "\n" + str(self.peers)
-        return string
+        return '%s\n%s' % (self.header, self.peers)
 
     def __eq__(self, other):
         if str(self) == str(other):
