@@ -6,21 +6,6 @@ import random
 from nanolib import *
 
 
-def get_next_hdr_payload():
-    # read and parse header
-    data = read_socket(s, 8)
-    if data is None:
-        raise CommsError()
-    header = message_header.parse_header(data)
-
-    # we can determine the size of the payload from the header
-    size = header.payload_length_bytes()
-
-    # read and parse payload
-    data = read_socket(s, size)
-    return header, data
-
-
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))

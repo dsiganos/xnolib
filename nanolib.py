@@ -1288,6 +1288,23 @@ def perform_handshake_exchange(s):
         raise HandshakeExchangeFail()
 
 
+# wait for the next message, parse the header but not the payload
+# the header is retruned as an object and the payload as raw bytes
+def get_next_hdr_payload():
+    # read and parse header
+    data = read_socket(s, 8)
+    if data is None:
+        raise CommsError()
+    header = message_header.parse_header(data)
+
+    # we can determine the size of the payload from the header
+    size = header.payload_length_bytes()
+
+    # read and parse payload
+    data = read_socket(s, size)
+    return header, data
+
+
 def block_length_by_type(blktype):
     lengths = {
         2: 152,
