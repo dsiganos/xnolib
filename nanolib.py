@@ -173,6 +173,7 @@ class message_header:
         self.ver_using = versions[1]
         self.ver_min = versions[2]
         self.msg_type = msg_type
+        assert isinstance(self.msg_type, message_type)
 
     def serialise_header(self):
         header = b""
