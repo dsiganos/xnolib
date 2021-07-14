@@ -156,7 +156,7 @@ class message_type:
         self.type = num
 
     def __str__(self):
-        return str(self.type)
+        return '%s(%s)' % (str(self.type), message_type_enum_to_str(self.type))
 
     def __eq__(self, other):
         if not isinstance(other, message_type):
