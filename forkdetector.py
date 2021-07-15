@@ -10,6 +10,7 @@ for addr in addresses:
 
 for p in peer_list:
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.connect((str(p.ip), p.port))
     manager = blocks_manager()
     bulk_pull = message_bulk_pull(livectx["genesis_pub"])

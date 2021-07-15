@@ -11,6 +11,7 @@ print(len(msg))
 
 ctx = livectx
 s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
 peeraddr = '::ffff:' + peeraddr
 s.connect((peeraddr, ctx['peerport']))

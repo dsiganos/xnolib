@@ -12,6 +12,7 @@ class telemetry_req:
 
 ctx = livectx
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
 peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
 s.connect((peeraddr, ctx['peerport']))
 s.settimeout(2)

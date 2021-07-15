@@ -44,6 +44,7 @@ class peer_manager:
         for n in self.nodes:
             for p in copy.copy(n.get_peers()):
                 s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
                 s.settimeout(30)
                 try:
                     s.connect((str(p.ip), p.port))
@@ -188,6 +189,7 @@ def get_next_peers(s):
 def main():
     ctx = livectx
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
     peeraddr = '::ffff:' + peeraddr
     s.connect((peeraddr, ctx['peerport']))
