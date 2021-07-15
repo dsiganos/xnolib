@@ -402,6 +402,7 @@ class message_keepalive:
 class message_bulk_pull:
     def __init__(self, hdr, start, finish=None, count=None):
         self.header = hdr
+        self.count = count
         self.public_key = binascii.unhexlify(start)
         if finish is not None:
             self.finish = binascii.unhexlify(finish)
@@ -409,7 +410,6 @@ class message_bulk_pull:
             self.finish = (0).to_bytes(32, "big")
         if count is not None:
             assert(hdr.ext == 1)
-            self.count = count
 
     def serialise(self):
         data = self.header.serialise_header()
@@ -424,6 +424,7 @@ class message_bulk_pull:
         data = (0).to_bytes(1, "big")
         data += self.count.to_bytes(4, "little")
         data += (0).to_bytes(3, "big")
+        return data
 
 
 class handshake_query:
@@ -918,6 +919,7 @@ class blocks_manager:
         self.unprocessed_blocks = []
         self.genesis_block = None
         self.create_genesis_account()
+        #TODO: Make a method which can get the next undiscovered account
 
     def create_genesis_account(self):
         open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
@@ -928,6 +930,17 @@ class blocks_manager:
         self.accounts.append(genesis_account)
         self.processed_blocks.append(open_block)
         self.genesis_block = open_block
+
+    def get_next_account(self):
+        for b in self.processed_blocks:
+            if not isinstance(b, block_send):
+                continue
+            else:
+                if not self.account_exists(b.destination):
+                    if b.destination == b"\x05\x9fh\xaa\xb2\x9d\xe0\xd3\xa2tCb\\~\xa9\xcd\xdbe\x17\xa8\xb7o\xe3w'\xefjMv\x83*\xd5":
+                        continue
+                    else:
+                        return b.destination
 
     def process(self, block):
         successful = False
