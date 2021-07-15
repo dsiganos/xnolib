@@ -931,18 +931,14 @@ class blocks_manager:
         self.processed_blocks.append(open_block)
         self.genesis_block = open_block
 
-    def get_next_account(self):
+    def next_acc_iter(self):
         for b in self.processed_blocks:
             if not isinstance(b, block_send):
                 continue
             else:
                 if not self.account_exists(b.destination):
-                    if b.destination == b"\x05\x9fh\xaa\xb2\x9d\xe0\xd3\xa2tCb\\~\xa9\xcd\xdbe\x17\xa8\xb7o\xe3w'\xefjMv\x83*\xd5":
-                        continue
-                    elif b.destination == b'\x00' * 32:
-                        continue
-                    else:
-                        return b.destination
+                    yield b.destination
+        yield None
 
     def process(self, block):
         successful = False
