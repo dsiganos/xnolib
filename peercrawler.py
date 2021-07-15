@@ -71,7 +71,7 @@ class peer_manager:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--forever', action='store_true', default=True,
-                        help='account index to create')
+                        help='loop forever looking for new peers')
     parser.add_argument('-d', '--delay', type=int, default=300,
                         help='delay between crawls in seconds')
     return parser.parse_args()
