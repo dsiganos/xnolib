@@ -944,11 +944,27 @@ class blocks_manager:
         successful = False
         if isinstance(block, block_open):
             successful = self.process_block_open(block)
+        elif isinstance(block, block_state):
+            successful = self.process_block_state(block)
         else:
             successful = self.process_block(block)
 
         if successful:
             self.process_unprocessed_blocks()
+
+    def process_block_state(self, block):
+        acc = self.find_nano_account(block.get_account())
+        if acc is None:
+            self.unprocessed_blocks.append(block)
+            return False
+        prev = self.find_prev_block(block)
+        if prev is None:
+            self.unprocessed_blocks.append(block)
+            return False
+        prev.ancillary["next"] = binascii.unhexlify(block.hash())
+        acc.add_block(block)
+        self.processed_blocks.append(block)
+        return True
 
     def process_block_open(self, block):
         if not valid_block(block):
@@ -1042,6 +1058,8 @@ class blocks_manager:
         return False
 
     def find_blocks_account(self, block):
+        if block.get_account() is not None:
+            return block.get_account()
         for b in self.processed_blocks:
             if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
                 assert(b.get_account() is not None)
