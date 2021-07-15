@@ -400,19 +400,30 @@ class message_keepalive:
 
 
 class message_bulk_pull:
-    def __init__(self, hdr, start, finish=None):
+    def __init__(self, hdr, start, finish=None, count=None):
         self.header = hdr
         self.public_key = binascii.unhexlify(start)
         if finish is not None:
             self.finish = binascii.unhexlify(finish)
         else:
             self.finish = (0).to_bytes(32, "big")
+        if count is not None:
+            assert(hdr.ext == 1)
+            self.count = count
 
     def serialise(self):
         data = self.header.serialise_header()
         data += self.public_key
         data += self.finish
+        if self.count is not None:
+            data += self.generate_extended_params()
         return data
+
+    def generate_extended_params(self):
+        assert(self.count is not None)
+        data = (0).to_bytes(1, "big")
+        data += self.count.to_bytes(4, "little")
+        data += (0).to_bytes(3, "big")
 
 
 class handshake_query:
