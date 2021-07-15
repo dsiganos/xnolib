@@ -960,6 +960,11 @@ class blocks_manager:
         else:
             if not self.account_exists(block.get_account()):
                 account = nano_account(block)
+                bal = self.find_balance(block)
+                if bal is None:
+                    self.unprocessed_blocks.append(block)
+                    return False
+                block.ancillary["balance"] = bal
                 self.accounts.append(account)
                 self.processed_blocks.append(block)
                 return True
@@ -1017,7 +1022,7 @@ class blocks_manager:
         if isinstance(block, block_open):
             for b in self.processed_blocks:
                 if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
-                    return b.ancillary["amount_sent"].to_bytes(16, "big")
+                    return b.ancillary["amount_sent"]
         elif isinstance(block, block_receive):
             before = int.from_bytes(self.find_prev_block(block).get_balance, "big")
             for b in self.processed_blocks:
