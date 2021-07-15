@@ -1037,7 +1037,7 @@ class blocks_manager:
                 if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
                     return b.ancillary["amount_sent"]
         elif isinstance(block, block_receive):
-            before = int.from_bytes(self.find_prev_block(block).get_balance, "big")
+            before = int.from_bytes(self.find_prev_block(block).get_balance(), "big")
             for b in self.processed_blocks:
                 if b.hash() == binascii.hexlify(block.source).decode("utf-8").upper():
                     amount = int.from_bytes(b.ancillary["amount_sent"], "big")
