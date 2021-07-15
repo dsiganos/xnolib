@@ -6,7 +6,7 @@ peer_list = []
 addresses = get_all_dns_addresses("peering.nano.org")
 for addr in addresses:
     addr = '::ffff:' + addr
-    peer_list.append(peer_address(ipaddress.IPv6Address(addr), 7075))
+    peer_list.append(peer(ipaddress.IPv6Address(addr), 7075))
 
 for p in peer_list:
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)

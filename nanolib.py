@@ -939,6 +939,8 @@ class blocks_manager:
                 if not self.account_exists(b.destination):
                     if b.destination == b"\x05\x9fh\xaa\xb2\x9d\xe0\xd3\xa2tCb\\~\xa9\xcd\xdbe\x17\xa8\xb7o\xe3w'\xefjMv\x83*\xd5":
                         continue
+                    elif b.destination == b'\x00' * 32:
+                        continue
                     else:
                         return b.destination
 

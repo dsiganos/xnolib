@@ -32,3 +32,6 @@ while next_account is not None:
     next_account = manager.get_next_account()
     print(next_account)
     count += 1
+
+print(manager)
+print(manager.str_processed_blocks())

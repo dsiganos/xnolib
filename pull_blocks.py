@@ -27,4 +27,4 @@ while len(blocks) != 0:
     manager.process(block)
 
 print(manager)
-# print(manager.str_processed_blocks())
+print(manager.str_processed_blocks())
