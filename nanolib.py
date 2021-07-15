@@ -312,10 +312,13 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class peer:
-    def __init__(self, ip = ipaddress.IPv6Address(0), port = 0):
+    def __init__(self, ip = ipaddress.IPv6Address(0), port = 0, score = -1):
         assert isinstance(ip, ipaddress.IPv6Address)
         self.ip = ip
         self.port = port
+
+        # sideband info, not used for equality and hashing
+        self.score = score
 
     def serialise(self):
         data = b""
@@ -340,16 +343,10 @@ class peer:
         return peer(ip, port)
 
     def __str__(self):
-        string = "["
-        string += str(self.ip) + "]:"
-        string += str(self.port)
-        return string
-
-    def __repr__(self):
-        return str(self)
+        return '%s:%s (score:%s)' % (self.ip, self.port, self.score)
 
     def __eq__(self, other):
-        return str(self) == str(other)
+        return self.ip == other.ip and self.port == other.port
 
     def __hash__(self):
         return hash((self.ip, self.port))
@@ -1193,9 +1190,14 @@ def read_socket(socket, numbytes):
         while len(data) < numbytes:
             data += socket.recv(1)
         return data
-    except:
+    except socket.timeout:
+        print('read_socket] Timeout whilst waiting for %d bytes')
+        print('  %s bytes in buffer: %s "%s"' % (len(data), binascii.hexlify(data), data))
+        return None
+    except socket.error as error:
         print('read_socket] Exception whilst waiting for %d bytes')
         print('  %s bytes in buffer: %s "%s"' % (len(data), binascii.hexlify(data), data))
+        print(error)
         return None
 
 
@@ -1296,7 +1298,6 @@ def valid_block(block):
 
 
 def perform_handshake_exchange(s):
-    # TODO: Remove print statements after everything is completed
     msg_handshake = handshake_query()
     s.send(msg_handshake.serialise())
     try:
