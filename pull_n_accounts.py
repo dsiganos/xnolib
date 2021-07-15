@@ -5,9 +5,9 @@ from nanolib import *
 
 
 def valid_account(acc):
-    if acc == b"\x05\x9fh\xaa\xb2\x9d\xe0\xd3\xa2tCb\\~\xa9\xcd\xdbe\x17\xa8\xb7o\xe3w'\xefjMv\x83*\xd5":
-        return False
-    elif acc == b'\x00' * 32:
+    # if acc == b"\x05\x9fh\xaa\xb2\x9d\xe0\xd3\xa2tCb\\~\xa9\xcd\xdbe\x17\xa8\xb7o\xe3w'\xefjMv\x83*\xd5":
+    #     return False
+    if acc == b'\x00' * 32:
         return False
     return True
 
@@ -31,7 +31,7 @@ manager = blocks_manager()
 next_account = binascii.unhexlify(ctx["genesis_pub"])
 
 acc_iter = manager.next_acc_iter()
-count = 1
+count = 0
 while next_account is not None:
     if count == 10:
         break
@@ -43,6 +43,7 @@ while next_account is not None:
         block = blocks.pop()
         manager.process(block)
     next_account = next(acc_iter)
+    print(next_account)
     while not valid_account(next_account):
         next_account = next(acc_iter)
         print(next_account)
@@ -50,5 +51,6 @@ while next_account is not None:
     print("Valid account!")
     count += 1
 
-
 print(manager)
+
+test = b'\tk\xce\x88\x9e\xbd\xf7\xef\xeb\x11\x13D\xd9\xc3\xba\xba-n\x82?<\xb01l\x8a\xf6i\x1c\xc8\r79'
