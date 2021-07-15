@@ -76,9 +76,9 @@ def account_id_to_name(acc_id_bin):
     burn = b'\x00' * 32
 
     named_accounts = {
-        genesis_live : 'genesis live',
-        genesis_beta : 'genesis beta',
-        burn : 'burn',
+        genesis_live: 'genesis live',
+        genesis_beta: 'genesis beta',
+        burn: 'burn',
     }
 
     return named_accounts.get(acc_id_bin, '')
@@ -400,14 +400,18 @@ class message_keepalive:
 
 
 class message_bulk_pull:
-    def __init__(self, hdr, block_hash):
+    def __init__(self, hdr, start, finish=None):
         self.header = hdr
-        self.public_key = binascii.unhexlify(block_hash)
+        self.public_key = binascii.unhexlify(start)
+        if finish is not None:
+            self.finish = binascii.unhexlify(finish)
+        else:
+            self.finish = (0).to_bytes(32, "big")
 
     def serialise(self):
         data = self.header.serialise_header()
         data += self.public_key
-        data += (0).to_bytes(32, "big")
+        data += self.finish
         return data
 
 
