@@ -1342,7 +1342,7 @@ def get_account_blocks(s, account):
         account = binascii.hexlify(account).decode("utf-8")
     bulk_pull = message_bulk_pull(hdr, account)
     s.send(bulk_pull.serialise())
-    return read_blocks_from_socket(s)
+    return read_all_blocks_from_socket(s)
 
 
 def block_length_by_type(blktype):
