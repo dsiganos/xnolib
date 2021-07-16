@@ -79,12 +79,14 @@ def account_id_to_name(acc_id_bin):
 
     genesis_live = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
     genesis_beta = binascii.unhexlify('259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A')
+    dev_fund     = binascii.unhexlify('42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279')
     burn = b'\x00' * 32
 
     named_accounts = {
         genesis_live: 'genesis live',
         genesis_beta: 'genesis beta',
-        burn: 'burn',
+        dev_fund:     'dev fund',
+        burn:         'burn',
     }
 
     return named_accounts.get(acc_id_bin, '')
