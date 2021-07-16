@@ -583,13 +583,14 @@ class block_send:
             next = self.ancillary["next"]
         if self.ancillary["amount_sent"] is not None:
             amount = int.from_bytes(self.ancillary["amount_sent"], "big")
+            amount = amount/(10**30)
         else:
             amount = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
-        string += "Amount Sent: %d" % amount
+        string += "Amount Sent: %f" % amount
         return string
 
     def serialise(self, include_block_type):
@@ -605,12 +606,14 @@ class block_send:
 
 
     def __str__(self):
+        balance = int.from_bytes(self.balance, "big")
+        balance = balance/(10**30)
         string = "------------- Block Send -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Dest: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
         string += "      %s\n" % get_account_id(self.destination)
-        string += "Bal:  %d\n" % int(self.balance.hex(), 16)
+        string += "Bal:  %f\n" % balance
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
         string += self.str_ancillary_data()
@@ -656,13 +659,14 @@ class block_receive:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
             balance = int.from_bytes(self.ancillary["balance"], "big")
+            balance = balance / (10 ** 30)
         else:
             balance = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
-        string += "Balance: %d\n" % balance
+        string += "Balance: %f\n" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -725,12 +729,13 @@ class block_open:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
             balance = int.from_bytes(self.ancillary["balance"], "big")
+            balance = balance / (10**30)
         else:
             balance = -1
         string = ""
         string += "Prev: %s\n" % previous
         string += "Next: %s\n" % next
-        string += "Balance: %d\n" % balance
+        string += "Balance: %f\n" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -812,13 +817,14 @@ class block_change:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
             balance = int.from_bytes(self.ancillary["balance"], "big")
+            balance = balance / (10 ** 30)
         else:
             balance = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
-        string += "Balance: %d" % balance
+        string += "Balance: %f" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -897,13 +903,15 @@ class block_state:
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
+        balance = int.from_bytes(self.balance, "big")
+        balance = balance / (10**30)
         string = "------------- Block State -------------\n"
         string += "Hash: %s\n" % self.hash()
         string += "Acc:  %s\n" % hexacc
         string += "      %s\n" % get_account_id(self.account)
         string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
         string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Bal:  %d\n" % int(self.balance.hex(), 16)
+        string += "Bal:  %f\n" % balance
         string += "Link: %s\n" % binascii.hexlify(self.link).decode("utf-8").upper()
         string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
         string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
