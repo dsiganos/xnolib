@@ -69,6 +69,21 @@ class peer_manager:
             print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
             self.get_peers_from_peer(p)
 
+    def crawl(self, ctx, forever, delay):
+        ipv4_addresses = get_all_dns_addresses(ctx['peeraddr'])
+        initial_peers = [peer(ipaddress.IPv6Address('::ffff:' + a), ctx['peerport']) for a in ipv4_addresses]
+
+        self.add_peers(initial_peers)
+        print(self)
+
+        self.crawl_once()
+        print(self)
+
+        while forever:
+            time.sleep(delay)
+            self.crawl_once()
+            print(self)
+
     def __str__(self):
         with self.mutex:
             s = '---------- Start of Manager peers (%s peers) ----------\n' % len(self.peers)
@@ -87,35 +102,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def crawl(ctx, forever, delay):
-    ipv4_addresses = get_all_dns_addresses(ctx['peeraddr'])
-    peers = [peer(ipaddress.IPv6Address('::ffff:' + a), ctx['peerport']) for a in ipv4_addresses]
-
-    peerman = peer_manager(peers)
-    print(peerman)
-
-    peerman.crawl_once()
-    print(peerman)
-
-    while forever:
-        time.sleep(delay)
-        peerman.crawl_once()
-        print(peerman)
-
-    return peerman
-
-
 class peer_crawler_thread(threading.Thread):
     def __init__(self, ctx, forever, delay):
         threading.Thread.__init__(self, daemon=True)
         self.ctx = ctx
         self.forever = forever
         self.delay = delay
-        self.peerman = None
+        self.peerman = peer_manager()
 
     def run(self):
         print('Starting peer crawler in a thread')
-        self.peerman = crawl(self.ctx, self.forever, self.delay)
+        self.peerman.crawl(self.ctx, self.forever, self.delay)
         print('Peer crawler thread ended')
 
 
@@ -128,9 +125,9 @@ def spawn_peer_crawler_thread(ctx, forever, delay):
 def main():
     ctx = livectx
     args = parse_args()
-    crawl(ctx, args.forever, args.delay)
-    while True:
-        time.sleep(1)
+
+    peerman = peer_manager()
+    peerman.crawl(ctx, args.forever, args.delay)
 
 
 if __name__ == "__main__":
