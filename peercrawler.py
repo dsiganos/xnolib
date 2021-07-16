@@ -11,15 +11,17 @@ from nanolib import *
 
 
 class peer_manager:
-    def __init__(self, peers=[]):
+    def __init__(self, peers=[], verbosity=0):
         self.mutex = threading.Lock()
         self.peers = set()
+        self.verbosity = verbosity
         self.add_peers(peers)
 
     def add_peers(self, newpeers):
         with self.mutex:
             for p in newpeers:
-                #print('adding peer %s' % p)
+                if self.verbosity >= 2:
+                    print('adding peer %s' % p)
                 self.peers.add(p)
 
     def get_peers_copy(self):
@@ -36,7 +38,8 @@ class peer_manager:
                 s.connect((str(peer.ip), peer.port))
             except socket.error as error:
                 peer.score = 0
-                #print('Failed to connect to peer %s, error: %s' % (peer, error))
+                if self.verbosity >= 2:
+                    print('Failed to connect to peer %s, error: %s' % (peer, error))
                 return
 
             # connected to peer, do handshake followed by listening for the first keepalive
@@ -59,14 +62,16 @@ class peer_manager:
                 peer.score = 1
 
     def crawl_once(self):
-        print('Starting a peer crawl')
+        if self.verbosity >= 1:
+            print('Starting a peer crawl')
 
         # it is important to take a copy of the peers so that it is not changing as we walk it
         peers_copy = self.get_peers_copy()
         assert len(peers_copy) > 0
 
         for p in peers_copy:
-            print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
+            if self.verbosity >= 1:
+                print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
             self.get_peers_from_peer(p)
 
     def crawl(self, ctx, forever, delay):
@@ -74,15 +79,18 @@ class peer_manager:
         initial_peers = [peer(ipaddress.IPv6Address('::ffff:' + a), ctx['peerport']) for a in ipv4_addresses]
 
         self.add_peers(initial_peers)
-        print(self)
+        if self.verbosity >= 1:
+            print(self)
 
         self.crawl_once()
-        print(self)
+        if self.verbosity >= 1:
+            print(self)
 
         while forever:
             time.sleep(delay)
             self.crawl_once()
-            print(self)
+            if self.verbosity >= 1:
+                print(self)
 
     def __str__(self):
         with self.mutex:
@@ -103,12 +111,12 @@ def parse_args():
 
 
 class peer_crawler_thread(threading.Thread):
-    def __init__(self, ctx, forever, delay):
+    def __init__(self, ctx, forever, delay, verbosity=0):
         threading.Thread.__init__(self, daemon=True)
         self.ctx = ctx
         self.forever = forever
         self.delay = delay
-        self.peerman = peer_manager()
+        self.peerman = peer_manager(verbosity=verbosity)
 
     def run(self):
         print('Starting peer crawler in a thread')
@@ -126,7 +134,7 @@ def main():
     ctx = livectx
     args = parse_args()
 
-    peerman = peer_manager()
+    peerman = peer_manager(verbosity=1)
     peerman.crawl(ctx, args.forever, args.delay)
 
 
