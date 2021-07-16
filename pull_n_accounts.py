@@ -23,10 +23,7 @@ count = 0
 while next_account is not None:
     if count == 10:
         break
-    header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
-    bulk_pull = message_bulk_pull(header, binascii.hexlify(next_account).decode("utf-8"))
-    s.send(bulk_pull.serialise())
-    blocks = read_all_blocks_from_socket(s)
+    blocks = get_account_blocks(s, next_account)
     while len(blocks) != 0:
         block = blocks.pop()
         manager.process(block)
@@ -40,5 +37,3 @@ while next_account is not None:
     count += 1
 
 print(manager)
-
-test = b'\tk\xce\x88\x9e\xbd\xf7\xef\xeb\x11\x13D\xd9\xc3\xba\xba-n\x82?<\xb01l\x8a\xf6i\x1c\xc8\r79'
