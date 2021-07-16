@@ -549,6 +549,7 @@ class confirm_req_hash:
 
 class block_send:
     def __init__(self, prev, dest, bal, sig, work):
+        assert(isinstance(bal, int))
         self.previous = prev
         self.destination = dest
         self.balance = bal
@@ -576,7 +577,7 @@ class block_send:
         data = b"".join([
             self.previous,
             self.destination,
-            self.balance
+            self.balance.to_bytes(16, "big")
         ])
         return blake2b(data, digest_size=32).digest()
 
@@ -592,15 +593,14 @@ class block_send:
         else:
             next = self.ancillary["next"]
         if self.ancillary["amount_sent"] is not None:
-            amount = int.from_bytes(self.ancillary["amount_sent"], "big")
-            amount = amount/(10**30)
+            amount = self.ancillary["amount_sent"] / (10**30)
         else:
             amount = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
-        string += "Amount Sent: %f" % amount
+        string += "Amount Sent: %d" % amount
         return string
 
     def serialise(self, include_block_type):
@@ -609,21 +609,20 @@ class block_send:
             data += (2).to_bytes(1, "big")
         data += self.previous
         data += self.destination
-        data += self.balance
+        data += self.balance.to_bytes(16, "big")
         data += self.signature
         data += self.work
         return data
 
 
     def __str__(self):
-        balance = int.from_bytes(self.balance, "big")
-        balance = balance/(10**30)
+        balance = self.balance / (10**30)
         string = "------------- Block Send -------------\n"
         string += "Hash: %s\n" % hexlify(self.hash())
         string += "Prev: %s\n" % hexlify(self.previous)
         string += "Dest: %s\n" % hexlify(self.destination)
         string += "      %s\n" % get_account_id(self.destination)
-        string += "Bal:  %f\n" % balance
+        string += "Bal:  %d\n" % balance
         string += "Sign: %s\n" % hexlify(self.signature)
         string += "Work: %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
@@ -674,15 +673,14 @@ class block_receive:
         else:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
-            balance = int.from_bytes(self.ancillary["balance"], "big")
-            balance = balance / (10 ** 30)
+            balance = self.ancillary["balance"] / (10 ** 30)
         else:
             balance = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
-        string += "Balance: %f\n" % balance
+        string += "Balance: %d\n" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -750,8 +748,7 @@ class block_open:
         else:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
-            balance = int.from_bytes(self.ancillary["balance"], "big")
-            balance = balance / (10**30)
+            balance = self.ancillary["balance"] / (10 ** 30)
         else:
             balance = -1
         string = ""
@@ -844,15 +841,14 @@ class block_change:
         else:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
-            balance = int.from_bytes(self.ancillary["balance"], "big")
-            balance = balance / (10 ** 30)
+            balance = self.ancillary["balance"] / (10 ** 30)
         else:
             balance = -1
         string = ""
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % account
         string += "Next: %s\n" % next
-        string += "Balance: %f" % balance
+        string += "Balance: %d" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -908,7 +904,7 @@ class block_state:
             self.account,
             self.previous,
             self.representative,
-            self.balance,
+            self.balance.to_bytes(16, "big"),
             self.link
 
         ])
@@ -929,7 +925,7 @@ class block_state:
         data += self.account
         data += self.previous
         data += self.representative
-        data += self.balance
+        data += self.balance.to_bytes(16, "big")
         data += self.link
         data += self.signature
         data += self.work
@@ -937,15 +933,14 @@ class block_state:
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
-        balance = int.from_bytes(self.balance, "big")
-        balance = balance / (10**30)
+        balance = self.balance / (10**30)
         string = "------------- Block State -------------\n"
         string += "Hash: %s\n" % hexlify(self.hash())
         string += "Acc:  %s\n" % hexacc
         string += "      %s\n" % get_account_id(self.account)
         string += "Prev: %s\n" % hexlify(self.previous)
         string += "Repr: %s\n" % hexlify(self.representative)
-        string += "Bal:  %f\n" % balance
+        string += "Bal:  %d\n" % balance
         string += "Link: %s\n" % hexlify(self.link)
         string += "Sign: %s\n" % hexlify(self.signature)
         string += "Work: %s\n" % hexlify(self.work)
@@ -1049,7 +1044,7 @@ class blocks_manager:
         if isinstance(block, block_send):
             amount = self.find_amount_sent(block)
             if amount is not None:
-                block.ancillary["amount_sent"] = amount.to_bytes(16, "big")
+                block.ancillary["amount_sent"] = amount
             else:
                 self.unprocessed_blocks.append(block)
                 return False
@@ -1070,8 +1065,8 @@ class blocks_manager:
         for b in self.processed_blocks:
             if b.hash() == block.get_previous():
                 if b.get_balance() is not None:
-                    before = int.from_bytes(b.get_balance(), "big")
-                    after = int.from_bytes(block.get_balance(), "big")
+                    before = b.get_balance()
+                    after = block.get_balance()
                     amount = before - after
                     return amount
                 else:
@@ -1086,8 +1081,8 @@ class blocks_manager:
             before = int.from_bytes(self.find_prev_block(block).get_balance(), "big")
             for b in self.processed_blocks:
                 if b.hash() == block.source:
-                    amount = int.from_bytes(b.ancillary["amount_sent"], "big")
-                    return (before + amount).to_bytes(16, "big")
+                    amount = b.ancillary["amount_sent"]
+                    return before + amount
         elif isinstance(block, block_change):
             for b in self.processed_blocks:
                 if b.hash() == block.get_previous():
@@ -1234,7 +1229,7 @@ class nano_account:
 
     def __str__(self):
         lastblk = self.get_last_block()
-        balance = int.from_bytes(lastblk.get_balance(), "big")
+        balance = lastblk.get_balance()
         balance = balance / (10**30)
         string = "------------- Nano Account -------------\n"
         string += "Account : %s\n" % hexlify(self.account)
@@ -1265,7 +1260,7 @@ def read_socket(socket, numbytes):
 
 def read_block_send(s):
     data = read_socket(s, 152)
-    block = block_send(data[:32], data[32:64], data[64:80], data[80:144], data[144:][::-1])
+    block = block_send(data[:32], data[32:64], int.from_bytes(data[64:80], "big"), data[80:144], data[144:][::-1])
     return block
 
 
@@ -1289,7 +1284,7 @@ def read_block_change(s):
 
 def read_block_state(s):
     data = read_socket(s, 216)
-    block = block_state(data[:32], data[32:64], data[64:96], data[96:112], data[112:144], data[144:208],
+    block = block_state(data[:32], data[32:64], data[64:96], int.from_bytes(data[96:112], "big"), data[112:144], data[144:208],
                         data[208:])
     return block
 
@@ -1467,7 +1462,7 @@ genesis_block_open = {
     "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
     "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
     "work": b'b\xf0T\x17\xdd?\xb6\x91',
-    "balance": (340282366920938463463374607431768211455).to_bytes(16, "big")
+    "balance": 340282366920938463463374607431768211455
 }
 
 
