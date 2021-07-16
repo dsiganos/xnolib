@@ -951,6 +951,8 @@ class blocks_manager:
         if successful:
             self.process_unprocessed_blocks()
 
+        return successful
+
     def process_block_state(self, block):
         acc = self.find_nano_account(block.get_account())
         if acc is None:
@@ -1109,79 +1111,78 @@ class blocks_manager:
 class nano_account:
     def __init__(self, open_block):
         self.first = open_block
-        self.last = open_block
         self.account = open_block.get_account()
-        self.blocks = [open_block]
+        self.blocks = { open_block.hash(): open_block }
 
     def add_block(self, block):
         # TODO: Block processing required
-        self.blocks.append(block)
-        self.last = block
+        self.blocks[block.hash()] = block
 
-    # This method is used for debugging: checking order
-    def traverse_backwards(self):
-        block = self.blocks[-1]
-        traversal = []
-        while block is not None:
-            traversal.append(self.blocks.index(block))
-            block = self.find_prev(block)
-        return traversal
+#    # This method is used for debugging: checking order
+#    def traverse_backwards(self):
+#        block = self.blocks[-1]
+#        traversal = []
+#        while block is not None:
+#            traversal.append(self.blocks.index(block))
+#            block = self.find_prev(block)
+#        return traversal
 
-    # This method is used for debugging: checking order
-    def traverse_forwards(self):
-        block = self.blocks[0]
-        traversal = []
-        while block is not None:
-            traversal.append(self.blocks.index(block))
-            block = self.find_next(block)
-        return traversal
+#    # This method is used for debugging: checking order
+#    def traverse_forwards(self):
+#        block = self.blocks[0]
+#        traversal = []
+#        while block is not None:
+#            traversal.append(self.blocks.index(block))
+#            block = self.find_next(block)
+#        return traversal
 
     def find_prev(self, block):
-        for b in self.blocks:
-            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
-                return b
-        return None
+        prevhash = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
+        return self.blocks.get(prevhash, None)
 
     def find_next(self, block):
         if block.ancillary["next"] is None:
             return None
-        for b in self.blocks:
-            if b.hash() == binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper():
-                return b
-        return None
+        nexthash = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
+        return self.blocks.get(nexthash, None)
+
+#    def get_last_block(self):
+#        next_block = self.first
+#        while :
+#            next = find_next(next_block)
 
     def str_blocks(self):
         string = ""
-        for b in self.blocks:
+        for b in self.blocks.values():
             string += str(b)
             string += "\n"
         return string
 
-    # Checks if itself is a subset of another account
-    def is_subset(self, account):
-        for b in self.blocks:
-            if b not in account.blocks:
-                return False
-        return True
+#    # Checks if itself is a subset of another account
+#    def is_subset(self, account):
+#        for b in self.blocks:
+#            if b not in account.blocks:
+#                return False
+#        return True
 
-    def check_forks(self):
-        for b1 in self.blocks:
-            for b2 in self.blocks:
-                if b1 == b2:
-                    continue
-                elif b1.previous == b2.previous:
-                    return b1, b2
-        return None, None
+#    def check_forks(self):
+#        for b1 in self.blocks:
+#            for b2 in self.blocks:
+#                if b1 == b2:
+#                    continue
+#                elif b1.previous == b2.previous:
+#                    return b1, b2
+#        return None, None
 
-    def get_balance(self, block):
-        return block.get_balance()
+#    def get_balance(self, block):
+#        return block.get_balance()
 
     def __str__(self):
         string = "------------- Nano Account -------------\n"
         string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
         string += "       : %s\n" % get_account_id(self.account)
         string += "Blocks:  %d\n" % len(self.blocks)
-        string += "Balance: %d\n" % int.from_bytes(self.blocks[-1].get_balance(), "big")
+        #string += "Balance: %d\n" % int.from_bytes(self.blocks[-1].get_balance(), "big")
         return string
 
 

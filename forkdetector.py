@@ -22,7 +22,8 @@ def pull_blocks(blockman, peer):
             block = read_block_from_socket(s)
             if block is None:
                 break
-            blockman.process(block)
+            print('%s ' % blockman.process(block), end='')
+        print()
 
         #a, b = blockman.accounts[0].check_forks()
         #if a is not None or b is not None:
@@ -36,19 +37,25 @@ peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=livectx, forever=
 peerman = peercrawler_thread.peerman
 
 blockman = blocks_manager()
+pulls = 0
+stop = False
 
-while True:
+while not stop:
     peers = peerman.get_peers_copy()
     print()
     print('Starting a round of pulling blocks with %s peers' % len(peers))
     for peer in peers:
         try:
             pull_blocks(blockman, peer)
+            pulls += 1
+            if pulls >= 10:
+                stop = True
+                break
         except socket.error as error:
             peer.score = 0
             print('socker error %s' % error)
 
-    print(blockman)
-    print(blockman.accounts[0])
     print(blockman.accounts[0].str_blocks())
+    print(blockman.accounts[0])
+    print(blockman)
     time.sleep(3)
