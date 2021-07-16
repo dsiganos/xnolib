@@ -104,7 +104,7 @@ def parse_args():
 
 class peer_crawler_thread(threading.Thread):
     def __init__(self, ctx, forever, delay):
-        threading.Thread.__init__(self, daemon=True)
+        threading.Thread.__init__(self, daemon=False)
         self.ctx = ctx
         self.forever = forever
         self.delay = delay
