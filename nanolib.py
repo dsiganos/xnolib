@@ -64,6 +64,10 @@ class HandshakeExchangeFail(Exception): pass
 class CommsError(Exception): pass
 
 
+def hexlify(data):
+    return binascii.hexlify(data).decode("utf-8").upper()
+
+
 def parse_ipv6(data):
     if len(data) != 16:
         raise ParseErrorBadIPv6()
@@ -307,7 +311,7 @@ class message_header:
         str  = "NetID: %s, " % self.net_id
         str += "VerMaxUsingMin: %s/%s/%s, " % (self.ver_max, self.ver_using, self.ver_min)
         str += "MsgType: %s, " % self.msg_type
-        str += "Extensions: %s" % binascii.hexlify(self.ext.to_bytes(2, "big")).decode("utf-8").upper()
+        str += "Extensions: %s" % hexlify(self.ext.to_bytes(2, "big"))
         return str
 
 
@@ -445,7 +449,7 @@ class handshake_query:
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
-        string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
+        string += "Cookie: %s\n" % hexlify(self.cookie)
         string += "Is query: True\n"
         string += "Is response: False\n"
         return string
@@ -479,8 +483,8 @@ class handshake_response:
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
-        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
-        string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
+        string += "Account: %s\n" % hexlify(self.account)
+        string += "Signature: %s\n" % hexlify(self.sig)
         string += "Is query: False\n"
         string += "Is response: True\n"
         return string
@@ -510,9 +514,9 @@ class handshake_response_query:
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
-        string += "Cookie: %s\n" % binascii.hexlify(self.cookie).decode("utf-8").upper()
-        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
-        string += "Signature: %s\n" % binascii.hexlify(self.sig).decode("utf-8").upper()
+        string += "Cookie: %s\n" % hexlify(self.cookie)
+        string += "Account: %s\n" % hexlify(self.account)
+        string += "Signature: %s\n" % hexlify(self.sig)
         string += "Is query: True\n"
         string += "Is response: True\n"
         return string
@@ -538,8 +542,8 @@ class confirm_req_hash:
         return data
 
     def __str__(self):
-        string = "First: %s\n" % binascii.hexlify(self.first).decode("utf-8").upper()
-        string += "Second: %s\n" % binascii.hexlify(self.first).decode("utf-8").upper()
+        string = "First: %s\n" % hexlify(self.first)
+        string += "Second: %s\n" % hexlify(self.first)
         return string
 
 
@@ -556,11 +560,17 @@ class block_send:
             "amount_sent": None
         }
 
-    def get_account(self): return self.ancillary["account"]
+    def get_account(self):
+        return self.ancillary["account"]
 
-    def get_previous(self): return self.previous
+    def get_previous(self):
+        return self.previous
 
-    def get_balance(self): return self.balance
+    def get_next(self):
+        return self.ancillary['next']
+
+    def get_balance(self):
+        return self.balance
 
     def hash(self):
         data = b"".join([
@@ -568,17 +578,17 @@ class block_send:
             self.destination,
             self.balance
         ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
+        return blake2b(data, digest_size=32).digest()
 
     def str_ancillary_data(self):
         if self.ancillary["account"] is not None:
-            hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+            hexacc = hexlify(self.ancillary["account"])
             account = get_account_id(self.ancillary["account"])
         else:
             hexacc = None
             account = self.ancillary["account"]
         if self.ancillary["next"] is not None:
-            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+            next = hexlify(self.ancillary["next"])
         else:
             next = self.ancillary["next"]
         if self.ancillary["amount_sent"] is not None:
@@ -609,13 +619,13 @@ class block_send:
         balance = int.from_bytes(self.balance, "big")
         balance = balance/(10**30)
         string = "------------- Block Send -------------\n"
-        string += "Hash: %s\n" % self.hash()
-        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Dest: %s\n" % binascii.hexlify(self.destination).decode("utf-8").upper()
+        string += "Hash: %s\n" % hexlify(self.hash())
+        string += "Prev: %s\n" % hexlify(self.previous)
+        string += "Dest: %s\n" % hexlify(self.destination)
         string += "      %s\n" % get_account_id(self.destination)
         string += "Bal:  %f\n" % balance
-        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Sign: %s\n" % hexlify(self.signature)
+        string += "Work: %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
         return string
 
@@ -632,11 +642,17 @@ class block_receive:
             "balance": None
         }
 
-    def get_account(self): return self.ancillary["account"]
+    def get_account(self):
+        return self.ancillary["account"]
 
-    def get_previous(self): return self.previous
+    def get_previous(self):
+        return self.previous
 
-    def get_balance(self): return self.ancillary["balance"]
+    def get_next(self):
+        return self.ancillary['next']
+
+    def get_balance(self):
+        return self.ancillary["balance"]
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
     def hash(self):
@@ -644,17 +660,17 @@ class block_receive:
             self.previous,
             self.source
         ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
+        return blake2b(data, digest_size=32).digest()
 
     def str_ancillary_data(self):
         if self.ancillary["account"] is not None:
-            hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+            hexacc = hexlify(self.ancillary["account"])
             account = get_account_id(self.ancillary["account"])
         else:
             hexacc = None
             account = self.ancillary["account"]
         if self.ancillary["next"] is not None:
-            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+            next = hexlify(self.ancillary["next"])
         else:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
@@ -682,11 +698,11 @@ class block_receive:
 
     def __str__(self):
         string = "------------- Block Receive -------------\n"
-        string += "Hash: %s\n" % self.hash()
-        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
-        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Hash: %s\n" % hexlify(self.hash())
+        string += "Prev: %s\n" % hexlify(self.previous)
+        string += "Src:  %s\n" % hexlify(self.source)
+        string += "Sign: %s\n" % hexlify(self.signature)
+        string += "Work: %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
         return string
 
@@ -704,11 +720,17 @@ class block_open:
             "balance": None
         }
 
-    def get_previous(self): return self.source
+    def get_previous(self):
+        return self.source
 
-    def get_account(self): return self.account
+    def get_next(self):
+        return self.ancillary['next']
 
-    def get_balance(self): return self.ancillary["balance"]
+    def get_account(self):
+        return self.account
+
+    def get_balance(self):
+        return self.ancillary["balance"]
 
     def hash(self):
         data = b"".join([
@@ -716,15 +738,15 @@ class block_open:
             self.representative,
             self.account
         ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
+        return blake2b(data, digest_size=32).digest()
 
     def str_ancillary_data(self):
         if self.ancillary["previous"] is not None:
-            previous = binascii.hexlify(self.ancillary["previous"]).decode("utf-8").upper()
+            previous = hexlify(self.ancillary["previous"])
         else:
             previous = self.ancillary["previous"]
         if self.ancillary["next"] is not None:
-            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+            next = hexlify(self.ancillary["next"])
         else:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
@@ -750,15 +772,15 @@ class block_open:
         return data
 
     def __str__(self):
-        hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
+        hexacc = hexlify(self.account)
         string = "------------- Block Open -------------\n"
-        string += "Hash: %s\n" % self.hash()
-        string += "Src:  %s\n" % binascii.hexlify(self.source).decode("utf-8").upper()
-        string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Hash: %s\n" % hexlify(self.hash())
+        string += "Src:  %s\n" % hexlify(self.source)
+        string += "Repr: %s\n" % hexlify(self.representative)
         string += "Acc : %s\n" % hexacc
         string += "      %s\n" % get_account_id(self.account)
-        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Sign: %s\n" % hexlify(self.signature)
+        string += "Work: %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
         return string
 
@@ -791,28 +813,34 @@ class block_change:
             "balance": None
         }
 
-    def get_account(self): return self.ancillary["account"]
+    def get_account(self):
+        return self.ancillary["account"]
 
-    def get_previous(self): return self.previous
+    def get_previous(self):
+        return self.previous
 
-    def get_balance(self): return self.ancillary["balance"]
+    def get_next(self):
+        return self.ancillary['next']
+
+    def get_balance(self):
+        return self.ancillary["balance"]
 
     def hash(self):
         data = b"".join([
             self.previous,
             self.representative
         ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
+        return blake2b(data, digest_size=32).digest()
 
     def str_ancillary_data(self):
         if self.ancillary["account"] is not None:
-            hexacc = binascii.hexlify(self.ancillary["account"]).decode("utf-8").upper()
+            hexacc = hexlify(self.ancillary["account"])
             account = get_account_id(self.ancillary["account"])
         else:
             hexacc = None
             account = self.ancillary["account"]
         if self.ancillary["next"] is not None:
-            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+            next = hexlify(self.ancillary["next"])
         else:
             next = self.ancillary["next"]
         if self.ancillary["balance"] is not None:
@@ -839,11 +867,11 @@ class block_change:
 
     def __str__(self):
         string = "------------- Block Change -------------\n"
-        string += "Hash: %s\n" % self.hash()
-        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
-        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Hash: %s\n" % hexlify(self.hash())
+        string += "Prev: %s\n" % hexlify(self.previous)
+        string += "Repr: %s\n" % hexlify(self.representative)
+        string += "Sign: %s\n" % hexlify(self.signature)
+        string += "Work: %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
         return string
 
@@ -861,11 +889,17 @@ class block_state:
             "next": None
         }
 
-    def get_previous(self): return self.previous
+    def get_previous(self):
+        return self.previous
 
-    def get_account(self): return self.account
+    def get_next(self):
+        return self.ancillary['next']
 
-    def get_balance(self): return self.balance
+    def get_account(self):
+        return self.account
+
+    def get_balance(self):
+        return self.balance
 
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
@@ -878,11 +912,11 @@ class block_state:
             self.link
 
         ])
-        return blake2b(data, digest_size=32).hexdigest().upper()
+        return blake2b(data, digest_size=32).digest()
 
     def str_ancillary_data(self):
         if self.ancillary["next"] is not None:
-            next = binascii.hexlify(self.ancillary["next"]).decode("utf-8").upper()
+            next = hexlify(self.ancillary["next"])
         else:
             next = self.ancillary["next"]
         string = "Next: %s" % next
@@ -906,15 +940,15 @@ class block_state:
         balance = int.from_bytes(self.balance, "big")
         balance = balance / (10**30)
         string = "------------- Block State -------------\n"
-        string += "Hash: %s\n" % self.hash()
+        string += "Hash: %s\n" % hexlify(self.hash())
         string += "Acc:  %s\n" % hexacc
         string += "      %s\n" % get_account_id(self.account)
-        string += "Prev: %s\n" % binascii.hexlify(self.previous).decode("utf-8").upper()
-        string += "Repr: %s\n" % binascii.hexlify(self.representative).decode("utf-8").upper()
+        string += "Prev: %s\n" % hexlify(self.previous)
+        string += "Repr: %s\n" % hexlify(self.representative)
         string += "Bal:  %f\n" % balance
-        string += "Link: %s\n" % binascii.hexlify(self.link).decode("utf-8").upper()
-        string += "Sign: %s\n" % binascii.hexlify(self.signature).decode("utf-8").upper()
-        string += "Work: %s\n" % binascii.hexlify(self.work).decode("utf-8").upper()
+        string += "Link: %s\n" % hexlify(self.link)
+        string += "Sign: %s\n" % hexlify(self.signature)
+        string += "Work: %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
         return string
 
@@ -970,7 +1004,7 @@ class blocks_manager:
         if prev is None:
             self.unprocessed_blocks.append(block)
             return False
-        prev.ancillary["next"] = binascii.unhexlify(block.hash())
+        prev.ancillary["next"] = block.hash()
         acc.add_block(block)
         self.processed_blocks.append(block)
         return True
@@ -1002,7 +1036,7 @@ class blocks_manager:
             block.ancillary["account"] = account_pk
             if not valid_block(block):
                 return False
-            self.find_prev_block(block).ancillary["next"] = binascii.unhexlify(block.hash())
+            self.find_prev_block(block).ancillary["next"] = block.hash()
         else:
             self.unprocessed_blocks.append(block)
             return False
@@ -1034,7 +1068,7 @@ class blocks_manager:
 
     def find_amount_sent(self, block):
         for b in self.processed_blocks:
-            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+            if b.hash() == block.get_previous():
                 if b.get_balance() is not None:
                     before = int.from_bytes(b.get_balance(), "big")
                     after = int.from_bytes(block.get_balance(), "big")
@@ -1046,17 +1080,17 @@ class blocks_manager:
     def find_balance(self, block):
         if isinstance(block, block_open):
             for b in self.processed_blocks:
-                if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                if b.hash() == block.get_previous():
                     return b.ancillary["amount_sent"]
         elif isinstance(block, block_receive):
             before = int.from_bytes(self.find_prev_block(block).get_balance(), "big")
             for b in self.processed_blocks:
-                if b.hash() == binascii.hexlify(block.source).decode("utf-8").upper():
+                if b.hash() == block.source:
                     amount = int.from_bytes(b.ancillary["amount_sent"], "big")
                     return (before + amount).to_bytes(16, "big")
         elif isinstance(block, block_change):
             for b in self.processed_blocks:
-                if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+                if b.hash() == block.get_previous():
                     return b.get_balance()
         return None
 
@@ -1070,7 +1104,7 @@ class blocks_manager:
         if block.get_account() is not None:
             return block.get_account()
         for b in self.processed_blocks:
-            if b.hash() == binascii.hexlify(block.get_previous()).decode("utf-8").upper():
+            if b.hash() == block.get_previous():
                 assert(b.get_account() is not None)
                 return b.get_account()
         return None
@@ -1086,7 +1120,7 @@ class blocks_manager:
             self.process(self.unprocessed_blocks.pop(0))
 
     def find_prev_block(self, block):
-        hash = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
+        hash = block.get_previous()
         for b in self.processed_blocks:
             if b.hash() == hash:
                 return b
@@ -1111,7 +1145,7 @@ class blocks_manager:
         string += "Unprocessed Blocks: %d\n" % len(self.unprocessed_blocks)
         string += "Accounts:\n\n"
         for a in self.accounts:
-            string += "    Public Key : %s\n" % binascii.hexlify(a.account).decode("utf-8").upper()
+            string += "    Public Key : %s\n" % hexlify(a.account)
             string += "    ID         : %s\n\n" % get_account_id(a.account)
         return string
 
@@ -1145,19 +1179,32 @@ class nano_account:
 #        return traversal
 
     def find_prev(self, block):
-        prevhash = binascii.hexlify(block.get_previous()).decode("utf-8").upper()
+        prevhash = block.get_previous()
         return self.blocks.get(prevhash, None)
 
     def find_next(self, block):
         if block.ancillary["next"] is None:
             return None
-        nexthash = binascii.hexlify(block.ancillary["next"]).decode("utf-8").upper()
+        nexthash = block.ancillary["next"]
         return self.blocks.get(nexthash, None)
 
-#    def get_last_block(self):
-#        next_block = self.first
-#        while :
-#            next = find_next(next_block)
+    def get_last_block(self):
+        assert self.first
+        currblk = self.first
+
+        while True:
+            nexthash = currblk.get_next()
+            print('nexthash', nexthash)
+            if nexthash is None:
+                break
+
+            nextblk = self.blocks.get(nexthash, None)
+            if nextblk is None:
+                break
+
+            currblk = nextblk
+
+        return currblk
 
     def str_blocks(self):
         string = ""
@@ -1186,11 +1233,14 @@ class nano_account:
 #        return block.get_balance()
 
     def __str__(self):
+        lastblk = self.get_last_block()
         string = "------------- Nano Account -------------\n"
-        string += "Account: %s\n" % binascii.hexlify(self.account).decode("utf-8").upper()
-        string += "       : %s\n" % get_account_id(self.account)
-        string += "Blocks:  %d\n" % len(self.blocks)
-        #string += "Balance: %d\n" % int.from_bytes(self.blocks[-1].get_balance(), "big")
+        string += "Account : %s\n" % hexlify(self.account)
+        string += "        : %s\n" % get_account_id(self.account)
+        string += "Blocks  : %d\n" % len(self.blocks)
+        string += "First   : %s\n" % hexlify(self.first.hash())
+        string += "Last    : %s\n" % hexlify(lastblk.hash())
+        string += "Balance : %d\n" % int.from_bytes(lastblk.get_balance(), "big")
         return string
 
 
@@ -1202,11 +1252,11 @@ def read_socket(socket, numbytes):
         return data
     except socket.timeout:
         print('read_socket] Timeout whilst waiting for %d bytes')
-        print('  %s bytes in buffer: %s "%s"' % (len(data), binascii.hexlify(data), data))
+        print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
         return None
     except socket.error as error:
         print('read_socket] Exception whilst waiting for %d bytes')
-        print('  %s bytes in buffer: %s "%s"' % (len(data), binascii.hexlify(data), data))
+        print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
         print(error)
         return None
 
@@ -1310,7 +1360,7 @@ def verify_pow(block):
 
 def valid_block(block):
     work_valid = verify_pow(block)
-    sig_valid = verify(binascii.unhexlify(block.hash()), block.signature, block.get_account())
+    sig_valid = verify(block.hash(), block.signature, block.get_account())
     return work_valid and sig_valid
 
 
@@ -1367,7 +1417,7 @@ def get_initial_connected_socket():
 def get_account_blocks(s, account):
     hdr = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
     if isinstance(account, bytes):
-        account = binascii.hexlify(account).decode("utf-8")
+        account = hexlify(account)
     bulk_pull = message_bulk_pull(hdr, account)
     s.send(bulk_pull.serialise())
     return read_all_blocks_from_socket(s)
