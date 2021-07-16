@@ -1242,7 +1242,7 @@ class nano_account:
         string += "Blocks  : %d\n" % len(self.blocks)
         string += "First   : %s\n" % hexlify(self.first.hash())
         string += "Last    : %s\n" % hexlify(lastblk.hash())
-        string += "Balance : %d\n" % balance
+        string += "Balance : %f\n" % balance
         return string
 
 
