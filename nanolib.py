@@ -1234,13 +1234,15 @@ class nano_account:
 
     def __str__(self):
         lastblk = self.get_last_block()
+        balance = int.from_bytes(lastblk.get_balance(), "big")
+        balance = balance / (10**30)
         string = "------------- Nano Account -------------\n"
         string += "Account : %s\n" % hexlify(self.account)
         string += "        : %s\n" % get_account_id(self.account)
         string += "Blocks  : %d\n" % len(self.blocks)
         string += "First   : %s\n" % hexlify(self.first.hash())
         string += "Last    : %s\n" % hexlify(lastblk.hash())
-        string += "Balance : %d\n" % int.from_bytes(lastblk.get_balance(), "big")
+        string += "Balance : %d\n" % balance
         return string
 
 
