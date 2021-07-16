@@ -31,7 +31,7 @@ while next_account is not None:
     header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
     bulk_pull = message_bulk_pull(header, binascii.hexlify(next_account).decode("utf-8"))
     s.send(bulk_pull.serialise())
-    blocks = read_blocks_from_socket(s)
+    blocks = read_all_blocks_from_socket(s)
     while len(blocks) != 0:
         block = blocks.pop()
         manager.process(block)
