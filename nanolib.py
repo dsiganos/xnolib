@@ -1279,8 +1279,8 @@ def read_block_change(s):
 
 def read_block_state(s):
     data = read_socket(s, 216)
-    block = block_state(data[:32], data[32:64], data[64:96], int.from_bytes(data[96:112], "big"), data[112:144], data[144:208],
-                        data[208:])
+    block = block_state(data[:32], data[32:64], data[64:96], int.from_bytes(data[96:112], "big"),
+                        data[112:144], data[144:208], data[208:])
     return block
 
 
