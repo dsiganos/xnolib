@@ -1189,7 +1189,6 @@ class nano_account:
 
         while True:
             nexthash = currblk.get_next()
-            print('nexthash', nexthash)
             if nexthash is None:
                 break
 
