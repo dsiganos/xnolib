@@ -5,19 +5,26 @@ import socket
 import copy
 import time
 import argparse
+import threading
 
 from nanolib import *
 
 
 class peer_manager:
     def __init__(self, peers=[]):
+        self.mutex = threading.Lock()
         self.peers = set()
         self.add_peers(peers)
 
-    def add_peers(self, peers):
-        for p in peers:
-            #print('adding peer %s' % p)
-            self.peers.add(p)
+    def add_peers(self, newpeers):
+        with self.mutex:
+            for p in newpeers:
+                #print('adding peer %s' % p)
+                self.peers.add(p)
+
+    def get_peers_copy(self):
+        with self.mutex:
+            return copy.copy(self.peers)
 
     def get_peers_from_peer(self, peer):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -52,19 +59,22 @@ class peer_manager:
                 peer.score = 1
 
     def crawl_once(self):
-        assert len(self.peers) > 0
         print('Starting a peer crawl')
 
         # it is important to take a copy of the peers so that it is not changing as we walk it
-        for p in copy.copy(self.peers):
-            print('Get peers from %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
+        peers_copy = self.get_peers_copy()
+        assert len(peers_copy) > 0
+
+        for p in peers_copy:
+            print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
             self.get_peers_from_peer(p)
 
     def __str__(self):
-        s = '---------- Start of Manager peers (%s peers) ----------\n' % len(self.peers)
-        for p in self.peers:
-            s += '%41s:%5s (score:%4s)\n' % ('[%s]' % p.ip, p.port, p.score)
-        s += '---------- End of Manager peers (%s peers) ----------' % len(self.peers)
+        with self.mutex:
+            s = '---------- Start of Manager peers (%s peers) ----------\n' % len(self.peers)
+            for p in self.peers:
+                s += '%41s:%5s (score:%4s)\n' % ('[%s]' % p.ip, p.port, p.score)
+            s += '---------- End of Manager peers (%s peers) ----------' % len(self.peers)
         return s
 
 
@@ -77,10 +87,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    ctx = livectx
-    args = parse_args()
-
+def crawl(ctx, forever, delay):
     ipv4_addresses = get_all_dns_addresses(ctx['peeraddr'])
     peers = [peer(ipaddress.IPv6Address('::ffff:' + a), ctx['peerport']) for a in ipv4_addresses]
 
@@ -90,10 +97,41 @@ def main():
     peerman.crawl_once()
     print(peerman)
 
-    while args.forever:
-        time.sleep(args.delay)
+    while forever:
+        time.sleep(delay)
         peerman.crawl_once()
         print(peerman)
+
+    return peerman
+
+
+class peer_crawler_thread(threading.Thread):
+    def __init__(self, ctx, forever, delay):
+        threading.Thread.__init__(self, daemon=True)
+        self.ctx = ctx
+        self.forever = forever
+        self.delay = delay
+        self.peerman = None
+
+    def run(self):
+        print('Starting peer crawler in a thread')
+        self.peerman = crawl(self.ctx, self.forever, self.delay)
+        print('Peer crawler thread ended')
+
+
+def spawn_peer_crawler_thread(ctx, forever, delay):
+    t = peer_crawler_thread(ctx, forever, delay)
+    t.start()
+    return t
+
+
+def main():
+    ctx = livectx
+    args = parse_args()
+    crawl(ctx, args.forever, args.delay)
+    while True:
+        time.sleep(1)
+
 
 if __name__ == "__main__":
     main()
