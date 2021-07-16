@@ -21,13 +21,6 @@ s.connect((peeraddr, ctx['peerport']))
 
 manager = blocks_manager()
 
-# header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
-# bulk_pull = message_bulk_pull(header, ctx["genesis_pub"])
-# s.send(bulk_pull.serialise())
-# blocks = read_blocks_from_socket(s)
-# while len(blocks) != 0:
-#     manager.process(blocks.pop())
-
 next_account = binascii.unhexlify(ctx["genesis_pub"])
 
 acc_iter = manager.next_acc_iter()
