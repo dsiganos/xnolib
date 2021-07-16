@@ -1330,6 +1330,15 @@ def get_next_hdr_payload(s):
     return header, data
 
 
+def get_account_blocks(s, account):
+    hdr = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
+    if isinstance(account, bytes):
+        account = binascii.hexlify(account).decode("utf-8")
+    bulk_pull = message_bulk_pull(hdr, account)
+    s.send(bulk_pull.serialise())
+    return read_blocks_from_socket(s)
+
+
 def block_length_by_type(blktype):
     lengths = {
         2: 152,
