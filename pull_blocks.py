@@ -1,3 +1,4 @@
+#!/bin/env python3
 import random
 import socket
 
@@ -12,7 +13,14 @@ s.settimeout(3)
 s.connect((peeraddr, ctx['peerport']))
 print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
 
-blocks = get_account_blocks(s, ctx["genesis_pub"])
+header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
+bulk_pull = message_bulk_pull(header, ctx['genesis_pub'])
+# bulk_pull = message_bulk_pull(header, '42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279')
+req = bulk_pull.serialise()
+s.send(req)
+# req = bulk_pull2.serialise()
+
+blocks = read_all_blocks_from_socket(s)
 
 manager = blocks_manager()
 while len(blocks) != 0:
@@ -20,3 +28,6 @@ while len(blocks) != 0:
     manager.process(block)
 
 print(manager)
+print(manager.accounts[0])
+print(manager.accounts[0].str_blocks())
+
