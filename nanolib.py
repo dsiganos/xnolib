@@ -1116,7 +1116,6 @@ class nano_account:
         self.blocks.append(block)
         self.last = block
 
-
     # This method is used for debugging: checking order
     def traverse_backwards(self):
         block = self.blocks[-1]
@@ -1232,32 +1231,39 @@ def read_block_state(s):
     return block
 
 
-def read_blocks_from_socket(s):
+def read_block_from_socket(s):
+    block = None
+
+    block_type = s.recv(1)
+    if len(block_type) == 0:
+        print('socket closed by peer')
+        return block
+
+    if block_type[0] == block_type_enum.send:
+        block = read_block_send(s)
+    elif block_type[0] == block_type_enum.receive:
+        block = read_block_receive(s)
+    elif block_type[0] == block_type_enum.open:
+        block = read_block_open(s)
+    elif block_type[0] == block_type_enum.change:
+        block = read_block_change(s)
+    elif block_type[0] == block_type_enum.state:
+        block = read_block_state(s)
+    elif block_type[0] == block_type_enum.invalid:
+        print('received block type invalid')
+    elif block_type[0] == block_type_enum.not_a_block:
+        print('received block type not a block')
+    else:
+        print('received unknown block type %s' % block_type_enum[0])
+
+    return block
+
+
+def read_all_blocks_from_socket(s):
     blocks = []
     while True:
-        block_type = s.recv(1)
-        if len(block_type) == 0:
-            print('socket closed by peer')
-            break
-
-        if block_type[0] == block_type_enum.send:
-            block = read_block_send(s)
-        elif block_type[0] == block_type_enum.receive:
-            block = read_block_receive(s)
-        elif block_type[0] == block_type_enum.open:
-            block = read_block_open(s)
-        elif block_type[0] == block_type_enum.change:
-            block = read_block_change(s)
-        elif block_type[0] == block_type_enum.state:
-            block = read_block_state(s)
-        elif block_type[0] == block_type_enum.invalid:
-            print('received block type invalid')
-            break
-        elif block_type[0] == block_type_enum.not_a_block:
-            print('received block type not a block')
-            break
-        else:
-            print('received unknown block type %s' % block_type_enum[0])
+        block = read_block_from_socket(s)
+        if block is None:
             break
         blocks.append(block)
     return blocks

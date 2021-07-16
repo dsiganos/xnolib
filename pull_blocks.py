@@ -1,3 +1,4 @@
+#!/bin/env python3
 import random
 import socket
 
@@ -19,7 +20,7 @@ req = bulk_pull.serialise()
 s.send(req)
 # req = bulk_pull2.serialise()
 
-blocks = read_blocks_from_socket(s)
+blocks = read_all_blocks_from_socket(s)
 
 manager = blocks_manager()
 while len(blocks) != 0:
@@ -27,4 +28,5 @@ while len(blocks) != 0:
     manager.process(block)
 
 print(manager)
-# print(manager.str_processed_blocks())
+print(manager.accounts[0])
+print(manager.accounts[0].str_blocks())
