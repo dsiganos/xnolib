@@ -8,6 +8,7 @@ import base64
 import dns.resolver
 import ed25519_blake2
 import ed25519_blake2b
+import git
 
 
 class ParseErrorBadMagicNumber(Exception): pass
@@ -53,9 +54,6 @@ class SocketClosedByPeer(Exception): pass
 
 
 class InvalidBlockHash(Exception): pass
-
-
-class ProcessingErrorAccountAlreadyOpen(Exception): pass
 
 
 class HandshakeExchangeFail(Exception): pass
@@ -720,7 +718,14 @@ class block_open:
         }
 
     def get_previous(self):
-        return self.source
+        if self.source == self.account:
+            # genesis block
+            assert self.source == self.representative
+            assert self.source == livectx['genesis_pub'] or self.source == betactx['genesis_pub']
+            return None
+        else:
+            # it is a regular open block and it has a source
+            return self.source
 
     def get_next(self):
         return self.ancillary['next']
@@ -953,19 +958,16 @@ class blocks_manager:
         self.accounts = []
         self.processed_blocks = []
         self.unprocessed_blocks = []
-        self.genesis_block = None
-        self.create_genesis_account()
-        #TODO: Make a method which can get the next undiscovered account
+        self.trust_open_blocks = True
 
-    def create_genesis_account(self):
+        # create genesis account and block
         open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
                                 genesis_block_open["account"], genesis_block_open["signature"],
                                 genesis_block_open["work"])
-        open_block.ancillary["balance"] = genesis_block_open["balance"]
-        genesis_account = nano_account(open_block)
-        self.accounts.append(genesis_account)
-        self.processed_blocks.append(open_block)
-        self.genesis_block = open_block
+        open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
+        self.accounts.append(nano_account(open_block))
+
+        #TODO: Make a method which can get the next undiscovered account
 
     def next_acc_iter(self):
         for b in self.processed_blocks:
@@ -980,6 +982,10 @@ class blocks_manager:
         successful = False
         if isinstance(block, block_open):
             successful = self.process_block_open(block)
+        elif isinstance(block, block_send):
+            successful = self.process_block_send(block)
+        elif isinstance(block, block_change):
+            successful = self.process_block_change(block)
         elif isinstance(block, block_state):
             successful = self.process_block_state(block)
         else:
@@ -991,41 +997,128 @@ class blocks_manager:
         return successful
 
     def process_block_state(self, block):
-        acc = self.find_nano_account(block.get_account())
-        if acc is None:
+        #print('process_block_state %s' % hexlify(block.hash()))
+
+        # check block
+#        if not valid_block(block):
+#            return False
+
+        # is it open block and do we trust all open blocks
+        if block.previous == b'\x00' * 32 and self.trust_open_blocks:
+            # check if account exists
+            if self.account_exists(block.get_account()):
+                print('state open block (%s) for already opened account %s' %
+                    (hexlify(block.hash()), account_id_to_name(block.account)))
+                return True
+
+            # create the account
+            acc = nano_account(block)
+            self.accounts.append(acc)
+            print('Opened new account\n%s' % acc)
+            return True
+
+        # find the previous block
+        prevblk, acc = self.find_ledger_block_by_hash(block.previous)
+        if prevblk is None:
+            #print('cannot find previous block (%s) of state block (%s)' %
+            #    (hexlify(block.previous), hexlify(block.hash())))
             self.unprocessed_blocks.append(block)
             return False
-        prev = self.find_prev_block(block)
-        if prev is None:
-            self.unprocessed_blocks.append(block)
-            return False
-        prev.ancillary["next"] = block.hash()
-        acc.add_block(block)
-        self.processed_blocks.append(block)
+
+        # check if it is an epoch block
+        if block.link.startswith(b'epoch') and prevblk.get_balance() == block.get_balance():
+            print('Epoch block')
+            print(block)
+
+        acc.add_block(block, previous=prevblk.hash())
         return True
 
     def process_block_open(self, block):
+        # check block
         if not valid_block(block):
             return False
-        if block.account == genesis_block_open["account"]:
-            assert (block == self.genesis_block)
-            self.processed_blocks.append(block)
+
+        # check if account exists
+        if self.account_exists(block.get_account()):
+            print('open block (%s) for already opened account %s' %
+                (hexlify(block.hash()), account_id_to_name(block.account)))
             return True
-        else:
-            if not self.account_exists(block.get_account()):
-                account = nano_account(block)
-                bal = self.find_balance(block)
-                if bal is None:
-                    self.unprocessed_blocks.append(block)
-                    return False
-                block.ancillary["balance"] = bal
-                self.accounts.append(account)
-                self.processed_blocks.append(block)
-                return True
-            else:
-                raise ProcessingErrorAccountAlreadyOpen()
+
+        # find the associated send block
+        srcblk, _ = self.find_ledger_block_by_hash(block.source)
+        if srcblk is None:
+            print('cannot find source block (%s) of open block (%s)' %
+                (hexlify(block.source), hexlify(block.hash())))
+            self.unprocessed_blocks.append(block)
+            return False
+
+        # we have a source block, set the opening balance
+        block.ancillary["balance"] = srcblk.ancillary["amount_sent"]
+
+        # create the account
+        acc = nano_account(block)
+        self.accounts.append(acc)
+        print('Opened new account\n%s' % acc)
+ 
+        return True
+
+    def process_block_send(self, block):
+        assert block.previous
+
+        # check block
+#        if not valid_block(block):
+#            return False
+
+        # find the previous block
+        prevblk, acc = self.find_ledger_block_by_hash(block.previous)
+        if prevblk is None:
+            print('cannot find previous block (%s) of send block (%s)' %
+                (hexlify(block.previous), hexlify(block.hash())))
+            self.unprocessed_blocks.append(block)
+            return False
+
+        # we have a previous block, set the amount_sent and account
+        block.ancillary["amount_sent"] = prevblk.get_balance() - block.balance
+        block.ancillary["account"] = prevblk.get_account()
+
+        # add block to the account
+        acc.add_block(block, previous=prevblk.hash())
+        return True
+
+    def process_block_change(self, block):
+        assert block.previous
+
+        # check block
+#        if not valid_block(block):
+#            return False
+
+        # find the previous block
+        prevblk, acc = self.find_ledger_block_by_hash(block.previous)
+        if prevblk is None:
+            print('cannot find previous block (%s) of send block (%s)' %
+                (hexlify(block.previous), hexlify(block.hash())))
+            self.unprocessed_blocks.append(block)
+            return False
+
+        # we have a previous block, set the balance and account
+        block.ancillary["account"] = prevblk.get_account()
+        block.ancillary["balance"] = prevblk.get_balance()
+
+        # add block to the account
+        acc.add_block(block, previous=prevblk.hash())
+        return True
+
+    # find a block by hash that is part of the local ledger
+    def find_ledger_block_by_hash(self, hsh):
+        for acc in self.accounts:
+            blk = acc.find_block_by_hash(hsh)
+            if blk: return blk, acc
+        return None, None
 
     def process_block(self, block):
+        assert not isinstance(block, block_send)
+        print('process block ', hexlify(block.hash()))
+        print('    prev:', hexlify(block.previous))
         account_pk = self.find_blocks_account(block)
         if account_pk is not None:
             block.ancillary["account"] = account_pk
@@ -1034,11 +1127,13 @@ class blocks_manager:
             self.find_prev_block(block).ancillary["next"] = block.hash()
         else:
             self.unprocessed_blocks.append(block)
+            print('process block no account_pk')
             return False
 
         n_account = self.find_nano_account(account_pk)
         if n_account is None:
             self.unprocessed_blocks.append(block)
+            print('process block no account')
             return False
 
         if isinstance(block, block_send):
@@ -1047,6 +1142,8 @@ class blocks_manager:
                 block.ancillary["amount_sent"] = amount
             else:
                 self.unprocessed_blocks.append(block)
+                print(block)
+                print('process block no amount')
                 return False
 
         if block.get_balance() is None:
@@ -1055,10 +1152,11 @@ class blocks_manager:
                 block.ancillary["balance"] = balance
             else:
                 self.unprocessed_blocks.append(block)
+                print('process block no balance')
                 return False
 
         n_account.add_block(block)
-        self.processed_blocks.append(block)
+        print('process block done')
         return True
 
     def find_amount_sent(self, block):
@@ -1074,6 +1172,7 @@ class blocks_manager:
 
     def find_balance(self, block):
         if isinstance(block, block_open):
+            assert False
             for b in self.processed_blocks:
                 if b.hash() == block.get_previous():
                     return b.ancillary["amount_sent"]
@@ -1150,10 +1249,35 @@ class nano_account:
         self.first = open_block
         self.account = open_block.get_account()
         self.blocks = { open_block.hash(): open_block }
+        self.isforked = False
+        #self.heads = [open_blocks]
 
-    def add_block(self, block):
-        # TODO: Block processing required
-        self.blocks[block.hash()] = block
+    # add a block to account, if previous is set then check for forks
+    def add_block(self, block, previous):
+        if block.hash() in self.blocks:
+            #print('block (%s) already exists in account %s' %
+            #    (hexlify(block.hash()), account_id_to_name(block.get_account())))
+            return
+        if previous is None:
+            self.blocks[block.hash()] = block
+        else:
+            prevblk = self.blocks[previous]
+            assert prevblk
+            prev_next = prevblk.get_next()
+            if prev_next:
+                print('FORK DETECTED: block: %s previous: %s previous_next: %s' %
+                    (hexlify(block.hash()), hexlify(previous), hexlify(prev_next)))
+                self.isforked = True
+            else:
+                #print('added block: %s to account %s' %
+                #    (hexlify(block.hash()), account_id_to_name(self.account)))
+                self.blocks[block.hash()] = block
+                prevblk.ancillary['next'] = block.hash()
+
+    #def _add_block(self)
+
+    def find_block_by_hash(self, hsh):
+        return self.blocks.get(hsh, None)
 
 #    # This method is used for debugging: checking order
 #    def traverse_backwards(self):
@@ -1235,6 +1359,7 @@ class nano_account:
         string += "First   : %s\n" % hexlify(self.first.hash())
         string += "Last    : %s\n" % hexlify(lastblk.hash())
         string += "Balance : %f\n" % (lastblk.get_balance() / (10**30))
+        string += "isforked: %s\n" % self.isforked
         return string
 
 
@@ -1458,8 +1583,7 @@ genesis_block_open = {
     "representative": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
     "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
     "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
-    "work": b'b\xf0T\x17\xdd?\xb6\x91',
-    "balance": 340282366920938463463374607431768211455
+    "work": b'b\xf0T\x17\xdd?\xb6\x91'
 }
 
 
