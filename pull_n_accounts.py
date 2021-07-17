@@ -14,7 +14,7 @@ def valid_account(acc):
 ctx = livectx
 s = get_initial_connected_socket()
 
-manager = blocks_manager()
+manager = block_manager()
 
 next_account = binascii.unhexlify(ctx["genesis_pub"])
 

@@ -953,7 +953,7 @@ class block_state:
         return string
 
 
-class blocks_manager:
+class block_manager:
     def __init__(self):
         self.accounts = []
         self.processed_blocks = []

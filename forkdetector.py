@@ -40,7 +40,7 @@ def pull_blocks(blockman, peer, hsh):
 peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=livectx, forever=True, delay=30)
 peerman = peercrawler_thread.peerman
 
-blockman = blocks_manager()
+blockman = block_manager()
 stop = False
 
 

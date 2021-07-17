@@ -9,7 +9,7 @@ s = get_initial_connected_socket()
 
 blocks = get_account_blocks(s, ctx["genesis_pub"])
 
-manager = blocks_manager()
+manager = block_manager()
 while len(blocks) != 0:
     block = blocks.pop()
     manager.process(block)
