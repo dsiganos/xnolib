@@ -2,6 +2,7 @@
 import socket
 import time
 import sys
+import tempfile
 
 import peercrawler
 from nanolib import *
@@ -39,10 +40,7 @@ def pull_blocks(blockman, peer, hsh):
 
 peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=livectx, forever=True, delay=30)
 peerman = peercrawler_thread.peerman
-
-blockman = block_manager()
-stop = False
-
+time.sleep(1)
 
 fork1 = '7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A2041FBF58EEFD'
 fork2 = 'CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75'
@@ -55,8 +53,15 @@ acc_ids = [
     fork2,
 ]
 
-time.sleep(1)
-#for acc_id in acc_ids:
+os.makedirs('forkdetector.data', exist_ok=True)
+workdir = tempfile.mkdtemp(dir='forkdetector.data')
+print(workdir)
+
+# initialise a git project in the temporary work directory
+gitrepo = git.Repo.init(workdir)
+
+blockman = block_manager(workdir, gitrepo)
+stop = False
 while len(blockman.accounts) < 2 or not blockman.accounts[1].isforked:
     peers = peerman.get_peers_copy()
     print()
@@ -71,12 +76,16 @@ while len(blockman.accounts) < 2 or not blockman.accounts[1].isforked:
 #                break
         except socket.error as error:
             peer.score = 0
-            print('socker error %s' % error)
+            print('socket error %s' % error)
 
     #print(blockman.accounts[0].str_blocks())
-    for acc in blockman.accounts:
-        print(acc)
-    print(blockman)
-    time.sleep(3)
+    #for acc in blockman.accounts:
+    #    print(acc)
+    #print(blockman)
+    #time.sleep(3)
 
 #print(blockman.unprocessed_blocks[0])
+for acc in blockman.accounts:
+    print(acc)
+print(blockman)
+print(workdir)

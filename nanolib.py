@@ -62,7 +62,13 @@ class HandshakeExchangeFail(Exception): pass
 class CommsError(Exception): pass
 
 
+def writefile(filename, content):
+    with open(filename, "w") as f:
+        f.write(content)
+
+
 def hexlify(data):
+    if data is None: return 'None'
     return binascii.hexlify(data).decode("utf-8").upper()
 
 
@@ -573,6 +579,20 @@ class block_send:
     def get_balance(self):
         return self.balance
 
+    def get_mount_sent_str(self):
+        if self.ancillary["amount_sent"] is not None:
+            return str(self.ancillary["amount_sent"] / (10**30))
+        else:
+            return 'None'
+
+    def get_account_str(self):
+        hexacc = None
+        acc_id = None
+        if self.ancillary["account"] is not None:
+            hexacc = hexlify(self.ancillary["account"])
+            acc_id = get_account_id(self.ancillary["account"])
+        return hexacc, acc_id
+
     def hash(self):
         data = b"".join([
             self.previous,
@@ -580,28 +600,6 @@ class block_send:
             self.balance.to_bytes(16, "big")
         ])
         return blake2b(data, digest_size=32).digest()
-
-    def str_ancillary_data(self):
-        if self.ancillary["account"] is not None:
-            hexacc = hexlify(self.ancillary["account"])
-            account = get_account_id(self.ancillary["account"])
-        else:
-            hexacc = None
-            account = self.ancillary["account"]
-        if self.ancillary["next"] is not None:
-            next = hexlify(self.ancillary["next"])
-        else:
-            next = self.ancillary["next"]
-        if self.ancillary["amount_sent"] is not None:
-            amount = self.ancillary["amount_sent"] / (10**30)
-        else:
-            amount = -1
-        string = ""
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % account
-        string += "Next: %s\n" % next
-        string += "Amount Sent: %d" % amount
-        return string
 
     def serialise(self, include_block_type):
         data = b''
@@ -624,7 +622,9 @@ class block_send:
         string += "Bal:  %f\n" % (self.balance / (10**30))
         string += "Sign: %s\n" % hexlify(self.signature)
         string += "Work: %s\n" % hexlify(self.work)
-        string += self.str_ancillary_data()
+        string += "Acc : %s\n      %s\n" % (get_account_str())
+        string += "Next: %s\n" % hexlify(self.ancillary["next"])
+        string += "Amount Sent: %s" % self.get_amount_sent_str()
         return string
 
 
@@ -954,18 +954,20 @@ class block_state:
 
 
 class block_manager:
-    def __init__(self):
+    def __init__(self, workdir, gitrepo):
         self.accounts = []
         self.processed_blocks = []
         self.unprocessed_blocks = []
         self.trust_open_blocks = True
+        self.workdir = workdir
+        self.gitrepo = gitrepo
 
         # create genesis account and block
-        open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-                                genesis_block_open["account"], genesis_block_open["signature"],
-                                genesis_block_open["work"])
-        open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
-        self.accounts.append(nano_account(open_block))
+#        open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+#                                genesis_block_open["account"], genesis_block_open["signature"],
+#                                genesis_block_open["work"])
+#        open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
+#        self.accounts.append(nano_account(self, open_block))
 
         #TODO: Make a method which can get the next undiscovered account
 
@@ -1012,7 +1014,7 @@ class block_manager:
                 return True
 
             # create the account
-            acc = nano_account(block)
+            acc = nano_account(self, block)
             self.accounts.append(acc)
             print('Opened new account\n%s' % acc)
             return True
@@ -1056,10 +1058,10 @@ class block_manager:
         block.ancillary["balance"] = srcblk.ancillary["amount_sent"]
 
         # create the account
-        acc = nano_account(block)
+        acc = nano_account(self, block)
         self.accounts.append(acc)
         print('Opened new account\n%s' % acc)
- 
+
         return True
 
     def process_block_send(self, block):
@@ -1245,12 +1247,16 @@ class block_manager:
 
 
 class nano_account:
-    def __init__(self, open_block):
+    def __init__(self, blockman, open_block):
         self.first = open_block
+        self.workdir = blockman.workdir
+        self.gitrepo = blockman.gitrepo
+        print(open_block)
         self.account = open_block.get_account()
-        self.blocks = { open_block.hash(): open_block }
         self.isforked = False
         #self.heads = [open_blocks]
+        self.blocks = {}
+        self._add_block(open_block, None)
 
     # add a block to account, if previous is set then check for forks
     def add_block(self, block, previous):
@@ -1258,23 +1264,39 @@ class nano_account:
             #print('block (%s) already exists in account %s' %
             #    (hexlify(block.hash()), account_id_to_name(block.get_account())))
             return
-        if previous is None:
-            self.blocks[block.hash()] = block
-        else:
-            prevblk = self.blocks[previous]
-            assert prevblk
-            prev_next = prevblk.get_next()
-            if prev_next:
-                print('FORK DETECTED: block: %s previous: %s previous_next: %s' %
-                    (hexlify(block.hash()), hexlify(previous), hexlify(prev_next)))
-                self.isforked = True
-            else:
-                #print('added block: %s to account %s' %
-                #    (hexlify(block.hash()), account_id_to_name(self.account)))
-                self.blocks[block.hash()] = block
-                prevblk.ancillary['next'] = block.hash()
 
-    #def _add_block(self)
+        # if previous is none then it must be a starting block
+        if previous is None:
+            assert len(self.blocks) == 0
+            self._add_block(block)
+            return
+
+        # it is not a starting block, look for previous and check for forks
+        prevblk = self.blocks[previous]
+        assert prevblk
+        prev_next = prevblk.get_next()
+        if prev_next:
+            print('FORK DETECTED: block: %s previous: %s previous_next: %s' %
+                (hexlify(block.hash()), hexlify(previous), hexlify(prev_next)))
+            self.isforked = True
+            self._add_block(block, prevblk)
+        else:
+            print('added block: %s to account %s' %
+                (hexlify(block.hash()), account_id_to_name(self.account)))
+            self._add_block(block, prevblk)
+            prevblk.ancillary['next'] = block.hash()
+
+    def _add_block(self, block, prevblk):
+        self.blocks[block.hash()] = block
+        hashstr = hexlify(block.hash())
+        filename = '%s/%s' % (self.workdir, hashstr)
+        writefile(filename, str(block) + '\n')
+        if prevblk is None:
+            self.gitrepo.git.checkout(orphan=hashstr)
+        else:
+            self.gitrepo.git.checkout('-b', hashstr, hexlify(prevblk.hash()))
+        self.gitrepo.index.add([hashstr])
+        self.gitrepo.index.commit('')
 
     def find_block_by_hash(self, hsh):
         return self.blocks.get(hsh, None)
