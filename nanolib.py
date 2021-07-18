@@ -328,6 +328,7 @@ class peer:
         assert isinstance(ip, ipaddress.IPv6Address)
         self.ip = ip
         self.port = port
+        self.peer_id = None
 
         # sideband info, not used for equality and hashing
         self.score = score
@@ -405,7 +406,6 @@ class message_keepalive:
             start_index = end_index
             end_index += 18
         return message_keepalive(hdr, peers_list)
-
 
 
 class message_bulk_pull:
@@ -564,7 +564,8 @@ class block_send:
         self.ancillary = {
             "account": None,
             "next": None,
-            "amount_sent": None
+            "amount_sent": None,
+            "peers" : set(),
         }
 
     def get_account(self):
@@ -615,16 +616,17 @@ class block_send:
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
-        string += "Hash: %s\n" % hexlify(self.hash())
-        string += "Prev: %s\n" % hexlify(self.previous)
-        string += "Dest: %s\n" % hexlify(self.destination)
-        string += "      %s\n" % get_account_id(self.destination)
-        string += "Bal:  %f\n" % (self.balance / (10**30))
-        string += "Sign: %s\n" % hexlify(self.signature)
-        string += "Work: %s\n" % hexlify(self.work)
-        string += "Acc : %s\n      %s\n" % (get_account_str())
-        string += "Next: %s\n" % hexlify(self.ancillary["next"])
-        string += "Amount Sent: %s" % self.get_amount_sent_str()
+        string += "Hash : %s\n" % hexlify(self.hash())
+        string += "Prev : %s\n" % hexlify(self.previous)
+        string += "Dest : %s\n" % hexlify(self.destination)
+        string += "       %s\n" % get_account_id(self.destination)
+        string += "Bal  : %f\n" % (self.balance / (10**30))
+        string += "Sign : %s\n" % hexlify(self.signature)
+        string += "Work : %s\n" % hexlify(self.work)
+        string += "Acc  : %s\n      %s\n" % (get_account_str())
+        string += "Next : %s\n" % hexlify(self.ancillary["next"])
+        string += "Sent : %s" % self.get_amount_sent_str()
+        string += "Peers: %s" % self.ancillary['peers']
         return string
 
 
@@ -637,7 +639,8 @@ class block_receive:
         self.ancillary = {
             "account": None,
             "next": None,
-            "balance": None
+            "balance": None,
+            "peers" : set(),
         }
 
     def get_account(self):
@@ -676,10 +679,10 @@ class block_receive:
         else:
             balance = -1
         string = ""
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % account
-        string += "Next: %s\n" % next
-        string += "Balance: %f\n" % balance
+        string += "Acc  : %s\n" % hexacc
+        string += "       %s\n" % account
+        string += "Next : %s\n" % next
+        string += "Bal  : %f\n" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -695,12 +698,13 @@ class block_receive:
 
     def __str__(self):
         string = "------------- Block Receive -------------\n"
-        string += "Hash: %s\n" % hexlify(self.hash())
-        string += "Prev: %s\n" % hexlify(self.previous)
-        string += "Src:  %s\n" % hexlify(self.source)
-        string += "Sign: %s\n" % hexlify(self.signature)
-        string += "Work: %s\n" % hexlify(self.work)
+        string += "Hash : %s\n" % hexlify(self.hash())
+        string += "Prev : %s\n" % hexlify(self.previous)
+        string += "Src  : %s\n" % hexlify(self.source)
+        string += "Sign : %s\n" % hexlify(self.signature)
+        string += "Work : %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
+        string += "Peers: %s" % self.ancillary['peers']
         return string
 
 
@@ -714,7 +718,8 @@ class block_open:
         self.ancillary = {
             "previous": None,
             "next": None,
-            "balance": None
+            "balance": None,
+            "peers" : set(),
         }
 
     def get_previous(self):
@@ -757,10 +762,9 @@ class block_open:
             balance = self.ancillary["balance"] / (10 ** 30)
         else:
             balance = -1
-        string = ""
-        string += "Prev: %s\n" % previous
-        string += "Next: %s\n" % next
-        string += "Balance: %f\n" % balance
+        string  = "Prev : %s\n" % previous
+        string += "Next : %s\n" % next
+        string += "Bal  : %f\n" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -777,14 +781,15 @@ class block_open:
     def __str__(self):
         hexacc = hexlify(self.account)
         string = "------------- Block Open -------------\n"
-        string += "Hash: %s\n" % hexlify(self.hash())
-        string += "Src:  %s\n" % hexlify(self.source)
-        string += "Repr: %s\n" % hexlify(self.representative)
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.account)
-        string += "Sign: %s\n" % hexlify(self.signature)
-        string += "Work: %s\n" % hexlify(self.work)
+        string += "Hash : %s\n" % hexlify(self.hash())
+        string += "Src  : %s\n" % hexlify(self.source)
+        string += "Repr : %s\n" % hexlify(self.representative)
+        string += "Acc  : %s\n" % hexacc
+        string += "       %s\n" % get_account_id(self.account)
+        string += "Sign : %s\n" % hexlify(self.signature)
+        string += "Work : %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
+        string += "Peers: %s" % self.ancillary['peers']
         return string
 
     def __eq__(self, other):
@@ -813,7 +818,8 @@ class block_change:
         self.ancillary = {
             "account": None,
             "next": None,
-            "balance": None
+            "balance": None,
+            "peers" : set(),
         }
 
     def get_account(self):
@@ -851,10 +857,10 @@ class block_change:
         else:
             balance = -1
         string = ""
-        string += "Acc : %s\n" % hexacc
-        string += "      %s\n" % account
-        string += "Next: %s\n" % next
-        string += "Balance: %f" % balance
+        string += "Acc  : %s\n" % hexacc
+        string += "       %s\n" % account
+        string += "Next : %s\n" % next
+        string += "Bal  : %f" % balance
         return string
 
     def serialise(self, include_block_type):
@@ -869,12 +875,13 @@ class block_change:
 
     def __str__(self):
         string = "------------- Block Change -------------\n"
-        string += "Hash: %s\n" % hexlify(self.hash())
-        string += "Prev: %s\n" % hexlify(self.previous)
-        string += "Repr: %s\n" % hexlify(self.representative)
-        string += "Sign: %s\n" % hexlify(self.signature)
-        string += "Work: %s\n" % hexlify(self.work)
+        string += "Hash : %s\n" % hexlify(self.hash())
+        string += "Prev : %s\n" % hexlify(self.previous)
+        string += "Repr : %s\n" % hexlify(self.representative)
+        string += "Sign : %s\n" % hexlify(self.signature)
+        string += "Work : %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
+        string += "Peers: %s" % self.ancillary['peers']
         return string
 
 
@@ -888,7 +895,8 @@ class block_state:
         self.signature = sig
         self.work = work
         self.ancillary = {
-            "next": None
+            "next": None,
+            "peers" : set(),
         }
 
     def get_previous(self):
@@ -916,14 +924,6 @@ class block_state:
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def str_ancillary_data(self):
-        if self.ancillary["next"] is not None:
-            next = hexlify(self.ancillary["next"])
-        else:
-            next = self.ancillary["next"]
-        string = "Next: %s" % next
-        return string
-
     def serialise(self, include_block_type):
         data = b''
         if include_block_type:
@@ -940,16 +940,17 @@ class block_state:
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block State -------------\n"
-        string += "Hash: %s\n" % hexlify(self.hash())
-        string += "Acc:  %s\n" % hexacc
-        string += "      %s\n" % get_account_id(self.account)
-        string += "Prev: %s\n" % hexlify(self.previous)
-        string += "Repr: %s\n" % hexlify(self.representative)
-        string += "Bal:  %f\n" % (self.balance / (10**30))
-        string += "Link: %s\n" % hexlify(self.link)
-        string += "Sign: %s\n" % hexlify(self.signature)
-        string += "Work: %s\n" % hexlify(self.work)
-        string += self.str_ancillary_data()
+        string += "Hash : %s\n" % hexlify(self.hash())
+        string += "Acc  : %s\n" % hexacc
+        string += "       %s\n" % get_account_id(self.account)
+        string += "Prev : %s\n" % hexlify(self.previous)
+        string += "Repr : %s\n" % hexlify(self.representative)
+        string += "Bal  : %f\n" % (self.balance / (10**30))
+        string += "Link : %s\n" % hexlify(self.link)
+        string += "Sign : %s\n" % hexlify(self.signature)
+        string += "Work : %s\n" % hexlify(self.work)
+        string += "Next : %s\n" % hexlify(self.ancillary["next"])
+        string += "Peers: %s" % self.ancillary['peers']
         return string
 
 
@@ -1520,6 +1521,7 @@ def perform_handshake_exchange(s):
     except TypeError:
         raise HandshakeExchangeFail()
 
+    return recvd_response.account
 
 # wait for the next message, parse the header but not the payload
 # the header is retruned as an object and the payload as raw bytes

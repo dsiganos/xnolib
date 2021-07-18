@@ -45,7 +45,10 @@ class peer_manager:
             # connected to peer, do handshake followed by listening for the first keepalive
             # once we get the first keepalive, we have what we need and we move on
             try:
-                perform_handshake_exchange(s)
+                peer_id = perform_handshake_exchange(s)
+                peer.peer_id = peer_id
+                if self.verbosity >= 1:
+                    print('  %s' % hexlify(peer_id))
                 starttime = time.time()
                 while time.time() - starttime <= 10:
                     hdr, payload = get_next_hdr_payload(s)

@@ -25,9 +25,8 @@ def pull_blocks(blockman, peer, hsh):
             block = read_block_from_socket(s)
             if block is None:
                 break
-            #if isinstance(block, block_open):
+            block.ancillary['peers'].add('[%s]:%s' % (peer.ip, peer.port))
             print(block)
-            #    sys.exit(0)
             blockman.process(block)
 
         #a, b = blockman.accounts[0].check_forks()
