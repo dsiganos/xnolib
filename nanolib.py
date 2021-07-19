@@ -960,7 +960,7 @@ class block_manager:
         elif isinstance(block, block_change):
             success = self.process_block_change(block)
         elif isinstance(block, block_receive):
-            assert False
+            self.process_block_receive(block)
         elif isinstance(block, block_state):
             success = self.process_block_state(block)
         else:
@@ -1060,6 +1060,29 @@ class block_manager:
 
         # add block to the account
         acc.add_block(block, previous=prevblk.hash())
+        return True
+
+    def process_block_receive(self, block):
+        assert(isinstance(block, block_receive))
+        prevblk, acc = self.find_ledger_block_by_hash(block.previous)
+        if prevblk is None:
+            print('cannot find previous block (%s) of receive block (%s)' %
+                  (hexlify(block.previous), hexlify(block.hash())))
+            self.unprocessed_blocks.add(block)
+            return False
+
+        scrblk, acc = self.find_ledger_block_by_hash(block.source)
+        if scrblk is None:
+            print("cannot find source block (%s) of reveive block (%s)" %
+                (hexlify(block.source), hexlify(block.hash())))
+            self.unprocessed_blocks.add(block)
+            return False
+
+        block.ancillary["balance"] = prevblk.get_balance()
+        block.ancillary["balance"] += scrblk.ancillary["amount_sent"]
+        block.ancillary["account"] = prevblk.get_account()
+        acc.add_block(block, previous = prevblk.hash())
+
         return True
 
     def process_block_change(self, block):
