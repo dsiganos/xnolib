@@ -1516,21 +1516,20 @@ def get_next_hdr_payload(s):
 
 
 def get_initial_connected_socket(ctx):
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-
-    while True:
+    for peeraddr in get_all_dns_addresses(ctx['peeraddr']):
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+        peeraddr = '::ffff:' + peeraddr
         try:
-            peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-            peeraddr = '::ffff:' + peeraddr
-            s.settimeout(3)
             s.connect((peeraddr, ctx['peerport']))
             print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
             return s
         except socket.error as e:
+            print('Failed to concect to %s' % peeraddr)
             print(e)
 
-    print('Failed to conect to %s' % peeraddr)
+    print('Failed to connect to any of the peering servers')
     return None
 
 
