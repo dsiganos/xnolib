@@ -580,7 +580,7 @@ class block_send:
     def get_balance(self):
         return self.balance
 
-    def get_mount_sent_str(self):
+    def get_amount_sent_str(self):
         if self.ancillary["amount_sent"] is not None:
             return str(self.ancillary["amount_sent"] / (10**30))
         else:
@@ -623,7 +623,7 @@ class block_send:
         string += "Bal  : %f\n" % (self.balance / (10**30))
         string += "Sign : %s\n" % hexlify(self.signature)
         string += "Work : %s\n" % hexlify(self.work)
-        string += "Acc  : %s\n      %s\n" % (get_account_str())
+        string += "Acc  : %s\n      %s\n" % (self.get_account_str())
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
         string += "Sent : %s" % self.get_amount_sent_str()
         string += "Peers: %s" % self.ancillary['peers']
