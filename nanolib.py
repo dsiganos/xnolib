@@ -1313,14 +1313,16 @@ class nano_account:
     def _add_block(self, block, prevblk):
         self.blocks[block.hash()] = block
         hashstr = hexlify(block.hash())
-        filename = '%s/%s' % (self.workdir, hashstr)
-        writefile(filename, str(block) + '\n')
-        if prevblk is None:
-            self.gitrepo.git.checkout(orphan=hashstr)
-        else:
-            self.gitrepo.git.checkout('-b', hashstr, hexlify(prevblk.hash()))
-        self.gitrepo.index.add([hashstr])
-        self.gitrepo.index.commit('')
+        if self.workdir:
+            filename = '%s/%s' % (self.workdir, hashstr)
+            writefile(filename, str(block) + '\n')
+        if self.gitrepo:
+            if prevblk is None:
+                self.gitrepo.git.checkout(orphan=hashstr)
+            else:
+                self.gitrepo.git.checkout('-b', hashstr, hexlify(prevblk.hash()))
+            self.gitrepo.index.add([hashstr])
+            self.gitrepo.index.commit('')
 
     def find_block_by_hash(self, hsh):
         return self.blocks.get(hsh, None)
