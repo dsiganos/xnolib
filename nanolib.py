@@ -939,6 +939,8 @@ class block_manager:
             success = self.process_block_send(block)
         elif isinstance(block, block_change):
             success = self.process_block_change(block)
+        elif isinstance(block, block_receive):
+            assert False
         elif isinstance(block, block_state):
             success = self.process_block_state(block)
         else:
