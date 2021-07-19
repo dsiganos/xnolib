@@ -1368,11 +1368,11 @@ def read_socket(socket, numbytes):
             data += socket.recv(1)
         return data
     except socket.timeout:
-        print('read_socket] Timeout whilst waiting for %d bytes')
+        print('read_socket] Timeout whilst waiting for %d bytes' % numbytes)
         print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
         return None
     except socket.error as error:
-        print('read_socket] Exception whilst waiting for %d bytes')
+        print('read_socket] Exception whilst waiting for %d bytes' % numbytes)
         print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
         print(error)
         return None
