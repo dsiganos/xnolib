@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 import binascii
 import random
 import socket
@@ -28,7 +30,6 @@ class frontier_entry:
         string = "%s\n" % get_account_id(self.account)
         string += "%s\n" % binascii.hexlify(self.frontier_hash).decode("utf-8").upper()
         return string
-
 
 
 def read_frontier_response(s):
