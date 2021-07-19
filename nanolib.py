@@ -579,6 +579,8 @@ class block_send:
         string += "Peers: %s" % self.ancillary['peers']
         return string
 
+    def __hash__(self):
+
 
 class block_receive:
     def __init__(self, prev, source, sig, work):
@@ -923,11 +925,11 @@ class block_manager:
         #TODO: Make a method which can get the next undiscovered account
 
     def next_acc_iter(self):
-        for b in self.processed_blocks:
-            if not isinstance(b, block_send):
-                continue
-            else:
-                if not self.account_exists(b.destination):
+        for a in self.accounts:
+            for block_hash, b in a.blocks.items():
+                if not isinstance(b, block_send):
+                    continue
+                elif not self.account_exists(b.destination):
                     yield b.destination
         yield None
 
@@ -1227,7 +1229,7 @@ class nano_account:
         self.first = open_block
         self.workdir = blockman.workdir
         self.gitrepo = blockman.gitrepo
-        print(open_block)
+        # print(open_block)
         self.account = open_block.get_account()
         self.isforked = False
         #self.heads = [open_blocks]
