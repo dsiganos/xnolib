@@ -964,11 +964,11 @@ class block_manager:
         self.gitrepo = gitrepo
 
         # create genesis account and block
-#        open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-#                                genesis_block_open["account"], genesis_block_open["signature"],
-#                                genesis_block_open["work"])
-#        open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
-#        self.accounts.append(nano_account(self, open_block))
+        open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+                                genesis_block_open["account"], genesis_block_open["signature"],
+                                genesis_block_open["work"])
+        open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
+        self.accounts.append(nano_account(self, open_block))
 
         #TODO: Make a method which can get the next undiscovered account
 
