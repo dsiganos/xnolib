@@ -10,7 +10,8 @@ msg += block.serialise(True)
 print(len(msg))
 
 ctx = livectx
-s = get_initial_connected_socket()
+s = get_initial_connected_socket(ctx)
+assert s
 
 data = s.recv(1000)
 data += s.recv(1000)

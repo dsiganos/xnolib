@@ -46,7 +46,8 @@ def read_frontier_response(s):
         print("counter: {}".format(counter))
 
 ctx = livectx
-s = get_initial_connected_socket()
+s = get_initial_connected_socket(ctx)
+assert s
 
 frontier = frontier_request()
 s.send(frontier.serialise())

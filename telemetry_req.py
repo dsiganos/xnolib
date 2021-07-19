@@ -11,7 +11,8 @@ class telemetry_req:
 
 
 ctx = livectx
-s = get_initial_connected_socket()
+s = get_initial_connected_socket(s)
+assert s
 
 perform_handshake_exchange(s)
 header = message_header(network_id(67), [18, 18, 18], message_type(12), 0)

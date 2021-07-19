@@ -1563,21 +1563,23 @@ def get_next_hdr_payload(s):
     return header, data
 
 
-def get_initial_connected_socket():
-    ctx = livectx
+def get_initial_connected_socket(ctx):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+
     while True:
         try:
             peeraddr = random.choice(get_all_dns_addresses(ctx['peeraddr']))
             peeraddr = '::ffff:' + peeraddr
             s.settimeout(3)
             s.connect((peeraddr, ctx['peerport']))
-            break
-        except:
-            continue
-    print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
-    return s
+            print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
+            return s
+        except socket.error as e:
+            print(e)
+
+    print('Failed to conect to %s' % peeraddr)
+    return None
 
 
 def get_account_blocks(s, account):
