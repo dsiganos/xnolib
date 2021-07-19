@@ -915,7 +915,7 @@ class block_state:
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
         string += "Peers: %s" % self.ancillary['peers']
         return string
-    
+
     def __hash__(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
         return hash((STATE_BLOCK_HEADER_BYTES, self.account,
@@ -928,7 +928,7 @@ class block_manager:
     def __init__(self, workdir, gitrepo):
         self.accounts = []
         self.processed_blocks = []
-        self.unprocessed_blocks = []
+        self.unprocessed_blocks = set()
         self.trust_open_blocks = True
         self.workdir = workdir
         self.gitrepo = gitrepo
@@ -999,7 +999,7 @@ class block_manager:
         if prevblk is None:
             #print('cannot find previous block (%s) of state block (%s)' %
             #    (hexlify(block.previous), hexlify(block.hash())))
-            self.unprocessed_blocks.append(block)
+            self.unprocessed_blocks.add(block)
             return False
 
         # check if it is an epoch block
@@ -1026,7 +1026,7 @@ class block_manager:
         if srcblk is None:
             print('cannot find source block (%s) of open block (%s)' %
                 (hexlify(block.source), hexlify(block.hash())))
-            self.unprocessed_blocks.append(block)
+            self.unprocessed_blocks.add(block)
             return False
 
         # we have a source block, set the opening balance
@@ -1051,7 +1051,7 @@ class block_manager:
         if prevblk is None:
             print('cannot find previous block (%s) of send block (%s)' %
                 (hexlify(block.previous), hexlify(block.hash())))
-            self.unprocessed_blocks.append(block)
+            self.unprocessed_blocks.add(block)
             return False
 
         # we have a previous block, set the amount_sent and account
@@ -1074,7 +1074,7 @@ class block_manager:
         if prevblk is None:
             print('cannot find previous block (%s) of send block (%s)' %
                 (hexlify(block.previous), hexlify(block.hash())))
-            self.unprocessed_blocks.append(block)
+            self.unprocessed_blocks.add(block)
             return False
 
         # we have a previous block, set the balance and account
@@ -1103,13 +1103,13 @@ class block_manager:
                 return False
             self.find_prev_block(block).ancillary["next"] = block.hash()
         else:
-            self.unprocessed_blocks.append(block)
+            self.unprocessed_blocks.add(block)
             print('process block no account_pk')
             return False
 
         n_account = self.find_nano_account(account_pk)
         if n_account is None:
-            self.unprocessed_blocks.append(block)
+            self.unprocessed_blocks.add(block)
             print('process block no account')
             return False
 
@@ -1118,7 +1118,7 @@ class block_manager:
             if amount is not None:
                 block.ancillary["amount_sent"] = amount
             else:
-                self.unprocessed_blocks.append(block)
+                self.unprocessed_blocks.add(block)
                 print(block)
                 print('process block no amount')
                 return False
@@ -1128,7 +1128,7 @@ class block_manager:
             if balance is not None:
                 block.ancillary["balance"] = balance
             else:
-                self.unprocessed_blocks.append(block)
+                self.unprocessed_blocks.add(block)
                 print('process block no balance')
                 return False
 
@@ -1203,7 +1203,7 @@ class block_manager:
                     blocks_processed.append(blk.hash())
 
             # remove blocks that are successfully processed from unprocessed list
-            self.unprocessed_blocks = list(filter(
+            self.unprocessed_blocks = set(filter(
                 lambda blk: not (blk.hash() in blocks_processed),
                 self.unprocessed_blocks
             ))
