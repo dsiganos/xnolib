@@ -1257,6 +1257,12 @@ class nano_account:
     # add a block to account, if previous is set then check for forks
     def add_block(self, block, previous):
         if block.hash() in self.blocks:
+            if self.workdir:
+                merged_block = self.blocks[block.hash()]
+                merged_block.ancillary['peers'].update(block.ancillary['peers'])
+                hashstr = hexlify(merged_block.hash())
+                filename = '%s/%s' % (self.workdir, hashstr)
+                writefile(filename, str(merged_block) + '\n')
             #print('block (%s) already exists in account %s' %
             #    (hexlify(block.hash()), account_id_to_name(block.get_account())))
             return
@@ -1292,9 +1298,11 @@ class nano_account:
             if prevblk is None:
                 self.gitrepo.git.checkout(orphan=hashstr)
             else:
-                self.gitrepo.git.checkout('-b', hashstr, hexlify(prevblk.hash()))
-            self.gitrepo.index.add([hashstr])
-            self.gitrepo.index.commit('')
+                self.gitrepo.git.checkout('-m', '-b', hashstr, hexlify(prevblk.hash()))
+            self.gitrepo.git.add('.')
+            print('git commit')
+            self.gitrepo.git.commit('-m', '.')
+            print('git commit done')
 
     def find_block_by_hash(self, hsh):
         return self.blocks.get(hsh, None)
