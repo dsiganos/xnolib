@@ -580,7 +580,9 @@ class block_send:
         return string
 
     def __hash__(self):
-
+        return hash((self.previous, self.destination,
+                     self.balance.to_bytes(16, "big"), self.signature,
+                     self.work))
 
 class block_receive:
     def __init__(self, prev, source, sig, work):
@@ -658,6 +660,9 @@ class block_receive:
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
+
+    def __hash__(self):
+        return hash((self.previous, self.source))
 
 
 class block_open:
@@ -760,6 +765,9 @@ class block_open:
             return False
         return True
 
+    def __hash__(self):
+        hash((self.source, self.representative, self.account))
+
 
 class block_change:
     def __init__(self, prev, rep, sig, work):
@@ -836,6 +844,9 @@ class block_change:
         string += "Peers: %s" % self.ancillary['peers']
         return string
 
+    def __hash__(self):
+        return hash((self.previous, self.representative))
+
 
 class block_state:
     def __init__(self, account, prev, rep, bal, link, sig, work):
@@ -904,6 +915,13 @@ class block_state:
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
         string += "Peers: %s" % self.ancillary['peers']
         return string
+    
+    def __hash__(self):
+        STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
+        return hash((STATE_BLOCK_HEADER_BYTES, self.account,
+                     self.previous, self.representative,
+                     self.balance.to_bytes(16, "big"),
+                     self.link))
 
 
 class block_manager:
