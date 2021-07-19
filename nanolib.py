@@ -1071,7 +1071,7 @@ class block_manager:
             self.unprocessed_blocks.add(block)
             return False
 
-        scrblk, acc = self.find_ledger_block_by_hash(block.source)
+        scrblk, _ = self.find_ledger_block_by_hash(block.source)
         if scrblk is None:
             print("cannot find source block (%s) of reveive block (%s)" %
                 (hexlify(block.source), hexlify(block.hash())))
@@ -1081,7 +1081,7 @@ class block_manager:
         block.ancillary["balance"] = prevblk.get_balance()
         block.ancillary["balance"] += scrblk.ancillary["amount_sent"]
         block.ancillary["account"] = prevblk.get_account()
-        acc.add_block(block, previous = prevblk.hash())
+        acc.add_block(block, previous=prevblk.hash())
 
         return True
 
