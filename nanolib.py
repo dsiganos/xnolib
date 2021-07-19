@@ -981,23 +981,25 @@ class block_manager:
                     yield b.destination
         yield None
 
-    def process(self, block):
-        successful = False
+    def process_one(self, block):
+        success = False
         if isinstance(block, block_open):
-            successful = self.process_block_open(block)
+            success = self.process_block_open(block)
         elif isinstance(block, block_send):
-            successful = self.process_block_send(block)
+            success = self.process_block_send(block)
         elif isinstance(block, block_change):
-            successful = self.process_block_change(block)
+            success = self.process_block_change(block)
         elif isinstance(block, block_state):
-            successful = self.process_block_state(block)
+            success = self.process_block_state(block)
         else:
-            successful = self.process_block(block)
+            success = self.process_block(block)
+        return success
 
-        if successful:
+    def process(self, block):
+        success = self.process_one(block)
+        if success:
             self.process_unprocessed_blocks()
-
-        return successful
+        return success
 
     def process_block_state(self, block):
         #print('process_block_state %s' % hexlify(block.hash()))
@@ -1212,9 +1214,30 @@ class block_manager:
                 return a
         return None
 
+    # try to process unprocessed blocks, if there is a success try again until there no more successes
     def process_unprocessed_blocks(self):
-        for i in range(0, len(self.unprocessed_blocks)):
-            self.process(self.unprocessed_blocks.pop(0))
+        blocks_processed = []
+        try_again = True
+        count = 0
+
+        while try_again:
+            try_again = False
+
+            # try to process each block
+            for blk in self.unprocessed_blocks:
+                if self.process_one(blk):
+                    count += 1
+                    try_again = True
+                    blocks_processed.append(blk.hash())
+
+            # remove blocks that are successfully processed from unprocessed list
+            self.unprocessed_blocks = list(filter(
+                lambda blk: not (blk.hash() in blocks_processed),
+                self.unprocessed_blocks
+            ))
+
+        if count > 0:
+            print('process_unprocessed_blocks] processed %s blocks, %s left' % (count, len(self.unprocessed_blocks)))
 
     def find_prev_block(self, block):
         hash = block.get_previous()
