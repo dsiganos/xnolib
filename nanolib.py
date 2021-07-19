@@ -625,7 +625,7 @@ class block_send:
         string += "Work : %s\n" % hexlify(self.work)
         string += "Acc  : %s\n      %s\n" % (self.get_account_str())
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
-        string += "Sent : %s" % self.get_amount_sent_str()
+        string += "Sent : %s\n" % self.get_amount_sent_str()
         string += "Peers: %s" % self.ancillary['peers']
         return string
 
