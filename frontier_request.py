@@ -39,6 +39,7 @@ class frontier_entry:
 
 def read_frontier_response(s):
     data = read_socket(s, 64)
+    assert data
     return frontier_entry(data[0:32], data[32:])
 
 

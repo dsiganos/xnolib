@@ -4,20 +4,42 @@ import time
 import sys
 import tempfile
 
+import frontier_request
 import peercrawler
 from nanolib import *
 
 
+def frontier_req(s, peer, acc_id):
+    frontier = frontier_request.frontier_request(acc_id, maxacc=1, confirmed=True)
+    s.send(frontier.serialise())
+    frontier = frontier_request.read_frontier_response(s)
+    endmark = frontier_request.read_frontier_response(s)
+    assert endmark.is_end_marker()
+    peer.aux['confirmed_frontier'] = frontier.frontier_hash
+
+    frontier = frontier_request.frontier_request(acc_id, maxacc=1, confirmed=False)
+    s.send(frontier.serialise())
+    frontier = frontier_request.read_frontier_response(s)
+    endmark = frontier_request.read_frontier_response(s)
+    assert endmark.is_end_marker()
+    peer.aux['unconfirmed_frontier'] = frontier.frontier_hash
+
+    print('Frontier [%s]:%s (%s, %s)' %
+        (peer.ip, peer.port, hexlify(peer.aux['confirmed_frontier']), hexlify(peer.aux['unconfirmed_frontier'])))
+
+
 def pull_blocks(blockman, peer, hsh):
-    print('pull blocks for account %s' % hsh)
+    print('pull blocks for account %s' % hexlify(hsh))
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(1)
+        s.settimeout(3)
         s.connect((str(peer.ip), peer.port))
+
+        frontier_req(s, peer, hsh)
 
         # send a block pull request
         hdr = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
-        bulk_pull = message_bulk_pull(hdr, hsh)
+        bulk_pull = message_bulk_pull(hdr, hexlify(hsh))
         s.send(bulk_pull.serialise())
 
         # pull blocks from peer
@@ -25,7 +47,8 @@ def pull_blocks(blockman, peer, hsh):
             block = read_block_from_socket(s)
             if block is None:
                 break
-            block.ancillary['peers'].add('[%s]:%s' % (peer.ip, peer.port))
+            peerinfo = (peer.ip, peer.port, hexlify(peer.aux['confirmed_frontier']), hexlify(peer.aux['unconfirmed_frontier']))
+            block.ancillary['peers'].add('[%s]:%s c:%s unc:%s' % peerinfo)
             print(block)
             blockman.process(block)
 
@@ -41,8 +64,8 @@ peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=livectx, forever=
 peerman = peercrawler_thread.peerman
 time.sleep(1)
 
-fork1 = '7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A2041FBF58EEFD'
-fork2 = 'CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75'
+fork1 = binascii.unhexlify('7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A2041FBF58EEFD')
+fork2 = binascii.unhexlify('CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75')
 
 acc_ids = [
     livectx["genesis_pub"],

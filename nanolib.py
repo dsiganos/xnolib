@@ -12,6 +12,7 @@ import git
 
 from exceptions import *
 
+
 def writefile(filename, content):
     with open(filename, "w") as f:
         f.write(content)
@@ -279,6 +280,7 @@ class peer:
         self.ip = ip
         self.port = port
         self.peer_id = None
+        self.aux = {}
 
         # sideband info, not used for equality and hashing
         self.score = score
@@ -1420,14 +1422,10 @@ def read_socket(socket, numbytes):
         while len(data) < numbytes:
             data += socket.recv(1)
         return data
-    except socket.timeout:
-        print('read_socket] Timeout whilst waiting for %d bytes' % numbytes)
+    except OSError as msg:
+        print('read_socket] Error whilst reading %d bytes' % numbytes)
         print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
-        return None
-    except socket.error as error:
-        print('read_socket] Exception whilst waiting for %d bytes' % numbytes)
-        print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
-        print(error)
+        print(msg)
         return None
 
 
