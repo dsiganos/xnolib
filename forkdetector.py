@@ -84,7 +84,7 @@ gitrepo = git.Repo.init(workdir)
 
 blockman = block_manager(workdir, gitrepo)
 stop = False
-while len(blockman.accounts) < 2 or not blockman.accounts[1].isforked:
+while True:
     peers = peerman.get_peers_copy()
     print()
     print('Starting a round of pulling blocks with %s peers' % len(peers))
