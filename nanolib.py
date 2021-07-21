@@ -478,31 +478,6 @@ class handshake_response_query:
         return string
 
 
-class confirm_req_hash:
-    def __init__(self, first, second, header=message_header(network_id(67), [18, 18, 18], message_type(12), 0)):
-        self.header = header
-        self.first = first
-        self.second = second
-
-    @classmethod
-    def parse(self, data):
-        assert(len(data) == 72)
-        header = message_header.parse_header(data[:8])
-        first = data[8:40]
-        second = data[40:]
-        return confirm_req_hash(first, second, header=header)
-
-    def serialise(self):
-        data = self.first
-        data += self.second
-        return data
-
-    def __str__(self):
-        string = "First: %s\n" % hexlify(self.first)
-        string += "Second: %s\n" % hexlify(self.first)
-        return string
-
-
 class block_send:
     def __init__(self, prev, dest, bal, sig, work):
         assert(isinstance(bal, int))
