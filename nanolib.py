@@ -202,9 +202,12 @@ class message_header:
         BLOCK_TYPE_MASK = 0x0f00
         return (self.ext & BLOCK_TYPE_MASK) >> 8
 
-    def block_type(self):
-        BLOCK_TYPE_MASK = 0x0f00
-        return (self.ext & BLOCK_TYPE_MASK) >> 8
+    def set_block_type(self, block_type):
+        assert(isinstance(block_type, int))
+        block_type = block_type << 8
+        self.ext = block_type
+
+
 
     @classmethod
     def parse_header(cls, data):
