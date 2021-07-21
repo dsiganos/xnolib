@@ -20,7 +20,7 @@ class bulk_pull_account:
 
 
 class bulk_pull_account_entry:
-    def __init__(self, source=None, hash=None, amount=None):
+    def __init__(self, source=None, hash=None, amount=-1):
         self.hash = hash
         self.amount = amount
         self.source = source
@@ -84,6 +84,7 @@ def read_account_entries_addr_only(s):
     while int.from_bytes(source, "big") != 0:
         entry = bulk_pull_account_entry(source=source)
         entries.append(entry)
+        source = read_socket(s, 32)
     return entries
 
 
@@ -104,11 +105,11 @@ def read_account_entries_hash_amount_addr(s):
 
 def main():
     s = get_initial_connected_socket(livectx)
-    account = binascii.unhexlify(livectx["genesis_pub"])
+    account = binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5')
     hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
 
     # Change the flag to see the different results (in range 0-2)
-    flag = 2
+    flag = 1
 
     msg = bulk_pull_account(hdr, account, flag)
     s.send(msg.serialise())
