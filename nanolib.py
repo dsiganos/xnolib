@@ -540,9 +540,18 @@ class block_send:
         data += self.destination
         data += self.balance.to_bytes(16, "big")
         data += self.signature
-        data += self.work
+        data += self.work[::-1]
         return data
 
+    @classmethod
+    def parse(cls, data):
+        assert(len(data) == block_length_by_type(2))
+        prev = data[0:32]
+        dest = data[32:64]
+        bal = int.from_bytes(data[64:80], "big")
+        sig = data[80:144]
+        work = data[144:][::-1]
+        return block_send(prev, dest, bal, sig, work)
 
     def __str__(self):
         string = "------------- Block Send -------------\n"
@@ -626,9 +635,17 @@ class block_receive:
         data += self.previous
         data += self.source
         data += self.signature
-        data += self.work
+        data += self.work[::-1]
         return data
 
+    @classmethod
+    def parse(cls, data):
+        assert(len(data) == block_length_by_type(3))
+        prev = data[0:32]
+        source = data[32:64]
+        sig = data[64:128]
+        work = data[128:][::-1]
+        return block_receive(prev, source, sig, work)
 
     def __str__(self):
         string = "------------- Block Receive -------------\n"
@@ -712,8 +729,19 @@ class block_open:
         data += self.representative
         data += self.account
         data += self.signature
-        data += self.work
+        data += self.work[::-1]
         return data
+
+    @classmethod
+    def parse(cls, data):
+        assert(len(data) == block_length_by_type(4))
+        source = data[0:32]
+        rep = data[32:64]
+        acc = data[64:96]
+        sig = data[96:160]
+        work = data[160:][::-1]
+        return block_open(source, rep, acc, sig, work)
+
 
     def __str__(self):
         hexacc = hexlify(self.account)
@@ -810,8 +838,17 @@ class block_change:
         data += self.previous
         data += self.representative
         data += self.signature
-        data += self.work
+        data += self.work[::-1]
         return data
+
+    @classmethod
+    def parse(cls, data):
+        assert(len(data) == block_length_by_type(5))
+        prev = data[0:32]
+        rep = data[32:64]
+        sig = data[64:128]
+        work = data[128:][::-1]
+        return block_change(prev, rep, sig, work)
 
     def __str__(self):
         string = "------------- Block Change -------------\n"
@@ -877,8 +914,20 @@ class block_state:
         data += self.balance.to_bytes(16, "big")
         data += self.link
         data += self.signature
-        data += self.work
+        data += self.work[::-1]
         return data
+
+    @classmethod
+    def parse(cls, data):
+        assert(len(data) == block_length_by_type(6))
+        account = data[0:32]
+        prev = data[32:64]
+        rep = data[64:96]
+        bal = int.from_bytes(data[96:112], "big")
+        link = data[112:144]
+        sig = data[144:208]
+        work = data[208:][::-1]
+        return block_state(account, prev, rep, bal, link, sig, work)
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
