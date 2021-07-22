@@ -36,8 +36,9 @@ class confirm_req_block:
 
     def serialise(self):
         data = self.hdr.serialise_header()
-        data += block.serialise(True)
+        data += block.serialise(False)
         return data
+
 
 class vote_common:
     def __init__(self, account, sig, seq):
@@ -57,7 +58,7 @@ class vote_common:
     def __str__(self):
         string = "Account: %s\n" % hexlify(self.account)
         string += "Signature: %s\n" % hexlify(self.sig)
-        stirng += "Sequence: %s\n" % self.seq
+        string += "Sequence: %s\n" % self.seq
         return string
 
 
@@ -92,7 +93,9 @@ class confirm_ack_hash:
         string += str(self.common)
         string += "Hashes: \n"
         for h in self.hashes:
-            string += "   " + h + "\n"
+            string += "   "
+            string += hexlify(h)
+            string += "\n"
         return string
 
 
@@ -138,8 +141,10 @@ header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
 block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
                    genesis_block_open["account"], genesis_block_open["signature"],
                    genesis_block_open["work"])
+
 header.set_block_type(4)
 msg = confirm_req_block(header, block)
+print("The block we send hash: %s" % hexlify(block.hash()))
 
 ctx = livectx
 s = get_initial_connected_socket(ctx)
