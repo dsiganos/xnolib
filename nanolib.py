@@ -914,7 +914,7 @@ class block_state:
         data += self.balance.to_bytes(16, "big")
         data += self.link
         data += self.signature
-        data += self.work[::-1]
+        data += self.work
         return data
 
     @classmethod
@@ -926,7 +926,7 @@ class block_state:
         bal = int.from_bytes(data[96:112], "big")
         link = data[112:144]
         sig = data[144:208]
-        work = data[208:][::-1]
+        work = data[208:]
         return block_state(account, prev, rep, bal, link, sig, work)
 
     def __str__(self):
@@ -1458,32 +1458,31 @@ def read_socket(socket, numbytes):
 
 def read_block_send(s):
     data = read_socket(s, 152)
-    block = block_send(data[:32], data[32:64], int.from_bytes(data[64:80], "big"), data[80:144], data[144:][::-1])
+    block = block_send.parse(data)
     return block
 
 
 def read_block_receive(s):
     data = read_socket(s, 136)
-    block = block_receive(data[:32], data[32:64], data[64:128], data[128:][::-1])
+    block = block_receive.parse(data)
     return block
 
 
 def read_block_open(s):
     data = read_socket(s, 168)
-    block = block_open(data[:32], data[32:64], data[64:96], data[96:160], data[160:][::-1])
+    block = block_open.parse(data)
     return block
 
 
 def read_block_change(s):
     data = read_socket(s, 136)
-    block = block_change(data[:32], data[32:64], data[64:128], data[128:][::-1])
+    block = block_change.parse(data)
     return block
 
 
 def read_block_state(s):
     data = read_socket(s, 216)
-    block = block_state(data[:32], data[32:64], data[64:96], int.from_bytes(data[96:112], "big"),
-                        data[112:144], data[144:208], data[208:])
+    block = block_state.parse(data)
     return block
 
 
@@ -1515,7 +1514,7 @@ def read_block_from_socket(s):
     return block
 
 
-def read_all_blocks_from_socket(s):
+def read_bulk_pull_response(s):
     blocks = []
     while True:
         block = read_block_from_socket(s)
@@ -1617,7 +1616,7 @@ def get_account_blocks(s, account):
         account = hexlify(account)
     bulk_pull = message_bulk_pull(hdr, account)
     s.send(bulk_pull.serialise())
-    return read_all_blocks_from_socket(s)
+    return read_bulk_pull_response(s)
 
 
 def block_length_by_type(blktype):
