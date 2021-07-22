@@ -573,6 +573,22 @@ class block_send:
                      self.balance.to_bytes(16, "big"), self.signature,
                      self.work))
 
+    def __eq__(self, other):
+        if not isinstance(other, block_send):
+            return False
+        elif self.previous != other.previous:
+            return False
+        elif self.destination != other.destination:
+            return False
+        elif self.balance != other.balance:
+            return False
+        elif self.signature != other.signature:
+            return False
+        elif self.work != other.work:
+            return False
+        return True
+
+
 class block_receive:
     def __init__(self, prev, source, sig, work):
         self.previous = prev
@@ -660,6 +676,19 @@ class block_receive:
 
     def __hash__(self):
         return hash((self.previous, self.source))
+
+    def __eq__(self, other):
+        if not isinstance(other, block_receive):
+            return False
+        elif self.previous != other.previous:
+            return False
+        elif self.source != other.source:
+            return False
+        elif self.signature != other.signature:
+            return False
+        elif self.work != other.work:
+            return False
+        return True
 
 
 class block_open:
@@ -864,6 +893,19 @@ class block_change:
     def __hash__(self):
         return hash((self.previous, self.representative))
 
+    def __eq__(self, other):
+        if not isinstance(other, block_change):
+            return False
+        elif self.previous != other.previous:
+            return False
+        elif self.representative != other.representative:
+            return False
+        elif self.signature != other.signature:
+            return False
+        elif self.work != other.work:
+            return False
+        return True
+
 
 class block_state:
     def __init__(self, account, prev, rep, bal, link, sig, work):
@@ -954,6 +996,25 @@ class block_state:
                      self.previous, self.representative,
                      self.balance.to_bytes(16, "big"),
                      self.link))
+
+    def __eq__(self, other):
+        if not isinstance(other, block_state):
+            return False
+        elif self.account != other.account:
+            return False
+        elif self.previous != other.previous:
+            return False
+        elif self.representative != other.representative:
+            return False
+        elif self.balance != other.balance:
+            return False
+        elif self.link != other.link:
+            return False
+        elif self.signature != other.signature:
+            return False
+        elif self.work != other.work:
+            return False
+        return True
 
 
 class block_manager:
