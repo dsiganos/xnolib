@@ -914,6 +914,8 @@ class block_state:
         data += self.balance.to_bytes(16, "big")
         data += self.link
         data += self.signature
+
+        # Block states proof of work is received and sent in big endian
         data += self.work
         return data
 
@@ -926,6 +928,7 @@ class block_state:
         bal = int.from_bytes(data[96:112], "big")
         link = data[112:144]
         sig = data[144:208]
+        # Block states proof of work is received and sent in big endian
         work = data[208:]
         return block_state(account, prev, rep, bal, link, sig, work)
 
