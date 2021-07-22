@@ -577,14 +577,22 @@ class block_send:
         if not isinstance(other, block_send):
             return False
         elif self.previous != other.previous:
+            assert (self.hash() != other.hash())
             return False
         elif self.destination != other.destination:
+            assert (self.hash() != other.hash())
             return False
         elif self.balance != other.balance:
+            assert (self.hash() != other.hash())
             return False
         elif self.signature != other.signature:
+            assert (self.hash() != other.hash())
             return False
         elif self.work != other.work:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.ancillary != other.ancillary:
+            assert (self.hash() != other.hash())
             return False
         return True
 
@@ -681,12 +689,19 @@ class block_receive:
         if not isinstance(other, block_receive):
             return False
         elif self.previous != other.previous:
+            assert (self.hash() != other.hash())
             return False
         elif self.source != other.source:
+            assert (self.hash() != other.hash())
             return False
         elif self.signature != other.signature:
+            assert (self.hash() != other.hash())
             return False
         elif self.work != other.work:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.ancillary != other.ancillary:
+            assert (self.hash() != other.hash())
             return False
         return True
 
@@ -787,19 +802,24 @@ class block_open:
         return string
 
     def __eq__(self, other):
-        try:
-            if self.source != other.source:
-                return False
-            elif self.representative != other.representative:
-                return False
-            elif self.account != other.account:
-                return False
-            elif self.signature != other.signature:
-                return False
-            elif self.work != other.work:
-                return False
-        except AttributeError:
+        if not isinstance(other, block_open):
             return False
+        elif self.source != other.source:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.representative != other.representative:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.account != other.account:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.signature != other.signature:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.work != other.work:
+            assert (self.hash() != other.hash())
+            return False
+
         return True
 
     def __hash__(self):
@@ -897,12 +917,19 @@ class block_change:
         if not isinstance(other, block_change):
             return False
         elif self.previous != other.previous:
+            assert (self.hash() != other.hash())
             return False
         elif self.representative != other.representative:
+            assert (self.hash() != other.hash())
             return False
         elif self.signature != other.signature:
+            assert (self.hash() != other.hash())
             return False
         elif self.work != other.work:
+            assert (self.hash() != other.hash())
+            return False
+        elif self.ancillary != other.ancillary:
+            assert (self.hash() != other.hash())
             return False
         return True
 
@@ -1001,19 +1028,30 @@ class block_state:
         if not isinstance(other, block_state):
             return False
         elif self.account != other.account:
+            assert (self.hash() != other.hash())
             return False
         elif self.previous != other.previous:
+            assert (self.hash() != other.hash())
             return False
         elif self.representative != other.representative:
+            assert (self.hash() != other.hash())
             return False
         elif self.balance != other.balance:
+            assert (self.hash() != other.hash())
             return False
         elif self.link != other.link:
+            assert (self.hash() != other.hash())
             return False
         elif self.signature != other.signature:
+            assert (self.hash() != other.hash())
             return False
         elif self.work != other.work:
+            assert (self.hash() != other.hash())
             return False
+        elif self.ancillary != other.ancillary:
+            assert (self.hash() != other.hash())
+            return False
+
         return True
 
 
