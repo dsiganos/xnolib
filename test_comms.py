@@ -98,6 +98,27 @@ class TestComms(unittest.TestCase):
         expected = 'ECCB8CB65CD3106EDA8CE9AA893FEAD497A91BCA903890CBD7A5C59F06AB9113'
         self.assertEqual(expected, hexlify(b.hash()))
 
+    def test_block_send_equality(self):
+        block1 = {
+            "prev": binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
+            "dest": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal": 337010421085160209006996005437231978653,
+            "sig": binascii.unhexlify(
+                '5B11B17DB9C8FE0CC58CAC6A6EECEF9CB122DA8A81C6D3DB1B5EE3AB065AA8F8CB1D6765C8EB91B58530C5FF5987AD95E6D34BB57F44257E20795EE412E61600'),
+            "work": binascii.unhexlify('3C82CC724905EE95')
+        }
+        b1 = block_send(block1["prev"], block1["dest"], block1["bal"], block1["sig"], block1["work"])
+        b2 = block_send(block1["prev"], block1["dest"], block1["bal"], block1["sig"], block1["work"])
+
+        self.assertEqual(b1, b2)
+
+        b2.ancillary["next"] = b'\x00'
+        try:
+            self.assertEqual(b1, b2)
+            self.assertTrue(False)
+        except AssertionError:
+            self.assertTrue(True)
+
     def test_block_receive_serialisation(self):
         prev = binascii.unhexlify('ECCB8CB65CD3106EDA8CE9AA893FEAD497A91BCA903890CBD7A5C59F06AB9113')
         source = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
@@ -179,7 +200,7 @@ class TestComms(unittest.TestCase):
         expected = '6875C0DBFE5C44D8F8CFF431BC69ED5587C68F89F0663F2BC1FBBFCB46DC5989'
         self.assertEqual(expected, hexlify(b.hash()))
 
-    def test_blocks_manager_processing(self):
+    def test_block_manager_processing(self):
         block1 = {
             "prev" : binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
             "dest" : binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
