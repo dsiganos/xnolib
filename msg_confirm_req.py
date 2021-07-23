@@ -1,3 +1,4 @@
+import sys
 import time
 
 from nanolib import *
@@ -183,7 +184,10 @@ assert s
 s.settimeout(20)
 perform_handshake_exchange(s)
 s.send(msg.serialise())
-
+hdr, data = get_next_hdr_payload(s)
+confirm_req = confirm_req_hash.parse(hdr, data)
+print("First confirm_req (always) received: ")
+print(confirm_req)
 confirm_acks = []
 
 starttime = time.time()
@@ -196,7 +200,15 @@ while time.time() - starttime <= 15:
             print("Found the block hash we sent!")
             print(ack)
             print("breaking!")
-            break
+            sys.exit(0)
     else:
         ack = confirm_ack_block.parse(hdr, data)
+        if block.hash() == ack.block.hash():
+            print("Found the block hash we sent!")
+            print(ack)
+            print("breaking!")
+            sys.exit(0)
+
         confirm_acks.append(ack)
+
+print("No response found!")
