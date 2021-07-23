@@ -177,7 +177,6 @@ def get_next_confirm_ack(s):
     return hdr, data
 
 
-header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
 # block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
 #                    genesis_block_open["account"], genesis_block_open["signature"],
 #                    genesis_block_open["work"])
@@ -193,7 +192,10 @@ test_block_send = {
 block = block_send(test_block_send["prev"], test_block_send["dest"], test_block_send["bal"],
                    test_block_send["sig"], test_block_send["work"])
 
-header.set_block_type(4)
+header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
+header.set_block_type(block_type_enum.send)
+header.set_item_count(1)
+
 msg = confirm_req_block(header, block)
 print("The block we send hash: %s" % hexlify(block.hash()))
 
