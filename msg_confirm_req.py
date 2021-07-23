@@ -3,28 +3,57 @@ import time
 from nanolib import *
 
 
-class confirm_req_hash:
-    def __init__(self, first, second, header=message_header(network_id(67), [18, 18, 18], message_type(12), 0)):
-        self.header = header
+class hash_pair:
+    def __init__(self, first, second):
+        assert(len(first) == 32 and len(second) == 32)
         self.first = first
         self.second = second
 
-    @classmethod
-    def parse(self, data):
-        assert(len(data) == 72)
-        header = message_header.parse_header(data[:8])
-        first = data[8:40]
-        second = data[40:]
-        return confirm_req_hash(first, second, header=header)
+    def __str__(self):
+        string =  "  First: %s\n" % hexlify(self.first)
+        string += "  Second: %s\n" % hexlify(self.second)
+        return string
 
     def serialise(self):
         data = self.first
         data += self.second
         return data
 
+
+class confirm_req_hash:
+    def __init__(self, hdr, hash_pairs):
+        assert(isinstance(hdr, message_header))
+        assert(hdr.count_get() == len(hash_pairs))
+        self.hdr = hdr
+        self.hash_pairs = hash_pairs
+
+    @classmethod
+    def parse(self, hdr, data):
+        assert(isinstance(hdr, message_header))
+        item_count = hdr.count_get()
+        assert(len(data) / 64 == item_count)
+
+        hash_pairs = []
+        for i in range(0, item_count):
+            first = data[0:32]
+            second = data[32:64]
+            pair = hash_pair(first, second)
+            hash_pairs.append(pair)
+            data = data[64:]
+
+        return confirm_req_hash(hdr, hash_pairs)
+
+    def serialise(self):
+        data = self.hdr.serialise_header()
+        for h in self.hash_pairs:
+            data += h.serialise()
+        return data
+
     def __str__(self):
-        string = "First: %s\n" % hexlify(self.first)
-        string += "Second: %s\n" % hexlify(self.first)
+        string = str(self.hdr) + "\n"
+        for i in range(1, len(self.hash_pairs) + 1):
+            string += "Pair %d:\n" % i
+            string += str(self.hash_pairs[i-1])
         return string
 
 
