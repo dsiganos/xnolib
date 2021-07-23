@@ -68,6 +68,11 @@ class confirm_req_block:
         data = self.hdr.serialise_header()
         data += block.serialise(False)
         return data
+    
+    def __str__(self):
+        string = str(self.hdr) + "\n"
+        string += str(self.block)
+        return string
 
 
 class vote_common:
