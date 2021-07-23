@@ -18,15 +18,6 @@ class TestComms(unittest.TestCase):
         ip8 = peer(IPv6Address("::ffff:74ca:6b61"), 54000)
         self.peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
 
-    def test_header_deserialisation(self):
-        h = message_header.parse_header(self.data)
-        self.assertEqual(chr(h.net_id.id), 'A')
-        self.assertEqual(h.ver_max, 34)
-        self.assertEqual(h.ver_using, 34)
-        self.assertEqual(h.ver_min, 34)
-        self.assertEqual(h.msg_type.type, 2)
-        self.assertEqual(h.ext, [0, 0])
-
     def test_header_serialisation(self):
         h = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
         self.assertEqual(h.serialise_header(), self.data[:8])
@@ -124,8 +115,8 @@ class TestComms(unittest.TestCase):
         source = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
         sig = binascii.unhexlify('57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201')
         work = binascii.unhexlify('7202DF8A7C380578')
-        expected = prev + source + sig + work[::-1]
         b = block_receive(prev, source, sig, work)
+        expected = prev + source + sig + work[::-1]
         self.assertEqual(expected, b.serialise(False))
 
     def test_block_receive_hash(self):
@@ -136,6 +127,23 @@ class TestComms(unittest.TestCase):
         b = block_receive(prev, source, sig, work)
         expected = '617703C3D7343138CADFCAE391CA863E46BB5661AA74C93635A104141600D46D'
         self.assertEqual(expected, hexlify(b.hash()))
+
+    def test_block_receive_equality(self):
+        prev = binascii.unhexlify('ECCB8CB65CD3106EDA8CE9AA893FEAD497A91BCA903890CBD7A5C59F06AB9113')
+        source = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
+        sig = binascii.unhexlify('57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201')
+        work = binascii.unhexlify('7202DF8A7C380578')
+        b1 = block_receive(prev, source, sig, work)
+        b2 = block_receive(prev, source, sig, work)
+        self.assertEqual(b1, b2)
+        b2.ancillary["next"] = b'\x00'
+
+        try:
+            self.assertEqual(b1, b2)
+            self.assertTrue(False)
+
+        except AssertionError:
+            self.assertTrue(True)
 
     def test_block_open_serialisation(self):
         source = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
@@ -157,6 +165,24 @@ class TestComms(unittest.TestCase):
         expected = '991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'
         self.assertEqual(expected, hexlify(b.hash()))
 
+    def test_block_open_equality(self):
+        source = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+        rep = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+        acc = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+        sig = binascii.unhexlify('9F0C933C8ADE004D808EA1985FA746A7E95BA2A38F867640F53EC8F180BDFE9E2C1268DEAD7C2664F356E37ABA362BC58E46DBA03E523A7B5A19E4B6EB12BB02')
+        work = binascii.unhexlify('62F05417DD3FB691')
+
+        b1 = block_open(source, rep, acc, sig, work)
+        b2 = block_open(source, rep, acc, sig, work)
+        self.assertEqual(b1, b2)
+        b2.ancillary["next"] = b'\x00'
+
+        try:
+            self.assertEqual(b1, b2)
+            self.assertTrue(False)
+        except AssertionError:
+            self.assertTrue(True)
+
     def test_block_change_serialisation(self):
         prev = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
         rep = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
@@ -174,6 +200,22 @@ class TestComms(unittest.TestCase):
         b = block_change(prev, rep, sig, work)
         expected = '01A8479535B4C10238F9B637ABB33B3271575F0918F748B4B6B01020073206AF'
         self.assertEqual(expected, hexlify(b.hash()))
+
+    def test_block_change_equality(self):
+        prev = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
+        rep = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+        sig = binascii.unhexlify('57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201')
+        work = binascii.unhexlify('0F78168D5B30191D')
+        b1 = block_change(prev, rep, sig, work)
+        b2 = block_change(prev, rep, sig, work)
+
+        self.assertEqual(b1, b2)
+        b2.ancillary["next"] = b'\x00'
+        try:
+            self.assertEqual(b1, b2)
+            self.assertTrue(False)
+        except AssertionError:
+            self.assertTrue(True)
 
     def test_block_state_serialisation(self):
         acc = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
@@ -193,12 +235,33 @@ class TestComms(unittest.TestCase):
         rep = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
         bal = 325586539664609129644855132177
         link = binascii.unhexlify('65706F636820763120626C6F636B000000000000000000000000000000000000')
-        sig = binascii.unhexlify(
-            '57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201')
+        sig = binascii.unhexlify('57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201')
         work = binascii.unhexlify('0F78168D5B30191D')
         b = block_state(acc, prev, rep, bal, link, sig, work)
         expected = '6875C0DBFE5C44D8F8CFF431BC69ED5587C68F89F0663F2BC1FBBFCB46DC5989'
         self.assertEqual(expected, hexlify(b.hash()))
+
+    def test_block_state_equality(self):
+        acc = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+        prev = binascii.unhexlify('ECCB8CB65CD3106EDA8CE9AA893FEAD497A91BCA903890CBD7A5C59F06AB9113')
+        rep = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+        bal = 325586539664609129644855132177
+        link = binascii.unhexlify('65706F636820763120626C6F636B000000000000000000000000000000000000')
+        sig = binascii.unhexlify('57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201')
+        work = binascii.unhexlify('0F78168D5B30191D')
+
+        b1 = block_state(acc, prev, rep, bal, link, sig, work)
+        b2 = block_state(acc, prev, rep, bal, link, sig, work)
+
+        self.assertEqual(b1, b2)
+        b2.ancillary["next"] = b'\x00'
+
+        try:
+            self.assertEqual(b1, b2)
+            self.assertTrue(False)
+
+        except AssertionError:
+            self.assertTrue(True)
 
     def test_block_manager_processing(self):
         block1 = {
