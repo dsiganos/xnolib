@@ -203,12 +203,11 @@ while time.time() - starttime <= 15:
             sys.exit(0)
     else:
         ack = confirm_ack_block.parse(hdr, data)
+        confirm_acks.append(ack)
         if block.hash() == ack.block.hash():
             print("Found the block hash we sent!")
             print(ack)
             print("breaking!")
             sys.exit(0)
-
-        confirm_acks.append(ack)
 
 print("No response found!")
