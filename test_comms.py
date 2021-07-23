@@ -179,7 +179,7 @@ class TestComms(unittest.TestCase):
         expected = '6875C0DBFE5C44D8F8CFF431BC69ED5587C68F89F0663F2BC1FBBFCB46DC5989'
         self.assertEqual(expected, hexlify(b.hash()))
 
-    def test_blocks_manager_traversals(self):
+    def test_blocks_manager_processing(self):
         block1 = {
             "prev" : binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
             "dest" : binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
