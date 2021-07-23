@@ -205,7 +205,14 @@ class message_header:
     def set_block_type(self, block_type):
         assert(isinstance(block_type, int))
         block_type = block_type << 8
-        self.ext = block_type
+        self.ext = self.ext & 0xf0ff
+        self.ext = self.ext | block_type
+
+    def set_item_count(self, count):
+        assert(isinstance(count, int))
+        count = count << 12
+        self.ext = self.ext & 0x0fff
+        self.ext = self.ext | count
 
 
 
