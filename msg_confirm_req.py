@@ -65,10 +65,11 @@ class confirm_req_block:
         self.block = block
 
     def serialise(self):
+        assert(self.hdr.block_type() in range(2, 7))
         data = self.hdr.serialise_header()
         data += block.serialise(False)
         return data
-    
+
     def __str__(self):
         string = str(self.hdr) + "\n"
         string += str(self.block)
@@ -175,9 +176,20 @@ def get_next_confirm_ack(s):
 
 
 header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
-block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-                   genesis_block_open["account"], genesis_block_open["signature"],
-                   genesis_block_open["work"])
+# block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+#                    genesis_block_open["account"], genesis_block_open["signature"],
+#                    genesis_block_open["work"])
+
+test_block_send = {
+    "prev" : b'J\x03\x9a\xd4\x82\xc9\x17\xc2f\xa3\xd4\xa2\xc9xI\xcei\x17;k\xc7u\xaf\xc7y\xb9\xea\\\xe4FBo',
+    "dest" : b'B\xdd0\x8b\xa9\x1a\xa2%\xb9\xdd\x0e\xf1Zh\xa8\xddI\xe2\x94\x0cbw\xa4\xbf\xac6>\x1c\x8b\xf1By',
+    "bal"  : 205676479325586539664609129644855132177,
+    "sig"  : b"0\xa5\x85\x03\x05\xaaa\x18P\x08\xd4\xa72\xaa\x85'h-#\x9d\x85Esh\xb6\xa5\x81\xf5\x17\xd5\xf8\xc0\x07\x8d\xb9\x9bWA\xb7\x9c\xc2\x98\x808r\x92\xb6Of\x8c\x96K\xe1\xb5\x07\x90\xd3\xec}\x94\x83\x96\xd0\x07",
+    "work" : b'\xed\xfdqW\x02^\xa4a'
+}
+
+block = block_send(test_block_send["prev"], test_block_send["dest"], test_block_send["bal"],
+                   test_block_send["sig"], test_block_send["work"])
 
 header.set_block_type(4)
 msg = confirm_req_block(header, block)
@@ -185,14 +197,15 @@ print("The block we send hash: %s" % hexlify(block.hash()))
 
 ctx = livectx
 s = get_initial_connected_socket(ctx)
-assert s
 s.settimeout(20)
 perform_handshake_exchange(s)
 s.send(msg.serialise())
+
 hdr, data = get_next_hdr_payload(s)
 confirm_req = confirm_req_hash.parse(hdr, data)
 print("First confirm_req (always) received: ")
 print(confirm_req)
+
 confirm_acks = []
 
 starttime = time.time()
