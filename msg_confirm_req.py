@@ -90,6 +90,7 @@ class confirm_ack_hash:
     def __str__(self):
         string = ""
         string += str(self.hdr)
+        string += "\n"
         string += str(self.common)
         string += "Hashes: \n"
         for h in self.hashes:
@@ -127,6 +128,7 @@ class confirm_ack_block:
     def __str__(self):
         string = ""
         string += str(hdr)
+        string += "\n"
         string += str(block)
 
 
@@ -156,30 +158,16 @@ s.send(msg.serialise())
 confirm_acks = []
 
 starttime = time.time()
-while time.time() - starttime <= 10:
+while time.time() - starttime <= 15:
     hdr, data = get_next_confirm_ack(s)
     if hdr.block_type() == 1:
         ack = confirm_ack_hash.parse(hdr, data)
         confirm_acks.append(ack)
+        if block.hash() in ack.hashes:
+            print("Found the block hash we sent!")
+            print(ack)
+            print("breaking!")
+            break
     else:
         ack = confirm_ack_block.parse(hdr, data)
         confirm_acks.append(ack)
-
-for a in confirm_acks:
-    print(a)
-
-print(hdr)
-print("header block type: %d" % hdr.block_type())
-
-
-
-
-#TODO: Look if one confirm_ack is exactly the same every time you run the program, that should be the response
-
-
-
-
-
-# TODO: Examine this data, why is it like this? (Look at extensions)
-
-
