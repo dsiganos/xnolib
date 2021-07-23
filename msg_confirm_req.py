@@ -211,3 +211,5 @@ while time.time() - starttime <= 15:
             sys.exit(0)
 
 print("No response found!")
+# for a in confirm_acks:
+#     print(a)
