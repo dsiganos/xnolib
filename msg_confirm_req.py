@@ -296,6 +296,13 @@ def search_for_response(s, req):
     print("No response found!")
 
 
+def convert_blocks_to_hash_pairs(blocks):
+    pairs = []
+    for b in blocks:
+        hash_pair(b.hash(), b.root())
+    return pairs
+
+
 def main():
     ctx = livectx
     s = get_initial_connected_socket(ctx)
