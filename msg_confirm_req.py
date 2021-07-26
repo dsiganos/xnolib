@@ -53,6 +53,21 @@ class confirm_req_hash:
             data += h.serialise()
         return data
 
+    def check_response(self, confirm_ack):
+        assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
+        if isinstance(confirm_ack, confirm_ack_hash):
+            for h in self.hash_pairs:
+                if h.first not in confirm_ack.hashes:
+                    return False
+
+        elif isinstance(confirm_ack, confirm_ack_block):
+            assert(len(self.hash_pairs) == 1)
+            for h in self.hash_pairs:
+                if h.first != confirm_ack.block.hash():
+                    return False
+
+        return True
+
     def __str__(self):
         string = str(self.hdr) + "\n"
         for i in range(1, len(self.hash_pairs) + 1):
@@ -60,22 +75,11 @@ class confirm_req_hash:
             string += str(self.hash_pairs[i-1])
         return string
 
-    def check_response(self, confirm_ack):
-        assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
-        if isinstance(confirm_ack, confirm_ack_hash):
-            for h in self.hash_pairs:
-                if h.first not in confirm_ack.hashes:
-                    return False
-        elif isinstance(confirm_ack, confirm_ack_block):
-            assert(len(self.hash_pairs) == 1)
-            for h in self.hash_pairs:
-                if h.first != confirm_ack.block.hash():
-                    return False
-        return True
 
 class confirm_req_block:
     def __init__(self, hdr, block, block_type):
         # TODO: Fill in the headers block_type and item count here
+        # Block has to be an instance of a block class
         assert(isinstance(hdr, message_header))
         assert(isinstance(block_type, int))
         self.hdr = hdr
@@ -88,6 +92,19 @@ class confirm_req_block:
         data = self.hdr.serialise_header()
         data += self.block.serialise(False)
         return data
+
+    def check_response(self, confirm_ack):
+        assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
+
+        if isinstance(confirm_ack, confirm_ack_block):
+            if self.block.hash() != confirm_ack.block.hash():
+                return False
+
+        if isinstance(confirm_ack, confirm_ack_hash):
+            if self.block.hash() not in confirm_ack.hashes:
+                return False
+
+        return True
 
     def __str__(self):
         string = str(self.hdr) + "\n"
