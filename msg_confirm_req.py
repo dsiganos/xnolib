@@ -29,7 +29,7 @@ class confirm_req_hash:
         assert(isinstance(hdr, message_header))
         assert(len(hash_pairs) > 0)
         hdr.set_item_count(len(hash_pairs))
-        hdr.set_block_type(1)
+        hdr.set_block_type(block_type_enum.not_a_block)
         self.hdr = hdr
         self.hash_pairs = hash_pairs
 
@@ -79,11 +79,11 @@ class confirm_req_hash:
 
 
 class confirm_req_block:
-    def __init__(self, hdr, block, block_type):
+    def __init__(self, hdr, block):
         # TODO: Fill in the headers block_type and item count here
         # Block has to be an instance of a block class
         assert(isinstance(hdr, message_header))
-        assert(isinstance(block_type, int))
+        block_type = block.get_type_int()
         self.hdr = hdr
         self.hdr.set_block_type(block_type)
         self.hdr.set_item_count(1)
@@ -224,28 +224,27 @@ def send_confirm_req_block(s):
     block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
                        genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
 
-    header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
-
-    req = confirm_req_block(header, block, block_type_enum.open)
     print("The block we send hash: %s" % hexlify(block.hash()))
-    s.send(req.serialise())
 
-    search_for_response(s, req)
+    outcome = confirm_block(block, s)
+
+    if not outcome:
+        print("block %s not confirmed!" % hexlify(block.hash()))
+    else:
+        print("block %s confirmed!" % hexlify(block.hash()))
 
 
 def send_confirm_req_hash(s):
-    header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
-
     block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
                        genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
     # print(block)
 
-    pairs = convert_blocks_to_hash_pairs([block])
-    req = confirm_req_hash(header, pairs)
-    print(req)
-    s.send(req.serialise())
+    outcome = confirm_blocks_by_hash([block], s)
 
-    search_for_response(s, req)
+    if not outcome:
+        print("blocks not confirmed!")
+    else:
+        print("blocks confirmed")
 
 
 def search_for_response(s, req):
@@ -257,16 +256,14 @@ def search_for_response(s, req):
             ack = confirm_ack_hash.parse(hdr, data)
             if req.is_response(ack):
                 print("Found response!")
-                print(ack)
-                sys.exit(0)
+                return ack
         else:
             ack = confirm_ack_block.parse(hdr, data)
             if req.is_response(ack):
                 print("Found response!")
-                print(ack)
-                sys.exit(0)
+                return ack
 
-    print("No response found!")
+    return None
 
 
 def convert_blocks_to_hash_pairs(blocks):
@@ -275,6 +272,34 @@ def convert_blocks_to_hash_pairs(blocks):
         pair = hash_pair(b.hash(), b.root())
         pairs.append(pair)
     return pairs
+
+
+def confirm_block(block, s):
+    hdr = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
+    req = confirm_req_block(hdr, block)
+    s.send(req.serialise())
+
+    resp = search_for_response(s, req)
+
+    if resp is None:
+        return False
+    else:
+        return True
+
+
+def confirm_blocks_by_hash(blocks, s):
+    assert(isinstance(blocks, list))
+    hdr = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
+    pairs = convert_blocks_to_hash_pairs(blocks)
+    req = confirm_req_hash(hdr, pairs)
+    s.send(req.serialise())
+
+    resp = search_for_response(s, req)
+
+    if resp is None:
+        return False
+    else:
+        return True
 
 
 def main():
@@ -297,7 +322,6 @@ def parse_args():
     parser.add_argument('-B', '--block', action="store_true", required=False, default=False)
     parser.add_argument('-H', '--hashes', action="store_true", required=False, default=False)
     return parser.parse_args()
-
 
 
 if __name__ == "__main__":
