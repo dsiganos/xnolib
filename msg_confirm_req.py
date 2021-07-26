@@ -27,6 +27,7 @@ class hash_pair:
 class confirm_req_hash:
     def __init__(self, hdr, hash_pairs):
         assert(isinstance(hdr, message_header))
+        assert(len(hash_pairs) > 0)
         hdr.set_item_count(len(hash_pairs))
         hdr.set_block_type(1)
         self.hdr = hdr
@@ -220,17 +221,8 @@ def get_next_confirm_ack(s):
 
 
 def send_confirm_req_block(s):
-    test_block_send = {
-        "prev": binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F'),
-        "dest": binascii.unhexlify('42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279'),
-        "bal": 205676479325586539664609129644855132177,
-        "sig": binascii.unhexlify(
-            '30A5850305AA61185008D4A732AA8527682D239D85457368B6A581F517D5F8C0078DB99B5741B79CC29880387292B64F668C964BE1B50790D3EC7D948396D007'),
-        "work": binascii.unhexlify('EDFD7157025EA461')
-    }
-
-    block = block_send(test_block_send["prev"], test_block_send["dest"], test_block_send["bal"],
-                       test_block_send["sig"], test_block_send["work"])
+    block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+                       genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
 
     header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
 
@@ -243,31 +235,12 @@ def send_confirm_req_block(s):
 
 def send_confirm_req_hash(s):
     header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
-    big_acc_block_open = {
-        "source": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
-        "rep": binascii.unhexlify('2399A083C600AA0572F5E36247D978FCFC840405F8D4B6D33161C0066A55F431'),
-        "account": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
-        "sig": binascii.unhexlify('E950FFDF0C9C4DAF43C27AE3993378E4D8AD6FA591C24497C53E07A3BC80468539B0A467992A916F0DDA6F267AD764A3C1A5BDBD8F489DFAE8175EEE0E337402'),
-        "work": binascii.unhexlify('E997C097A452A1B1')
-    }
+
     block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
                        genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
     # print(block)
 
-    # block_hash = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
-    # root = binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F')
-
-    # block_hash = binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948')
-    # root = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
-
-    # block_hash = block.hash()
-    # root = block.root()
-
-    # block_hash = binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948')
-    # root = genesis_block_open["account"]
-
     pairs = convert_blocks_to_hash_pairs([block])
-    print("Converted Pairs: {}".format(pairs))
     req = confirm_req_hash(header, pairs)
     print(req)
     s.send(req.serialise())
@@ -293,7 +266,6 @@ def search_for_response(s, req):
                 print(ack)
                 sys.exit(0)
 
-
     print("No response found!")
 
 
@@ -312,7 +284,6 @@ def main():
     perform_handshake_exchange(s)
 
     args = parse_args()
-    print(args)
     if args.block:
         send_confirm_req_block(s)
     elif args.hashes:
@@ -324,7 +295,7 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-B', '--block', action="store_true", required=False, default=False)
-    parser.add_argument('-H', '--hashes', action="store_true", required=False, default=True)
+    parser.add_argument('-H', '--hashes', action="store_true", required=False, default=False)
     return parser.parse_args()
 
 
