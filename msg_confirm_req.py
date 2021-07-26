@@ -227,14 +227,35 @@ def send_confirm_req_block(s):
 
 
 def send_confirm_req_hash(s):
-    print("Unimplemented function")
     header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
     header.set_item_count(1)
     header.set_block_type(1)
-    block_hash = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
-    prev = binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F')
-    pairs = [hash_pair(block_hash, prev)]
+    big_acc_block_open = {
+        "source": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
+        "rep": binascii.unhexlify('2399A083C600AA0572F5E36247D978FCFC840405F8D4B6D33161C0066A55F431'),
+        "account": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+        "sig": binascii.unhexlify('E950FFDF0C9C4DAF43C27AE3993378E4D8AD6FA591C24497C53E07A3BC80468539B0A467992A916F0DDA6F267AD764A3C1A5BDBD8F489DFAE8175EEE0E337402'),
+        "work": binascii.unhexlify('E997C097A452A1B1')
+    }
+    block = block_open(big_acc_block_open["source"], big_acc_block_open["rep"], big_acc_block_open["account"],
+                       big_acc_block_open["sig"], big_acc_block_open["work"])
+    # print(block)
+
+    # block_hash = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
+    # root = binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F')
+
+    # block_hash = binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948')
+    # root = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
+
+    # block_hash = block.hash()
+    # root = block.root()
+
+    block_hash = binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948')
+    root = genesis_block_open["account"]
+
+    pairs = [hash_pair(block_hash, root)]
     req = confirm_req_hash(header, pairs)
+    print(req)
     s.send(req.serialise())
 
     confirm_acks = []
@@ -245,10 +266,20 @@ def send_confirm_req_hash(s):
         if hdr.block_type() == 1:
             ack = confirm_ack_hash.parse(hdr, data)
             confirm_acks.append(ack)
-            if prev in ack.hashes and block_hash in ack.hashes:
+            if block_hash in ack.hashes:
                 print("Found a response!")
                 print(ack)
                 print("breaking")
+                sys.exit(0)
+
+        else:
+            ack = confirm_ack_block.parse(hdr, data)
+            confirm_acks.append(ack)
+            if block_hash == ack.block.hash():
+                print("Found the block hash we sent!")
+                print(ack)
+                print("breaking")
+                sys.exit(0)
 
     print("No response found!")
 
