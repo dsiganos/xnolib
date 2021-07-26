@@ -226,7 +226,7 @@ def send_confirm_req_block(s):
 
     header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
 
-    req = confirm_req_block(header, block, block_type_enum.send)
+    req = confirm_req_block(header, block, block_type_enum.open)
     print("The block we send hash: %s" % hexlify(block.hash()))
     s.send(req.serialise())
 
