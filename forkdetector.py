@@ -7,6 +7,7 @@ import tempfile
 import frontier_request
 import peercrawler
 from nanolib import *
+from exceptions import *
 
 
 def frontier_req(s, peer, acc_id):
@@ -96,9 +97,12 @@ while True:
 #            if pulls >= 1:
 #                stop = True
 #                break
-        except socket.error as error:
+        except OSError as e:
             peer.score = 0
-            print('socket error %s' % error)
+            print(e)
+        except PyNanoCoinException as e:
+            peer.score = 0
+            print(e)
 
     #print(blockman.accounts[0].str_blocks())
     #for acc in blockman.accounts:

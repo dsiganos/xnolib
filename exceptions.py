@@ -1,52 +1,72 @@
-class ParseErrorBadMagicNumber(Exception): pass
+
+# all exceptions in this project inherit this class
+class PyNanoCoinException(Exception):
+    pass
 
 
-class ParseErrorBadNetworkId(Exception): pass
+class ParseErrorBadMagicNumber(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadMessageType(Exception): pass
+class ParseErrorBadNetworkId(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadIPv6(Exception): pass
+class ParseErrorBadMessageType(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadMessageBody(Exception): pass
+class ParseErrorBadIPv6(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBlockSend(Exception): pass
+class ParseErrorBadMessageBody(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBlockReceive(Exception): pass
+class ParseErrorBadBlockSend(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBlockOpen(Exception): pass
+class ParseErrorBadBlockReceive(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBlockChange(Exception): pass
+class ParseErrorBadBlockOpen(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBlockChange(Exception): pass
+class ParseErrorBadBlockChange(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBlockState(Exception): pass
+class ParseErrorBadBlockChange(PyNanoCoinException):
+    pass
 
 
-class ParseErrorBadBulkPullResponse(Exception): pass
+class ParseErrorBadBlockState(PyNanoCoinException):
+    pass
 
 
-class BadBlockHash(Exception): pass
+class ParseErrorBadBulkPullResponse(PyNanoCoinException):
+    pass
 
 
-class SocketClosedByPeer(Exception): pass
+class BadBlockHash(PyNanoCoinException):
+    pass
 
 
-class InvalidBlockHash(Exception): pass
+class SocketClosedByPeer(PyNanoCoinException):
+    pass
 
 
-class HandshakeExchangeFail(Exception): pass
+class InvalidBlockHash(PyNanoCoinException):
+    pass
 
 
-class CommsError(Exception): pass
+class HandshakeExchangeFail(PyNanoCoinException):
+    pass
 
 
-
+class CommsError(PyNanoCoinException):
+    pass

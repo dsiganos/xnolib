@@ -3,6 +3,8 @@
 import binascii
 import random
 import socket
+from exceptions import *
+
 from nanolib import message_header, network_id, message_type, livectx, read_socket, get_all_dns_addresses, \
     get_account_id, get_initial_connected_socket, hexlify, get_account_id
 
@@ -39,7 +41,8 @@ class frontier_entry:
 
 def read_frontier_response(s):
     data = read_socket(s, 64)
-    assert data
+    if data is None or len(data) < 64:
+        raise PyNanoCoinException('failed to read frontier response, data=%s', data)
     return frontier_entry(data[0:32], data[32:])
 
 
