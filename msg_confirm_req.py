@@ -204,6 +204,13 @@ class confirm_ack_block:
         string += str(self.block)
 
 
+def check_confirm_req_response(confirm_req, confirm_ack):
+    # TODO: Check this
+    assert(isinstance(confirm_req, confirm_req_hash) or isinstance(confirm_req, confirm_req_block))
+    assert(isinstance(confirm_ack, confirm_ack_hash) or isinstance(confirm_ack, confirm_ack_block))
+    return confirm_req.check_response(confirm_ack)
+
+
 def get_next_confirm_ack(s):
     hdr, data = get_next_hdr_payload(s)
     while hdr.msg_type != message_type(5):
