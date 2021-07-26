@@ -60,6 +60,18 @@ class confirm_req_hash:
             string += str(self.hash_pairs[i-1])
         return string
 
+    def check_response(self, confirm_ack):
+        assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
+        if isinstance(confirm_ack, confirm_ack_hash):
+            for h in self.hash_pairs:
+                if h.first not in confirm_ack.hashes:
+                    return False
+        elif isinstance(confirm_ack, confirm_ack_block):
+            assert(len(self.hash_pairs) == 1)
+            for h in self.hash_pairs:
+                if h.first != confirm_ack.block.hash():
+                    return False
+        return True
 
 class confirm_req_block:
     def __init__(self, hdr, block, block_type):
