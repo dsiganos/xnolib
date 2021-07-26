@@ -53,7 +53,7 @@ class confirm_req_hash:
             data += h.serialise()
         return data
 
-    def check_response(self, confirm_ack):
+    def is_response(self, confirm_ack):
         assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
         if isinstance(confirm_ack, confirm_ack_hash):
             for h in self.hash_pairs:
@@ -93,7 +93,7 @@ class confirm_req_block:
         data += self.block.serialise(False)
         return data
 
-    def check_response(self, confirm_ack):
+    def is_response(self, confirm_ack):
         assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
 
         if isinstance(confirm_ack, confirm_ack_block):
@@ -208,7 +208,7 @@ def check_confirm_req_response(confirm_req, confirm_ack):
     # TODO: Check this
     assert(isinstance(confirm_req, confirm_req_hash) or isinstance(confirm_req, confirm_req_block))
     assert(isinstance(confirm_ack, confirm_ack_hash) or isinstance(confirm_ack, confirm_ack_block))
-    return confirm_req.check_response(confirm_ack)
+    return confirm_req.is_response(confirm_ack)
 
 
 def get_next_confirm_ack(s):
@@ -233,33 +233,11 @@ def send_confirm_req_block(s):
 
     header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
 
-    msg = confirm_req_block(header, block, block_type_enum.send)
+    req = confirm_req_block(header, block, block_type_enum.send)
     print("The block we send hash: %s" % hexlify(block.hash()))
-    s.send(msg.serialise())
+    s.send(req.serialise())
 
-    confirm_acks = []
-
-    starttime = time.time()
-    while time.time() - starttime <= 15:
-        hdr, data = get_next_confirm_ack(s)
-        if hdr.block_type() == 1:
-            ack = confirm_ack_hash.parse(hdr, data)
-            confirm_acks.append(ack)
-            if block.hash() in ack.hashes:
-                print("Found the block hash we sent!")
-                print(ack)
-                print("breaking!")
-                sys.exit(0)
-        else:
-            ack = confirm_ack_block.parse(hdr, data)
-            confirm_acks.append(ack)
-            if block.hash() == ack.block.hash():
-                print("Found the block hash we sent!")
-                print(ack)
-                print("breaking!")
-                sys.exit(0)
-
-    print("No response found!")
+    search_for_response(s, req)
 
 
 def send_confirm_req_hash(s):
@@ -293,29 +271,27 @@ def send_confirm_req_hash(s):
     req = confirm_req_hash(header, pairs)
     print(req)
     s.send(req.serialise())
+    search_for_response(s, req)
 
-    confirm_acks = []
 
+def search_for_response(s, req):
+    assert(isinstance(req, confirm_req_block) or isinstance(req, confirm_req_hash))
     starttime = time.time()
     while time.time() - starttime <= 15:
         hdr, data = get_next_confirm_ack(s)
         if hdr.block_type() == 1:
             ack = confirm_ack_hash.parse(hdr, data)
-            confirm_acks.append(ack)
-            if block_hash in ack.hashes:
-                print("Found a response!")
+            if req.is_response(ack):
+                print("Found response!")
                 print(ack)
-                print("breaking")
                 sys.exit(0)
-
         else:
             ack = confirm_ack_block.parse(hdr, data)
-            confirm_acks.append(ack)
-            if block_hash == ack.block.hash():
-                print("Found the block hash we sent!")
+            if req.is_response(ack):
+                print("Found response!")
                 print(ack)
-                print("breaking")
                 sys.exit(0)
+
 
     print("No response found!")
 
@@ -333,7 +309,7 @@ def main():
     elif args.hashes:
         send_confirm_req_hash(s)
     else:
-        print("Please specify either -b or -H for sending a confirm_req using a block or hashes respectively")
+        print("Please specify either -B or -H for sending a confirm_req using a block or hashes respectively")
 
 
 def parse_args():
