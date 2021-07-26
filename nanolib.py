@@ -520,6 +520,9 @@ class block_send:
     def root(self):
         return self.previous
 
+    def get_type_int(self):
+        return block_type_enum.send
+
     def get_amount_sent_str(self):
         if self.ancillary["amount_sent"] is not None:
             return str(self.ancillary["amount_sent"] / (10**30))
@@ -634,6 +637,9 @@ class block_receive:
 
     def root(self):
         return self.previous
+
+    def get_type_int(self):
+        return block_type_enum.receive
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
     def hash(self):
@@ -755,6 +761,9 @@ class block_open:
     def root(self):
         return self.account
 
+    def get_type_int(self):
+        return block_type_enum.open
+
     def hash(self):
         data = b"".join([
             self.source,
@@ -870,6 +879,9 @@ class block_change:
     def root(self):
         return self.previous
 
+    def get_type_int(self):
+        return block_type_enum.change
+
     def hash(self):
         data = b"".join([
             self.previous,
@@ -978,6 +990,9 @@ class block_state:
 
     def get_balance(self):
         return self.balance
+
+    def get_type_int(self):
+        return block_type_enum.state
 
     def root(self):
         if int.from_bytes(self.previous, "big") == 0:
