@@ -517,6 +517,9 @@ class block_send:
     def get_balance(self):
         return self.balance
 
+    def root(self):
+        return self.previous
+
     def get_amount_sent_str(self):
         if self.ancillary["amount_sent"] is not None:
             return str(self.ancillary["amount_sent"] / (10**30))
@@ -628,6 +631,9 @@ class block_receive:
 
     def get_balance(self):
         return self.ancillary["balance"]
+
+    def root(self):
+        return self.previous
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
     def hash(self):
@@ -746,6 +752,9 @@ class block_open:
     def get_balance(self):
         return self.ancillary["balance"]
 
+    def root(self):
+        return self.account
+
     def hash(self):
         data = b"".join([
             self.source,
@@ -858,6 +867,9 @@ class block_change:
     def get_balance(self):
         return self.ancillary["balance"]
 
+    def root(self):
+        return self.previous
+
     def hash(self):
         data = b"".join([
             self.previous,
@@ -966,6 +978,12 @@ class block_state:
 
     def get_balance(self):
         return self.balance
+
+    def root(self):
+        if int.from_bytes(self.previous, "big") == 0:
+            return self.account
+        else:
+            return self.previous
 
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
