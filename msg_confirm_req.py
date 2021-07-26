@@ -27,7 +27,8 @@ class hash_pair:
 class confirm_req_hash:
     def __init__(self, hdr, hash_pairs):
         assert(isinstance(hdr, message_header))
-        assert(hdr.count_get() == len(hash_pairs))
+        hdr.set_item_count(len(hash_pairs))
+        hdr.set_block_type(1)
         self.hdr = hdr
         self.hash_pairs = hash_pairs
 
@@ -242,8 +243,6 @@ def send_confirm_req_block(s):
 
 def send_confirm_req_hash(s):
     header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
-    header.set_item_count(1)
-    header.set_block_type(1)
     big_acc_block_open = {
         "source": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
         "rep": binascii.unhexlify('2399A083C600AA0572F5E36247D978FCFC840405F8D4B6D33161C0066A55F431'),
@@ -251,8 +250,8 @@ def send_confirm_req_hash(s):
         "sig": binascii.unhexlify('E950FFDF0C9C4DAF43C27AE3993378E4D8AD6FA591C24497C53E07A3BC80468539B0A467992A916F0DDA6F267AD764A3C1A5BDBD8F489DFAE8175EEE0E337402'),
         "work": binascii.unhexlify('E997C097A452A1B1')
     }
-    block = block_open(big_acc_block_open["source"], big_acc_block_open["rep"], big_acc_block_open["account"],
-                       big_acc_block_open["sig"], big_acc_block_open["work"])
+    block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
+                       genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
     # print(block)
 
     # block_hash = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
@@ -264,13 +263,15 @@ def send_confirm_req_hash(s):
     # block_hash = block.hash()
     # root = block.root()
 
-    block_hash = binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948')
-    root = genesis_block_open["account"]
+    # block_hash = binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948')
+    # root = genesis_block_open["account"]
 
-    pairs = [hash_pair(block_hash, root)]
+    pairs = convert_blocks_to_hash_pairs([block])
+    print("Converted Pairs: {}".format(pairs))
     req = confirm_req_hash(header, pairs)
     print(req)
     s.send(req.serialise())
+
     search_for_response(s, req)
 
 
@@ -299,7 +300,8 @@ def search_for_response(s, req):
 def convert_blocks_to_hash_pairs(blocks):
     pairs = []
     for b in blocks:
-        hash_pair(b.hash(), b.root())
+        pair = hash_pair(b.hash(), b.root())
+        pairs.append(pair)
     return pairs
 
 
@@ -322,7 +324,7 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-B', '--block', action="store_true", required=False, default=False)
-    parser.add_argument('-H', '--hashes', action="store_true", required=False, default=False)
+    parser.add_argument('-H', '--hashes', action="store_true", required=False, default=True)
     return parser.parse_args()
 
 
