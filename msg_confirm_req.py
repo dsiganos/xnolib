@@ -2,6 +2,7 @@
 
 import sys
 import time
+import argparse
 
 from nanolib import *
 
@@ -61,15 +62,19 @@ class confirm_req_hash:
 
 
 class confirm_req_block:
-    def __init__(self, hdr, block):
+    def __init__(self, hdr, block, block_type):
+        # TODO: Fill in the headers block_type and item count here
         assert(isinstance(hdr, message_header))
+        assert(isinstance(block_type, int))
         self.hdr = hdr
+        self.hdr.set_block_type(block_type)
+        self.hdr.set_item_count(1)
         self.block = block
 
     def serialise(self):
         assert(self.hdr.block_type() in range(2, 7))
         data = self.hdr.serialise_header()
-        data += block.serialise(False)
+        data += self.block.serialise(False)
         return data
 
     def __str__(self):
@@ -165,9 +170,9 @@ class confirm_ack_block:
 
     def __str__(self):
         string = ""
-        string += str(hdr)
+        string += str(self.hdr)
         string += "\n"
-        string += str(block)
+        string += str(self.block)
 
 
 def get_next_confirm_ack(s):
@@ -177,61 +182,100 @@ def get_next_confirm_ack(s):
     return hdr, data
 
 
-# block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-#                    genesis_block_open["account"], genesis_block_open["signature"],
-#                    genesis_block_open["work"])
+def send_confirm_req_block(s):
+    test_block_send = {
+        "prev": binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F'),
+        "dest": binascii.unhexlify('42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279'),
+        "bal": 205676479325586539664609129644855132177,
+        "sig": binascii.unhexlify(
+            '30A5850305AA61185008D4A732AA8527682D239D85457368B6A581F517D5F8C0078DB99B5741B79CC29880387292B64F668C964BE1B50790D3EC7D948396D007'),
+        "work": binascii.unhexlify('EDFD7157025EA461')
+    }
 
-test_block_send = {
-    "prev" : binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F'),
-    "dest" : binascii.unhexlify('42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279'),
-    "bal"  : 205676479325586539664609129644855132177,
-    "sig"  : binascii.unhexlify('30A5850305AA61185008D4A732AA8527682D239D85457368B6A581F517D5F8C0078DB99B5741B79CC29880387292B64F668C964BE1B50790D3EC7D948396D007'),
-    "work" : binascii.unhexlify('EDFD7157025EA461')
-}
+    block = block_send(test_block_send["prev"], test_block_send["dest"], test_block_send["bal"],
+                       test_block_send["sig"], test_block_send["work"])
 
-block = block_send(test_block_send["prev"], test_block_send["dest"], test_block_send["bal"],
-                   test_block_send["sig"], test_block_send["work"])
+    header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
 
-header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
-header.set_block_type(block_type_enum.send)
-header.set_item_count(1)
+    msg = confirm_req_block(header, block, block_type_enum.send)
+    print("The block we send hash: %s" % hexlify(block.hash()))
+    s.send(msg.serialise())
 
-msg = confirm_req_block(header, block)
-print("The block we send hash: %s" % hexlify(block.hash()))
+    confirm_acks = []
 
-ctx = livectx
-s = get_initial_connected_socket(ctx)
-s.settimeout(20)
-perform_handshake_exchange(s)
-s.send(msg.serialise())
+    starttime = time.time()
+    while time.time() - starttime <= 15:
+        hdr, data = get_next_confirm_ack(s)
+        if hdr.block_type() == 1:
+            ack = confirm_ack_hash.parse(hdr, data)
+            confirm_acks.append(ack)
+            if block.hash() in ack.hashes:
+                print("Found the block hash we sent!")
+                print(ack)
+                print("breaking!")
+                sys.exit(0)
+        else:
+            ack = confirm_ack_block.parse(hdr, data)
+            confirm_acks.append(ack)
+            if block.hash() == ack.block.hash():
+                print("Found the block hash we sent!")
+                print(ack)
+                print("breaking!")
+                sys.exit(0)
 
-hdr, data = get_next_hdr_payload(s)
-confirm_req = confirm_req_hash.parse(hdr, data)
-print("First confirm_req (always) received: ")
-print(confirm_req)
+    print("No response found!")
 
-confirm_acks = []
 
-starttime = time.time()
-while time.time() - starttime <= 15:
-    hdr, data = get_next_confirm_ack(s)
-    if hdr.block_type() == 1:
-        ack = confirm_ack_hash.parse(hdr, data)
-        confirm_acks.append(ack)
-        if block.hash() in ack.hashes:
-            print("Found the block hash we sent!")
-            print(ack)
-            print("breaking!")
-            sys.exit(0)
+def send_confirm_req_hash(s):
+    print("Unimplemented function")
+    header = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
+    header.set_item_count(1)
+    header.set_block_type(1)
+    block_hash = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
+    prev = binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F')
+    pairs = [hash_pair(block_hash, prev)]
+    req = confirm_req_hash(header, pairs)
+    s.send(req.serialise())
+
+    confirm_acks = []
+
+    starttime = time.time()
+    while time.time() - starttime <= 15:
+        hdr, data = get_next_confirm_ack(s)
+        if hdr.block_type() == 1:
+            ack = confirm_ack_hash.parse(hdr, data)
+            confirm_acks.append(ack)
+            if prev in ack.hashes and block_hash in ack.hashes:
+                print("Found a response!")
+                print(ack)
+                print("breaking")
+
+    print("No response found!")
+
+
+def main():
+    ctx = livectx
+    s = get_initial_connected_socket(ctx)
+    s.settimeout(20)
+    perform_handshake_exchange(s)
+
+    args = parse_args()
+    print(args)
+    if args.block:
+        send_confirm_req_block(s)
+    elif args.hashes:
+        send_confirm_req_hash(s)
     else:
-        ack = confirm_ack_block.parse(hdr, data)
-        confirm_acks.append(ack)
-        if block.hash() == ack.block.hash():
-            print("Found the block hash we sent!")
-            print(ack)
-            print("breaking!")
-            sys.exit(0)
+        print("Please specify either -b or -H for sending a confirm_req using a block or hashes respectively")
 
-print("No response found!")
-# for a in confirm_acks:
-#     print(a)
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-B', '--block', action="store_true", required=False, default=False)
+    parser.add_argument('-H', '--hashes', action="store_true", required=False, default=False)
+    return parser.parse_args()
+
+
+
+if __name__ == "__main__":
+    main()
