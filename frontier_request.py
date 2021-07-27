@@ -6,8 +6,7 @@ import socket
 import argparse
 from exceptions import *
 
-from pynanocoin import message_header, network_id, message_type, livectx, betactx, read_socket, get_all_dns_addresses, \
-    get_account_id, get_initial_connected_socket, hexlify, get_account_id
+from pynanocoin import *
 
 
 class frontier_request:
@@ -75,8 +74,13 @@ def main():
     ctx = betactx if args.beta else livectx
     confirmed = not args.notconfirmed
 
-    s = get_initial_connected_socket(ctx, args.peer)
+    if args.peer:
+        peerstr = str(ip_addr.from_string(args.peer))
+        s = get_initial_connected_socket(ctx, [peerstr])
+    else:
+        s = get_initial_connected_socket(ctx)
     assert s
+
     s.settimeout(60)
 
     frontier = frontier_request(ctx = ctx,
