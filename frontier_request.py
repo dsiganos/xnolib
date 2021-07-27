@@ -10,8 +10,8 @@ from nanolib import message_header, network_id, message_type, livectx, read_sock
 
 
 class frontier_request:
-    def __init__(self, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff, confirmed=False):
-        self.header = message_header(network_id(67), [18, 18, 18], message_type(8), 2 if confirmed else 0)
+    def __init__(self, ctx, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff, confirmed=False):
+        self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
         self.start_account = start_account
         self.maxage = maxage
         self.maxacc = maxacc
@@ -57,7 +57,7 @@ def main():
     assert s
     s.settimeout(60)
 
-    frontier = frontier_request(fork2, maxacc=1, confirmed=True)
+    frontier = frontier_request(ctx, fork2, maxacc=1, confirmed=True)
     s.send(frontier.serialise())
 
     counter = 1

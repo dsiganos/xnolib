@@ -10,15 +10,15 @@ from nanolib import *
 from exceptions import *
 
 
-def frontier_req(s, peer, acc_id):
-    frontier = frontier_request.frontier_request(acc_id, maxacc=1, confirmed=True)
+def frontier_req(ctx, s, peer, acc_id):
+    frontier = frontier_request.frontier_request(ctx, acc_id, maxacc=1, confirmed=True)
     s.send(frontier.serialise())
     frontier = frontier_request.read_frontier_response(s)
     endmark = frontier_request.read_frontier_response(s)
     assert endmark.is_end_marker()
     peer.aux['confirmed_frontier'] = frontier.frontier_hash
 
-    frontier = frontier_request.frontier_request(acc_id, maxacc=1, confirmed=False)
+    frontier = frontier_request.frontier_request(ctx, acc_id, maxacc=1, confirmed=False)
     s.send(frontier.serialise())
     frontier = frontier_request.read_frontier_response(s)
     endmark = frontier_request.read_frontier_response(s)
@@ -29,14 +29,14 @@ def frontier_req(s, peer, acc_id):
         (peer.ip, peer.port, hexlify(peer.aux['confirmed_frontier']), hexlify(peer.aux['unconfirmed_frontier'])))
 
 
-def pull_blocks(blockman, peer, hsh):
+def pull_blocks(ctx, blockman, peer, hsh):
     print('pull blocks for account %s' % hexlify(hsh))
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
         s.connect((str(peer.ip), peer.port))
 
-        frontier_req(s, peer, hsh)
+        frontier_req(ctx, s, peer, hsh)
 
         # send a block pull request
         hdr = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
@@ -60,8 +60,9 @@ def pull_blocks(blockman, peer, hsh):
         #    print(a)
         #    print(b)
 
+ctx=livectx
 
-peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=livectx, forever=True, delay=30)
+peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=ctx, forever=True, delay=30)
 peerman = peercrawler_thread.peerman
 time.sleep(1)
 
@@ -92,7 +93,7 @@ while True:
     pulls = 0
     for peer in peers:
         try:
-            pull_blocks(blockman, peer, fork2)
+            pull_blocks(ctx, blockman, peer, fork3)
             pulls += 1
 #            if pulls >= 1:
 #                stop = True
