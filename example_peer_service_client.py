@@ -25,6 +25,7 @@ s.settimeout(10)
 count = 0
 
 # The program will pull peers from the peer_service a number of times (depending on loop condition)
+# You need to rerun the peer_service after this program finishes to attempt again
 
 while count != 3:
     s.send((1).to_bytes(1, "big"))
