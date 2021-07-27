@@ -69,6 +69,15 @@ time.sleep(1)
 fork1 = binascii.unhexlify('7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A2041FBF58EEFD')
 fork2 = binascii.unhexlify('CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75')
 
+# nano_35u3s789f3to4956beqm6t3tnt99oiqxtu4juxezrtsnua1k7nxhnwexrt8d
+fork3 = binascii.unhexlify('8F61C94C76875511C644B2F32683AA68E7AC2FDD6C51DF59FC6B34DA0122D3AF')
+
+# nano_31kphxzkf3unoahwqy33xq16d16y4aucjpph568apsbdu7rosqr9kkmo99wh
+fork4 = binascii.unhexlify('82567f7f268774aa1fcbf821edc045809e1236a8dacf190c8b652bd9715cdf07')
+
+# nano_1gwu55iga8pf3bpef3shfqgmdgqj3xsqpptuqqnknb4zu4f8cxcyk7ezd36p
+fork5 = binascii.unhexlify('3b9b18e0e41acd0a6cc6872f6ddd35baf10f737b5b5bbde92a245fd89a65755e')
+
 acc_ids = [
     livectx["genesis_pub"],
     '42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279',
