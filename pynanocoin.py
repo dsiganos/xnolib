@@ -123,7 +123,6 @@ class ip_addr:
         return ip_addr(ipv6)
 
     def __str__(self):
-        print(type(self.ipv6.ipv4_mapped))
         if self.ipv6.ipv4_mapped:
             return '::ffff:' + str(self.ipv6.ipv4_mapped)
         return str(self.ipv6)
