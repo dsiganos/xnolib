@@ -39,7 +39,7 @@ def pull_blocks(ctx, blockman, peer, hsh):
         frontier_req(ctx, s, peer, hsh)
 
         # send a block pull request
-        hdr = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
+        hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(6), 0)
         bulk_pull = message_bulk_pull(hdr, hexlify(hsh))
         s.send(bulk_pull.serialise())
 
