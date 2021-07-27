@@ -1,5 +1,5 @@
 import socket
-import json
+import jsonpickle
 
 from peercrawler import spawn_peer_crawler_thread
 from pynanocoin import livectx
@@ -15,7 +15,9 @@ def listen_to_conn(conn):
 
 
 def get_json_peers(peerman):
-    return json.dumps(peerman.peers)
+    return jsonpickle.encode(peerman.peers)
+
+# Run this code before running the example_peer_service_client.py
 
 
 crawler_thread = spawn_peer_crawler_thread(livectx, True, 0)
