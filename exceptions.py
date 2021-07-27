@@ -70,3 +70,7 @@ class HandshakeExchangeFail(PyNanoCoinException):
 
 class CommsError(PyNanoCoinException):
     pass
+
+
+class BadTelemetryReply(PyNanoCoinException):
+    pass
