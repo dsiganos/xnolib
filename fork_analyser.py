@@ -86,8 +86,9 @@ acc_ids = [
     fork2,
 ]
 
-os.makedirs('forkdetector.data', exist_ok=True)
-workdir = tempfile.mkdtemp(dir='forkdetector.data')
+workdirname = 'fork_analyser.data'
+os.makedirs(workdirname, exist_ok=True)
+workdir = tempfile.mkdtemp(dir=workdirname)
 print(workdir)
 
 # initialise a git project in the temporary work directory
