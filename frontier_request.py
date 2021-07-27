@@ -6,7 +6,7 @@ import socket
 import argparse
 from exceptions import *
 
-from nanolib import message_header, network_id, message_type, livectx, betactx, read_socket, get_all_dns_addresses, \
+from pynanocoin import message_header, network_id, message_type, livectx, betactx, read_socket, get_all_dns_addresses, \
     get_account_id, get_initial_connected_socket, hexlify, get_account_id
 
 

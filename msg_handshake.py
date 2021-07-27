@@ -1,7 +1,7 @@
 import socket
 import random
 
-from nanolib import *
+from pynanocoin import *
 
 
 ctx = livectx

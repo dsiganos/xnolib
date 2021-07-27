@@ -6,7 +6,7 @@ import tempfile
 
 import frontier_request
 import peercrawler
-from nanolib import *
+from pynanocoin import *
 from exceptions import *
 
 

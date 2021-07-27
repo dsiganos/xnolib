@@ -7,7 +7,7 @@ import time
 import argparse
 import threading
 
-from nanolib import *
+from pynanocoin import *
 
 
 class peer_manager:

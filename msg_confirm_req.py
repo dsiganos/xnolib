@@ -4,7 +4,7 @@ import sys
 import time
 import argparse
 
-from nanolib import *
+from pynanocoin import *
 
 
 class hash_pair:

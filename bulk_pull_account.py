@@ -1,6 +1,6 @@
 #!/bin/env python3
 
-from nanolib import *
+from pynanocoin import *
 
 
 class bulk_pull_account:

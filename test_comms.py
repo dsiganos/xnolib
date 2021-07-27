@@ -1,6 +1,6 @@
 import unittest
 import binascii
-from nanolib import *
+from pynanocoin import *
 from ipaddress import IPv6Address
 
 

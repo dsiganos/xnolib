@@ -1,4 +1,4 @@
-from nanolib import *
+from pynanocoin import *
 
 class msg_publish:
     def __init__(self, hdr, block):

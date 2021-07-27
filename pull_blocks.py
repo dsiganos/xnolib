@@ -2,7 +2,7 @@
 import random
 import socket
 
-from nanolib import *
+from pynanocoin import *
 
 ctx = livectx
 s = get_initial_connected_socket(ctx)

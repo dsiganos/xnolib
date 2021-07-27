@@ -2,7 +2,7 @@
 import random
 import socket
 
-from nanolib import *
+from pynanocoin import *
 
 
 def valid_account(acc):

@@ -1,4 +1,4 @@
-from nanolib import *
+from pynanocoin import *
 
 class telemetry_req:
     def __init__(self):
