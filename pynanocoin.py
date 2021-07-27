@@ -47,9 +47,10 @@ def account_id_to_name(acc_id_bin):
     return named_accounts.get(acc_id_bin, '')
 
 
+# returns a list of ipv4 mapped ipv6 strings
 def get_all_dns_addresses(url):
     result = dns.resolver.resolve(url, 'A')
-    return [x.to_text() for x in result]
+    return ['::ffff:' + x.to_text() for x in result]
 
 
 def confirm_req_size(block_type, i_count):
@@ -106,6 +107,26 @@ def get_account_id(account, prefix='nano_'):
     # add prefix, label and return
     return prefix + encode_account.decode() + label
 
+
+class ip_addr:
+    def __init__(self, ipv6):
+        assert isinstance(ipv6, ipaddress.IPv6Address)
+        self.ipv6 = ipv6
+
+    @classmethod
+    def from_string(cls, ipstr):
+        assert isinstance(ipstr, str)
+        a = ipaddress.ip_address(ipstr)
+        if a.version == 4:
+            ipstr = '::ffff:' + str(a)
+        ipv6 = ipaddress.IPv6Address(ipstr)
+        return ip_addr(ipv6)
+
+    def __str__(self):
+        print(type(self.ipv6.ipv4_mapped))
+        if self.ipv6.ipv4_mapped:
+            return '::ffff:' + str(self.ipv6.ipv4_mapped)
+        return str(self.ipv6)
 
 class block_type_enum:
     invalid = 0
@@ -1742,7 +1763,6 @@ def get_initial_connected_socket(ctx, peers=None):
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
-        peeraddr = '::ffff:' + peeraddr
         try:
             s.connect((peeraddr, ctx['peerport']))
             print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))

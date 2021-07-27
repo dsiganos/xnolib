@@ -1,8 +1,12 @@
+#!/bin/env python3
+
+import argparse
 from pynanocoin import *
 
+
 class telemetry_req:
-    def __init__(self):
-        self.header = message_header(network_id(67), [18, 18, 18], message_type(12), 0)
+    def __init__(self, ctx):
+        self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_req), 0)
 
     def serialise(self):
         return self.header.serialise_header()
@@ -81,21 +85,37 @@ class telemetry_ack:
                              timestamp, active_difficulty)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--beta', action='store_true', default=False,
+                        help='use beta network')
+    parser.add_argument('-p', '--peer',
+                        help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
+    return parser.parse_args()
+
+
 def main():
-    s = get_initial_connected_socket(livectx)
+    args = parse_args()
+    ctx = betactx if args.beta else livectx
+
+    if args.peer:
+        peerstr = str(ip_addr.from_string(args.peer))
+        s = get_initial_connected_socket(ctx, [peerstr])
+    else:
+        s = get_initial_connected_socket(ctx)
     assert s
 
     perform_handshake_exchange(s)
 
-    header = message_header(network_id(67), [18, 18, 18], message_type(12), 0)
-    s.send(header.serialise_header())
+    req = telemetry_req(ctx)
+    s.send(req.serialise())
 
     hdr, data = get_next_hdr_payload(s)
     while hdr.msg_type != message_type(13):
         hdr, data = get_next_hdr_payload(s)
     print(hdr)
-    resp = telemetry_ack.parse(data)
 
+    resp = telemetry_ack.parse(data)
     print(resp)
 
 
