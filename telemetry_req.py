@@ -55,12 +55,13 @@ class telemetry_ack:
         string += "Pre-release Version: %d\n" % self.pre_release_ver
         string += "Maker Version: %d\n" % self.maker_ver
         string += "Timestamp: %d ms\n" % self.timestamp
-        string += "Active Difficulty: %s" % hexlify(self.active_difficulty)
+        string += "Active Difficulty: %s (%s)" % (self.active_difficulty, hex(self.active_difficulty))
         return string
 
     @classmethod
     def parse(self, data):
-        assert(len(data) == 202)
+        if len(data) != 202:
+            raise BadTelemetryReply('message len not 202, data=%s', data)
         sig = data[0:64]
         node_id = data[64:96]
         block_count = int.from_bytes(data[96:104], "big")
@@ -72,13 +73,13 @@ class telemetry_ack:
         peer_count = int.from_bytes(data[144:148], "big")
         protocol_ver = data[148]
         genesis_hash = data[149:181]
-        major_ver = data[182]
-        minor_ver = data[183]
-        patch_ver = data[184]
-        pre_release_ver = data[185]
-        maker_ver = data[186]
-        timestamp = int.from_bytes(data[187:195], "big")
-        active_difficulty = data[195:]
+        major_ver = data[181]
+        minor_ver = data[182]
+        patch_ver = data[183]
+        pre_release_ver = data[184]
+        maker_ver = data[185]
+        timestamp = int.from_bytes(data[186:194], "big")
+        active_difficulty = int.from_bytes(data[194:202], "big")
         return telemetry_ack(sig, node_id, block_count, cemented_count, unchecked_count,
                              account_count, bandwidth_cap, uptime, peer_count, protocol_ver,
                              genesis_hash, major_ver, minor_ver, patch_ver, pre_release_ver, maker_ver,
