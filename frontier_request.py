@@ -3,9 +3,10 @@
 import binascii
 import random
 import socket
+import argparse
 from exceptions import *
 
-from nanolib import message_header, network_id, message_type, livectx, read_socket, get_all_dns_addresses, \
+from nanolib import message_header, network_id, message_type, livectx, betactx, read_socket, get_all_dns_addresses, \
     get_account_id, get_initial_connected_socket, hexlify, get_account_id
 
 
@@ -50,14 +51,39 @@ fork1 = binascii.unhexlify(b'7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A
 fork2 = binascii.unhexlify(b'CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75')
 
 
-def main():
-    ctx = livectx
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--beta', action='store_true', default=False,
+                        help='use beta network')
+    parser.add_argument('-c', '--count', type=int, default=0xffffffff,
+                        help='number of frontiers to download, if not set, all frontiers are downloaded')
+    parser.add_argument('-m', '--maxage', type=int, default=0xffffffff,
+                        help='maxage of frontiers')
+    parser.add_argument('-n', '--notconfirmed', action='store_true', default=False,
+                        help='also download not confirmed blocks')
+    parser.add_argument('-s', '--start_acc', default='00'*32,
+                        help='start account')
+    parser.add_argument('-p', '--peer',
+                        help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
+    return parser.parse_args()
 
-    s = get_initial_connected_socket(ctx)
+
+def main():
+    args = parse_args()
+    print(args)
+
+    ctx = betactx if args.beta else livectx
+    confirmed = not args.notconfirmed
+
+    s = get_initial_connected_socket(ctx, args.peer)
     assert s
     s.settimeout(60)
 
-    frontier = frontier_request(ctx, fork2, maxacc=1, confirmed=True)
+    frontier = frontier_request(ctx = ctx,
+                                start_account = binascii.unhexlify(args.start_acc),
+                                maxage = args.maxage,
+                                maxacc = args.count,
+                                confirmed = confirmed)
     s.send(frontier.serialise())
 
     counter = 1

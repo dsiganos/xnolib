@@ -1734,10 +1734,11 @@ def get_next_hdr_payload(s):
     return header, data
 
 
-def get_initial_connected_socket(ctx):
-    dns_peers = get_all_dns_addresses(ctx['peeraddr'])
-    random.shuffle(dns_peers)
-    for peeraddr in dns_peers:
+def get_initial_connected_socket(ctx, peers=None):
+    if peers is None or len(peers) == 0:
+        peers = get_all_dns_addresses(ctx['peeraddr'])
+        random.shuffle(peers)
+    for peeraddr in peers:
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
@@ -1790,12 +1791,20 @@ def extensions_to_extented_params(extensions):
 
 
 livectx = {
-    'net_id': network_id(67),
+    'net_id': network_id(ord('C')),
     'peeraddr': "peering.nano.org",
     'peerport': 7075,
     'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
     'another_pub': '059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5',
     'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
+}
+
+
+betactx = {
+    'net_id': network_id(ord('B')),
+    'peeraddr': "peering-beta.nano.org",
+    'peerport': 54000,
+    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
 }
 
 
@@ -1805,11 +1814,4 @@ genesis_block_open = {
     "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
     "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
     "work": b'b\xf0T\x17\xdd?\xb6\x91'
-}
-
-
-betactx = {
-    'peeraddr': "peering-beta.nano.org",
-    'peerport': 54000,
-    'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
 }
