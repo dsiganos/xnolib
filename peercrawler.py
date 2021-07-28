@@ -155,6 +155,16 @@ def run_peer_service_forever(peerman, addr='::1', port=12345):
         conn.close()
 
 
+def get_all_peers(addr='::1'):
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    s.settimeout(5)
+    s.connect((addr, 12345))
+    json_peers = readall(s)
+    peers = jsonpickle.decode(json_peers)
+    s.close()
+    return peers
+
 def main():
     args = parse_args()
     ctx = betactx if args.beta else livectx
