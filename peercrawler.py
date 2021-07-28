@@ -114,6 +114,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--beta', action='store_true', default=False,
                         help='use beta network')
+    parser.add_argument('-v', '--verbosity', type=int,
+                        help='verbosity level')
     parser.add_argument('-f', '--forever', action='store_true', default=True,
                         help='loop forever looking for new peers')
     parser.add_argument('-d', '--delay', type=int, default=300,
@@ -139,8 +141,8 @@ class peer_crawler_thread(threading.Thread):
         print('Peer crawler thread ended')
 
 
-def spawn_peer_crawler_thread(ctx, forever, delay):
-    t = peer_crawler_thread(ctx, forever, delay)
+def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
+    t = peer_crawler_thread(ctx, forever, delay, verbosity)
     t.start()
     return t
 
@@ -175,10 +177,12 @@ def main():
     ctx = betactx if args.beta else livectx
 
     if args.service:
-        crawler_thread = spawn_peer_crawler_thread(ctx, True, args.delay)
+        verbosity = args.verbosity if args.verbosity else 0
+        crawler_thread = spawn_peer_crawler_thread(ctx, True, args.delay, verbosity)
         run_peer_service_forever(crawler_thread.peerman, port=args.port)
     else:
-        peerman = peer_manager(verbosity=1)
+        verbosity = args.verbosity if args.verbosity else 1
+        peerman = peer_manager(verbosity=verbosity)
         peerman.crawl(ctx, args.forever, args.delay)
 
 
