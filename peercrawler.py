@@ -29,7 +29,7 @@ class peer_manager:
         with self.mutex:
             return copy.copy(self.peers)
 
-    def get_peers_from_peer(self, peer):
+    def get_peers_from_peer(self, peer, ctx):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(3)
@@ -46,7 +46,7 @@ class peer_manager:
             # connected to peer, do handshake followed by listening for the first keepalive
             # once we get the first keepalive, we have what we need and we move on
             try:
-                peer_id = perform_handshake_exchange(s)
+                peer_id = perform_handshake_exchange(s, ctx)
                 peer.peer_id = peer_id
                 if self.verbosity >= 1:
                     print('  %s' % hexlify(peer_id))
@@ -65,7 +65,7 @@ class peer_manager:
                 # peer was connectable but some other error happpened, score it with 1
                 peer.score = 1
 
-    def crawl_once(self):
+    def crawl_once(self, ctx):
         if self.verbosity >= 1:
             print('Starting a peer crawl')
 
@@ -76,7 +76,7 @@ class peer_manager:
         for p in peers_copy:
             if self.verbosity >= 1:
                 print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
-            self.get_peers_from_peer(p)
+            self.get_peers_from_peer(p, ctx)
 
     def crawl(self, ctx, forever, delay):
         addresses = get_all_dns_addresses(ctx['peeraddr'])
@@ -86,13 +86,13 @@ class peer_manager:
         if self.verbosity >= 1:
             print(self)
 
-        self.crawl_once()
+        self.crawl_once(ctx)
         if self.verbosity >= 1:
             print(self)
 
         while forever:
             time.sleep(delay)
-            self.crawl_once()
+            self.crawl_once(ctx)
             if self.verbosity >= 1:
                 print(self)
 

@@ -419,8 +419,8 @@ class message_bulk_pull:
 
 
 class handshake_query:
-    def __init__(self, cookie=os.urandom(32)):
-        self.header = message_header(network_id(67), [18, 18, 18], message_type(10), 1)
+    def __init__(self, ctx, cookie=os.urandom(32)):
+        self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 1)
         self.cookie = cookie
 
     def serialise(self):
@@ -444,8 +444,8 @@ class handshake_query:
 
 
 class handshake_response:
-    def __init__(self, account, signature):
-        self.header = message_header(network_id(67), [18, 18, 18], message_type(10), 2)
+    def __init__(self, account, signature, ctx):
+        self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 2)
         self.account = account
         self.sig = signature
 
@@ -456,18 +456,18 @@ class handshake_response:
         return data
 
     @classmethod
-    def create_response(cls, cookie):
+    def create_response(cls, cookie, ctx):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
         sig = signing_key.sign(cookie)
-        return handshake_response(verifying_key.to_bytes(), sig)
+        return handshake_response(verifying_key.to_bytes(), sig, ctx)
 
     @classmethod
-    def parse_response(cls, data):
+    def parse_response(cls, data, ctx):
         assert(len(data) == 104)
         account = data[8:32]
         sig = data[32:]
         assert(len(sig) == 64)
-        return handshake_response(account, sig)
+        return handshake_response(account, sig, ctx)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
@@ -479,8 +479,8 @@ class handshake_response:
 
 
 class handshake_response_query:
-    def __init__(self, cookie, account, signature):
-        self.header = message_header(network_id(67), [18, 18, 18], message_type(10), 3)
+    def __init__(self, cookie, account, signature, ctx):
+        self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 3)
         self.cookie = cookie
         self.account = account
         self.sig = signature
@@ -493,12 +493,12 @@ class handshake_response_query:
         return data
 
     @classmethod
-    def parse_query_response(cls, data):
+    def parse_query_response(cls, data, ctx):
         assert(len(data) == 136)
         cookie = data[8:40]
         account = data[40:72]
         sig = data[72:]
-        return handshake_response_query(cookie, account, sig)
+        return handshake_response_query(cookie, account, sig, ctx)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
@@ -1734,14 +1734,14 @@ def valid_block(block):
     return work_valid and sig_valid
 
 
-def perform_handshake_exchange(s):
-    msg_handshake = handshake_query()
+def perform_handshake_exchange(s, ctx):
+    msg_handshake = handshake_query(ctx)
     s.send(msg_handshake.serialise())
     try:
         data = read_socket(s, 136)
-        recvd_response = handshake_response_query.parse_query_response(data)
+        recvd_response = handshake_response_query.parse_query_response(data, ctx)
 
-        response = handshake_response.create_response(recvd_response.cookie)
+        response = handshake_response.create_response(recvd_response.cookie, ctx)
         s.send(response.serialise())
 
         vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
