@@ -306,7 +306,7 @@ def main():
     ctx = livectx
     s = get_initial_connected_socket(ctx)
     s.settimeout(20)
-    perform_handshake_exchange(s, ctx)
+    perform_handshake_exchange(ctx, s)
 
     args = parse_args()
     if args.block:

@@ -106,7 +106,7 @@ def main():
         s = get_initial_connected_socket(ctx)
     assert s
 
-    perform_handshake_exchange(s, ctx)
+    perform_handshake_exchange(ctx, s)
 
     req = telemetry_req(ctx)
     s.send(req.serialise())
