@@ -1610,6 +1610,8 @@ def read_socket(socket, numbytes):
         data = b''
         while len(data) < numbytes:
             data += socket.recv(1)
+            if len(data) == 0:
+                raise SocketClosedByPeer('read_socket: data=%s' % data)
         return data
     except OSError as msg:
         print('read_socket] Error whilst reading %d bytes' % numbytes)

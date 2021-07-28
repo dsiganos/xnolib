@@ -74,3 +74,7 @@ class CommsError(PyNanoCoinException):
 
 class BadTelemetryReply(PyNanoCoinException):
     pass
+
+
+class SocketClosedByPeer(PyNanoCoinException):
+    pass
