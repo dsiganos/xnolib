@@ -109,7 +109,7 @@ def get_account_id(account, prefix='nano_'):
 
 
 class ip_addr:
-    def __init__(self, ipv6):
+    def __init__(self, ipv6 = ipaddress.IPv6Address(0)):
         assert isinstance(ipv6, ipaddress.IPv6Address)
         self.ipv6 = ipv6
 
@@ -121,6 +121,9 @@ class ip_addr:
             ipstr = '::ffff:' + str(a)
         ipv6 = ipaddress.IPv6Address(ipstr)
         return ip_addr(ipv6)
+
+    def serialise(self):
+        return self.ipv6.packed
 
     def __str__(self):
         if self.ipv6.ipv4_mapped:
@@ -305,8 +308,8 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class peer:
-    def __init__(self, ip = ipaddress.IPv6Address(0), port = 0, score = -1):
-        assert isinstance(ip, ipaddress.IPv6Address)
+    def __init__(self, ip = ip_addr(), port = 0, score = -1):
+        assert isinstance(ip, ip_addr)
         self.ip = ip
         self.port = port
         self.peer_id = None
@@ -317,12 +320,12 @@ class peer:
 
     def serialise(self):
         data = b""
-        data += self.ip.packed
+        data += self.ip.serialise()
         data += self.port.to_bytes(2, "little")
         return data
 
     def is_valid(self):
-        data = self.ip.packed
+        data = self.ip.serialise()
         data += self.port.to_bytes(2, "little")
         if int.from_bytes(data[0:16], "big") == 0:
             return False
@@ -335,10 +338,10 @@ class peer:
         assert(len(data) == 18)
         ip = parse_ipv6(data[0:16])
         port = int.from_bytes(data[16:], "little")
-        return peer(ip, port)
+        return peer(ip_addr(ip), port)
 
     def __str__(self):
-        return '%s:%s (score:%s)' % (self.ip, self.port, self.score)
+        return '%s:%s (score:%s)' % (str(self.ip), self.port, self.score)
 
     def __eq__(self, other):
         return self.ip == other.ip and self.port == other.port

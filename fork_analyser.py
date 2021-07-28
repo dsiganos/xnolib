@@ -3,9 +3,8 @@ import socket
 import time
 import sys
 import tempfile
-
-import frontier_request
 import peercrawler
+import frontier_request
 from pynanocoin import *
 from exceptions import *
 
@@ -61,10 +60,11 @@ def pull_blocks(ctx, blockman, peer, hsh):
         #    print(b)
 
 ctx=livectx
-
-peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=ctx, forever=True, delay=30)
-peerman = peercrawler_thread.peerman
-time.sleep(1)
+peers = peercrawler.get_all_peers()
+if peers is None:
+    peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=ctx, forever=True, delay=30, verbosity=1)
+    peerman = peercrawler_thread.peerman
+    time.sleep(1)
 
 fork1 = binascii.unhexlify('7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A2041FBF58EEFD')
 fork2 = binascii.unhexlify('CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75')

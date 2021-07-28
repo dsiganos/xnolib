@@ -85,7 +85,7 @@ class peer_manager:
 
     def crawl(self, ctx, forever, delay):
         addresses = get_all_dns_addresses(ctx['peeraddr'])
-        initial_peers = [peer(ipaddress.IPv6Address(a), ctx['peerport']) for a in addresses]
+        initial_peers = [peer(ip_addr(ipaddress.IPv6Address(a)), ctx['peerport']) for a in addresses]
 
         self.add_peers(initial_peers)
         if self.verbosity >= 1:
@@ -166,11 +166,15 @@ def get_all_peers(addr='::1'):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(5)
-    s.connect((addr, 12345))
+    try:
+        s.connect((addr, 12345))
+    except ConnectionRefusedError:
+        return None
     json_peers = readall(s)
     peers = jsonpickle.decode(json_peers)
     s.close()
     return peers
+
 
 def main():
     args = parse_args()
