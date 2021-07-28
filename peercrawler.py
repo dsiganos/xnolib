@@ -61,9 +61,14 @@ class peer_manager:
 
                 # timeout whilst waiting for keepalive, score it with 2
                 peer.score = 2
-            except:
+            except OSError as e:
                 # peer was connectable but some other error happpened, score it with 1
                 peer.score = 1
+                print('Exception %s: %s' % (type(e), e))
+            except PyNanoCoinException as e:
+                # peer was connectable but some other error happpened, score it with 1
+                peer.score = 1
+                print('Exception %s: %s' % (type(e), e))
 
     def crawl_once(self, ctx):
         if self.verbosity >= 1:
