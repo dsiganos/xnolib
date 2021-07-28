@@ -4,6 +4,7 @@ import binascii
 import random
 import socket
 import argparse
+import lmdb
 from exceptions import *
 
 from pynanocoin import *
@@ -64,7 +65,29 @@ def parse_args():
                         help='start account')
     parser.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
+    parser.add_argument('--db',
+                        help='save frontiers in the database named by the argument')
     return parser.parse_args()
+
+
+def read_all_frontiers(s, frontier_handler):
+    counter = 1
+    while True:
+        frontier = read_frontier_response(s)
+
+        if frontier.is_end_marker():
+            return
+
+        frontier_handler(counter, frontier)
+        counter += 1
+
+
+def print_handler(counter, frontier):
+    print(counter, hexlify(frontier.frontier_hash), hexlify(frontier.account), get_account_id(frontier.account))
+
+
+def frontier_to_db(tx, counter, frontier):
+    tx.put(frontier.account, frontier.frontier_hash)
 
 
 def main():
@@ -90,15 +113,13 @@ def main():
                                 confirmed = confirmed)
     s.send(frontier.serialise())
 
-    counter = 1
-    while True:
-        frontier = read_frontier_response(s)
-
-        if frontier.is_end_marker():
-            return
-
-        print(counter, hexlify(frontier.frontier_hash), hexlify(frontier.account), get_account_id(frontier.account))
-        counter += 1
+    if args.db:
+        lmdb_env = lmdb.open(args.db, map_size=10*1000*1000*1000)
+        with lmdb_env.begin(write=True) as tx:
+            read_all_frontiers(s, lambda c, f: tx.put(f.account, f.frontier_hash))
+        lmdb_env.close()
+    else:
+        read_all_frontiers(s, print_handler)
 
 
 if __name__ == "__main__":
