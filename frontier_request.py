@@ -92,7 +92,6 @@ def frontier_to_db(tx, counter, frontier):
 
 def main():
     args = parse_args()
-    print(args)
 
     ctx = betactx if args.beta else livectx
     confirmed = not args.notconfirmed
