@@ -1686,6 +1686,20 @@ def read_bulk_pull_response(s):
     return blocks
 
 
+def readall(s):
+    data = b''
+    while True:
+        try:
+            recvd = s.recv(1)
+            if recvd == b'': raise SocketClosedByPeer
+            data += recvd
+        except (socket.timeout, SocketClosedByPeer):
+            if len(data) > 0:
+                return data
+            else:
+                return None
+
+
 def pow_validate(work, prev):
     # It didn't want to create bytearrays with the raw bytes so I had to use the list()
     work = bytearray(list(work))
