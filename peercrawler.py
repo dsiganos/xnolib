@@ -6,6 +6,7 @@ import copy
 import time
 import argparse
 import threading
+import jsonpickle
 
 from pynanocoin import *
 
@@ -106,10 +107,16 @@ class peer_manager:
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--beta', action='store_true', default=False,
+                        help='use beta network')
     parser.add_argument('-f', '--forever', action='store_true', default=True,
                         help='loop forever looking for new peers')
     parser.add_argument('-d', '--delay', type=int, default=300,
                         help='delay between crawls in seconds')
+    parser.add_argument('-s', '--service', action='store_true', default=False,
+                        help='run peer crawler as a service')
+    parser.add_argument('-p', '--port', type=int, default=12345,
+                        help='tcp port number to listen on in service mode')
     return parser.parse_args()
 
 
@@ -133,12 +140,31 @@ def spawn_peer_crawler_thread(ctx, forever, delay):
     return t
 
 
-def main():
-    ctx = livectx
-    args = parse_args()
+def run_peer_service_forever(peerman, addr='::1', port=12345):
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind((addr, port))
+    s.listen()
 
-    peerman = peer_manager(verbosity=1)
-    peerman.crawl(ctx, args.forever, args.delay)
+    while True:
+        conn, addr = s.accept()
+        conn.settimeout(5)
+        json_list = jsonpickle.encode(peerman.get_peers_copy())
+        conn.send(json_list.encode())
+        conn.close()
+
+
+def main():
+    args = parse_args()
+    ctx = betactx if args.beta else livectx
+
+    if args.service:
+        crawler_thread = spawn_peer_crawler_thread(ctx, True, args.delay)
+        run_peer_service_forever(crawler_thread.peerman, port=args.port)
+    else:
+        peerman = peer_manager(verbosity=1)
+        peerman.crawl(ctx, args.forever, args.delay)
 
 
 if __name__ == "__main__":
