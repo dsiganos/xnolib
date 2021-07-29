@@ -8,10 +8,12 @@ from pynanocoin import *
 
 
 class frontier_service:
-    def __init__(self, ctx, peer_service_active = False, peerman = None):
+    def __init__(self, ctx, db, cursor, peer_service_active = False, peerman = None):
         assert(peerman is None if peer_service_active else not None)
         assert(isinstance(peerman, peercrawler.peer_manager) or peerman is None)
         self.ctx = ctx
+        self.db = db
+        self.cursor = cursor
         self.peer_service_active = peer_service_active
         self.peerman = peerman
         self.peers = []
@@ -41,7 +43,8 @@ class frontier_service:
         req = frontier_request.frontier_request(self.ctx, maxacc=1000)
         s.send(req.serialise())
 
-        frontier_request.read_all_frontiers(s, frontier_request.print_handler)
+        frontier_request.read_all_frontiers(s, mysql_hander(p, self.cursor))
+        self.db.commit()
         return None
 
 
@@ -66,9 +69,9 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help='verbosity for the peercrawler')
-    parser.add_argument('-c', '--create', action='store_true', default=False,
+    parser.add_argument('-c', '--create', action='store_true', default=True,
                         help='determines a new database should be created')
-    parser.add_argument('-db', '--database', type=str, required=True,
+    parser.add_argument('-db', '--database', type=str, default="initial_test",
                         help='the name of the database that will be either created of connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
                         help='the username for the connection')
@@ -79,21 +82,43 @@ def parse_args():
     return parser.parse_args()
 
 
+def mysql_hander(p, cursor):
+    assert(isinstance(p, peer))
+    print("INSERT INTO Peers(peer_id, ip_address, port, score) " +
+          "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
+    cursor.execute("INSERT INTO Peers(peer_id, ip_address, port, score) " +
+                   "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
+
+    def add_data(counter, frontier):
+        print("INSERT INTO Frontiers(peer_id, frontier_hash, account) " +
+              "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
+                                       hexlify(frontier.account)))
+        cursor.execute("INSERT INTO Frontiers(peer_id, frontier_hash, account) " +
+                       "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
+                                                hexlify(frontier.account)))
+    return add_data
+
+
 def main():
     # MySQL IP: 127.0.0.1
     # MySQL Port: 3306
     # MySQL Pass: password123
 
     args = parse_args()
+
     if args.create:
-        db = setup_db_connection(host=args.host, user=args.user, passwd=args.password)
-        # TODO: Add creation of a new database
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
+        create_new_database(db.cursor(), name=args.database)
+        create_db_structure_frontier_service(db.cursor())
+        db.close()
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.database)
+        cursor = db.cursor()
+
     else:
-        db = setup_db_connection(host=args.host, user=args.user, passwd=args.password, db=args.database)
-    cursor = db.cursor()
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.database)
+        cursor = db.cursor()
 
     ctx = betactx if args.beta else livectx
-    s = get_initial_connected_socket(ctx)
     peers = peercrawler.get_all_peers()
     peer_service_active = False
     if peers is None:
@@ -105,7 +130,7 @@ def main():
         peer_service_active = True
         peerman = None
 
-    frontserv = frontier_service(ctx, peer_service_active, peerman)
+    frontserv = frontier_service(ctx, db, cursor, peer_service_active, peerman)
     frontserv.start_service()
 
 
