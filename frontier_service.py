@@ -59,6 +59,12 @@ def parse_args():
                         help='save frontiers in the database named by the argument')
     parser.add_argument('-b', '--beta', action='store_true', default=False,
                         help='use beta network')
+    parser.add_argument('-f', '--forever', action="store_true", default=True,
+                        help='"forever" argument for the peercrawler thread')
+    parser.add_argument('-d', '--delay', type=int, default=0,
+                        help='delay between crawls in seconds')
+    parser.add_argument('-v', '--verbosity', type=int, default=0,
+                        help='verbosity for the peercrawler')
     return parser.parse_args()
 
 
@@ -77,7 +83,8 @@ def main():
     peers = peercrawler.get_all_peers()
     peer_service_active = False
     if peers is None:
-        thread = peercrawler.spawn_peer_crawler_thread()
+        thread = peercrawler.spawn_peer_crawler_thread(ctx, forever=args.forever,
+                                                       delay=args.delay, verbosity=args.verbosity)
         peerman = thread.peerman
         time.sleep(1)
     else:
