@@ -1,8 +1,9 @@
 import argparse
 import time
-
+from sql_utils import *
 import frontier_request
 import peercrawler
+import mysql.connector
 from pynanocoin import *
 
 
@@ -65,19 +66,32 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help='verbosity for the peercrawler')
+    parser.add_argument('-c', '--create', action='store_true', default=False,
+                        help='determines a new database should be created')
+    parser.add_argument('-db', '--database', type=str, required=True,
+                        help='the name of the database that will be either created of connected to')
+    parser.add_argument('-u', '--username', type=str, default='root',
+                        help='the username for the connection')
+    parser.add_argument('-p', '--password', type=str, default='password123',
+                        help='password for the database connection')
+    parser.add_argument('-H', '--host', type=str, default='localhost',
+                        help='the ip of the sql server')
     return parser.parse_args()
-
-
-def setup_db_connection():
-    pass
 
 
 def main():
     # MySQL IP: 127.0.0.1
     # MySQL Port: 3306
-
+    # MySQL Pass: password123
 
     args = parse_args()
+    if args.create:
+        db = setup_db_connection(host=args.host, user=args.user, passwd=args.password)
+        # TODO: Add creation of a new database
+    else:
+        db = setup_db_connection(host=args.host, user=args.user, passwd=args.password, db=args.database)
+    cursor = db.cursor()
+
     ctx = betactx if args.beta else livectx
     s = get_initial_connected_socket(ctx)
     peers = peercrawler.get_all_peers()
