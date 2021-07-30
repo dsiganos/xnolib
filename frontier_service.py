@@ -8,7 +8,7 @@ from pynanocoin import *
 
 
 class frontier_service:
-    def __init__(self, ctx, db, cursor, peer_service_active = False, peerman = None):
+    def __init__(self, ctx, db, cursor, peer_service_active = False, peerman = None, verbosity = 0):
         assert(peerman is None if peer_service_active else not None)
         assert(isinstance(peerman, peercrawler.peer_manager) or peerman is None)
         self.ctx = ctx
@@ -16,6 +16,7 @@ class frontier_service:
         self.cursor = cursor
         self.peer_service_active = peer_service_active
         self.peerman = peerman
+        self.verbosity = verbosity
         self.peers = []
         self.peers_frontiers = []
 
@@ -41,7 +42,7 @@ class frontier_service:
         req = frontier_request.frontier_request(self.ctx, maxacc=1000)
         s.send(req.serialise())
         try:
-            frontier_request.read_all_frontiers(s, mysql_hander(p, self.cursor))
+            frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
             self.db.commit()
         except PyNanoCoinException:
             return
@@ -121,17 +122,19 @@ def parse_args():
     return parser.parse_args()
 
 
-def mysql_hander(p, cursor):
+def mysql_handler(p, cursor, verbosity):
     assert(isinstance(p, peer))
-    print("INSERT INTO Peers(peer_id, ip_address, port, score) " +
-          "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
+    if verbosity > 0:
+        print("INSERT INTO Peers(peer_id, ip_address, port, score) " +
+              "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
     cursor.execute("INSERT INTO Peers(peer_id, ip_address, port, score) " +
                    "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
 
     def add_data(counter, frontier):
-        print("INSERT INTO Frontiers(peer_id, frontier_hash, account_hash) " +
-              "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
-                                       hexlify(frontier.account)))
+        if verbosity > 0:
+            print("INSERT INTO Frontiers(peer_id, frontier_hash, account_hash) " +
+                  "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
+                                           hexlify(frontier.account)))
         cursor.execute("INSERT INTO Frontiers(peer_id, frontier_hash, account_hash) " +
                        "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
                                                 hexlify(frontier.account)))
@@ -170,7 +173,7 @@ def main():
         peer_service_active = True
         peerman = None
 
-    frontserv = frontier_service(ctx, db, cursor, peer_service_active, peerman)
+    frontserv = frontier_service(ctx, db, cursor, peer_service_active, peerman, args.verbosity)
     # frontserv.start_service()
 
     records = frontserv.find_accounts_different_hashes()
