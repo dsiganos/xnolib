@@ -8,14 +8,14 @@ class TestComms(unittest.TestCase):
     def setUp(self):
         data = "524122222202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
         self.data = binascii.unhexlify(data)
-        ip1 = peer(IPv6Address("::ffff:9df5:d11e"), 54000)
-        ip2 = peer(IPv6Address("::ffff:18fb:4f64"), 54000)
-        ip3 = peer(IPv6Address("::ffff:405a:48c2"), 54000)
-        ip4 = peer(IPv6Address("::ffff:9538:2eec"), 54000)
-        ip5 = peer(IPv6Address("::ffff:2e04:4970"), 54000)
-        ip6 = peer(IPv6Address("::ffff:68cd:cd53"), 54000)
-        ip7 = peer(IPv6Address("::ffff:b3a2:bdef"), 54000)
-        ip8 = peer(IPv6Address("::ffff:74ca:6b61"), 54000)
+        ip1 = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        ip2 = peer(ip_addr(IPv6Address("::ffff:18fb:4f64")), 54000)
+        ip3 = peer(ip_addr(IPv6Address("::ffff:405a:48c2")), 54000)
+        ip4 = peer(ip_addr(IPv6Address("::ffff:9538:2eec")), 54000)
+        ip5 = peer(ip_addr(IPv6Address("::ffff:2e04:4970")), 54000)
+        ip6 = peer(ip_addr(IPv6Address("::ffff:68cd:cd53")), 54000)
+        ip7 = peer(ip_addr(IPv6Address("::ffff:b3a2:bdef")), 54000)
+        ip8 = peer(ip_addr(IPv6Address("::ffff:74ca:6b61")), 54000)
         self.peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
 
     def test_header_serialisation(self):
@@ -47,9 +47,13 @@ class TestComms(unittest.TestCase):
         self.assertTrue(h1 == h)
 
     def test_equality_peer(self):
-        p = peer(IPv6Address("::ffff:9df5:d11e"), 54000)
-        p2 = peer(IPv6Address("::ffff:9df5:d11e"), 54000)
+        p = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        p2 = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        p3 = peer(ip_addr(IPv6Address("::ffff:9df5:d113")), 54000)
+        p4 = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54001)
         self.assertTrue(p == p2)
+        self.assertTrue(p != p3)
+        self.assertTrue(p != p4)
 
     def test_keepalive_full_loop1(self):
         h = message_header.parse_header(self.data[0:8])
