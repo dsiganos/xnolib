@@ -130,6 +130,15 @@ class ip_addr:
             return '::ffff:' + str(self.ipv6.ipv4_mapped)
         return str(self.ipv6)
 
+    def __eq__(self, other):
+        if not isinstance(other, ip_addr):
+            return False
+        return self.ipv6 == other.ipv6
+
+    def __hash__(self):
+        return hash(self.ipv6)
+
+
 class block_type_enum:
     invalid = 0
     not_a_block = 1
