@@ -28,12 +28,12 @@ class TestComms(unittest.TestCase):
         self.assertEqual(h2, h)
 
     def test_peer_deserialisation(self):
-        p = peer(IPv6Address("::ffff:9df5:d11e"), 54000)
+        p = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         p1 = peer.parse_peer(self.data[8:26])
         self.assertEqual(p, p1)
 
     def test_peer_serialisation(self):
-        p = peer(IPv6Address("::ffff:9df5:d11e"), 54000)
+        p = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         self.assertEqual(self.data[8:26], p.serialise())
 
     def test_full_keepalive_serialisation(self):
