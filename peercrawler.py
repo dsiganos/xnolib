@@ -21,7 +21,7 @@ class peer_manager:
     def add_peers(self, newpeers):
         with self.mutex:
             for p in newpeers:
-                if self.verbosity >= 2:
+                if self.verbosity >= 3:
                     print('adding peer %s' % p)
                 self.peers.add(p)
 
@@ -39,7 +39,7 @@ class peer_manager:
                 s.connect((str(peer.ip), peer.port))
             except socket.error as error:
                 peer.score = 0
-                if self.verbosity >= 2:
+                if self.verbosity >= 3:
                     print('Failed to connect to peer %s, error: %s' % (peer, error))
                 return
 
@@ -48,7 +48,7 @@ class peer_manager:
             try:
                 peer_id = perform_handshake_exchange(ctx, s)
                 peer.peer_id = peer_id
-                if self.verbosity >= 1:
+                if self.verbosity >= 2:
                     print('  %s' % hexlify(peer_id))
                 starttime = time.time()
                 while time.time() - starttime <= 10:
@@ -79,7 +79,7 @@ class peer_manager:
         assert len(peers_copy) > 0
 
         for p in peers_copy:
-            if self.verbosity >= 1:
+            if self.verbosity >= 2:
                 print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
             self.get_peers_from_peer(p, ctx)
 
