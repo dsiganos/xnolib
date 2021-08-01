@@ -7,6 +7,7 @@ import time
 import argparse
 import threading
 import jsonpickle
+from functools import reduce
 
 from pynanocoin import *
 
@@ -103,10 +104,11 @@ class peer_manager:
 
     def __str__(self):
         with self.mutex:
-            s = '---------- Start of Manager peers (%s peers) ----------\n' % len(self.peers)
+            good = reduce(lambda c, p: c + int(p.score >= 1000), self.peers, 0)
+            s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(self.peers), good)
             for p in self.peers:
                 s += '%41s:%5s (score:%4s)\n' % ('[%s]' % p.ip, p.port, p.score)
-            s += '---------- End of Manager peers (%s peers) ----------' % len(self.peers)
+            s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
         return s
 
 
