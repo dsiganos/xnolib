@@ -181,11 +181,11 @@ def main():
     ctx = betactx if args.beta else livectx
 
     if args.service:
-        verbosity = args.verbosity if args.verbosity else 0
+        verbosity = args.verbosity if (args.verbosity is not None) else 0
         crawler_thread = spawn_peer_crawler_thread(ctx, True, args.delay, verbosity)
         run_peer_service_forever(crawler_thread.peerman, port=args.port)
     else:
-        verbosity = args.verbosity if args.verbosity else 1
+        verbosity = args.verbosity if (args.verbosity is not None) else 1
         peerman = peer_manager(verbosity=verbosity)
         peerman.crawl(ctx, args.forever, args.delay)
 
