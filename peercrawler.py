@@ -114,8 +114,13 @@ class peer_manager:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--beta', action='store_true', default=False,
-                        help='use beta network')
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-b', '--beta', action='store_true', default=False,
+                       help='use beta network')
+    group.add_argument('-t', '--test', action='store_true', default=False,
+                       help='use test network')
+
     parser.add_argument('-v', '--verbosity', type=int,
                         help='verbosity level')
     parser.add_argument('-f', '--forever', action='store_true', default=True,
@@ -180,7 +185,10 @@ def get_all_peers(addr='::1'):
 
 def main():
     args = parse_args()
-    ctx = betactx if args.beta else livectx
+
+    ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
 
     if args.service:
         verbosity = args.verbosity if (args.verbosity is not None) else 0
