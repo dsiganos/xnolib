@@ -127,22 +127,21 @@ class peer_frontiers:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--db',
-                        help='save frontiers in the database named by the argument')
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-b', '--beta', action='store_true', default=False,
                        help='use beta network')
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
+
     parser.add_argument('-f', '--forever', action="store_true", default=True,
                         help='"forever" argument for the peercrawler thread')
     parser.add_argument('-d', '--delay', type=int, default=0,
                         help='delay between crawls in seconds')
     parser.add_argument('-v', '--verbosity', type=int, default=1,
                         help='verbosity for the peercrawler')
-    parser.add_argument('-c', '--create', action='store_true', default=False,
-                        help='determines a new database should be created')
-    parser.add_argument('-db', '--database', type=str, default="peer_frontiers",
+
+    parser.add_argument('--db', type=str, default="peer_frontiers",
                         help='the name of the database that will be either created or connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
                         help='the username for the connection')
@@ -150,6 +149,9 @@ def parse_args():
                         help='password for the database connection')
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='the ip of the sql server')
+    parser.add_argument('-c', '--create', action='store_true', default=False,
+                        help='determines a new database should be created')
+
     return parser.parse_args()
 
 
@@ -185,14 +187,14 @@ def main():
 
     if args.create:
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
-        create_new_database(db.cursor(), name=args.database)
+        create_new_database(db.cursor(), name=args.db)
         create_db_structure_frontier_service(db.cursor())
         db.close()
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.database)
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
         cursor = db.cursor()
 
     else:
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.database)
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
         cursor = db.cursor()
 
     ctx = livectx
