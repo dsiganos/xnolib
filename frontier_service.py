@@ -18,34 +18,59 @@ class frontier_service:
         self.peerman = peerman
         self.verbosity = verbosity
         self.peers = []
-        self.peers_frontiers = []
+        self.visited_peers = []
 
     def start_service(self):
+        while True:
+            self.single_pass()
+
+    def single_pass(self):
         if self.peer_service_active:
             self.peers = peercrawler.get_all_peers()
         else:
             self.peers = self.peerman.get_peers_copy()
 
         for p in self.peers:
-            self.download_peer_frontiers(p)
+            if p.score <= 0:
+                continue
+            if p not in self.visited_peers:
+                self.manage_peer_frontiers(p)
+                self.visited_peers.append(p)
 
+    def manage_peer_frontiers(self, p):
+        # Attempts to connect to a peer recursively (if it fails)
+        if p.score <= 0:
+            self.remove_peer_data(p)
+            self.peers.remove(p)
 
-    def download_peer_frontiers(self, p):
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(15)
+
+        # Testing a peers connection
         try:
             s.connect((str(p.ip), p.port))
         except Exception as ex:
+            p.deduct_score(200)
             print(ex)
-            return
+
+            # Will try to connect to the peer again, until the score is 0 (recursively)
+            return self.manage_peer_frontiers(p)
+
+        # maxacc argument can be removed in final version
         req = frontier_request.frontier_request(self.ctx, maxacc=1000)
         s.send(req.serialise())
+
         try:
             frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
             self.db.commit()
+
         except PyNanoCoinException:
             return
+
+    def remove_peer_data(self, p):
+        self.cursor.execute("DELETE FROM frontiers WHERE peer_id = '%s'" % p.serialise())
+        self.cursor.execute("DELETE FROM peers WHERE peer_id = '%s'" % p.serialise())
 
     # Function which will query all accounts with different frontier hashes
     def find_accounts_different_hashes(self):
@@ -68,10 +93,14 @@ class frontier_service:
 
         return records
 
+    def count_frontiers(self):
+        self.cursor.execute("SELECT COUNT(*) FROM frontiers")
+        result = self.cursor.fetchall()
+        return result[0]
+
 
 class frontiers_record:
-    def __init__(self, frontier_id, peer_hash, frontier_hash, account):
-        self.frontier_id = frontier_id
+    def __init__(self, peer_hash, frontier_hash, account):
         self.peer_hash = peer_hash
         self.frontier_hash = frontier_hash
         self.account = account
@@ -79,11 +108,10 @@ class frontiers_record:
     @classmethod
     def from_tuple(cls, data):
         assert(isinstance(data, tuple))
-        return frontiers_record(data[0], data[1], data[2], data[3])
+        return frontiers_record(data[0], data[1], data[2])
 
     def __str__(self):
-        string = "Frontier ID: %d\n" % self.frontier_id
-        string += "Peer: %s\n" % self.peer_hash
+        string = "Peer: %s\n" % self.peer_hash
         string += "Frontier Hash: %s\n" % self.frontier_hash
         string += "Account: %s\n" % self.account
         return string
@@ -101,8 +129,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--db',
                         help='save frontiers in the database named by the argument')
-    parser.add_argument('-b', '--beta', action='store_true', default=False,
-                        help='use beta network')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-b', '--beta', action='store_true', default=False,
+                       help='use beta network')
+    group.add_argument('-t', '--test', action='store_true', default=False,
+                       help='use test network')
     parser.add_argument('-f', '--forever', action="store_true", default=True,
                         help='"forever" argument for the peercrawler thread')
     parser.add_argument('-d', '--delay', type=int, default=0,
@@ -112,7 +143,7 @@ def parse_args():
     parser.add_argument('-c', '--create', action='store_true', default=False,
                         help='determines a new database should be created')
     parser.add_argument('-db', '--database', type=str, default="peer_frontiers",
-                        help='the name of the database that will be either created of connected to')
+                        help='the name of the database that will be either created or connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
                         help='the username for the connection')
     parser.add_argument('-p', '--password', type=str, default='password123',
@@ -122,30 +153,33 @@ def parse_args():
     return parser.parse_args()
 
 
+# MySQL closure
 def mysql_handler(p, cursor, verbosity):
     assert(isinstance(p, peer))
+    query1 = "INSERT INTO Peers(peer_id, ip_address, port, score) "
+    query1 += "VALUES('%s', '%s', %d, %d) " % (hexlify(p.serialise()), str(p.ip), p.port, p.score)
+    query1 += "ON DUPLICATE KEY UPDATE port = port"
     if verbosity > 0:
-        print("INSERT INTO Peers(peer_id, ip_address, port, score) " +
-              "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
-    cursor.execute("INSERT INTO Peers(peer_id, ip_address, port, score) " +
-                   "VALUES('%s', '%s', '%d', '%d')" % (hexlify(p.serialise()), str(p.ip), p.port, p.score))
+        print(query1)
+    cursor.execute(query1)
 
     def add_data(counter, frontier):
-        if verbosity > 0:
-            print("INSERT INTO Frontiers(peer_id, frontier_hash, account_hash) " +
-                  "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
-                                           hexlify(frontier.account)))
-        cursor.execute("INSERT INTO Frontiers(peer_id, frontier_hash, account_hash) " +
-                       "VALUES ('%s', '%s', '%s')" % (hexlify(p.serialise()), hexlify(frontier.frontier_hash),
-                                                hexlify(frontier.account)))
+        query2 = "INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) "
+        query2 += "VALUES ('%s', '%s', '%s') " % (hexlify(p.serialise()), hexlify(frontier.account),
+                                                 hexlify(frontier.frontier_hash))
+        query2 += "ON DUPLICATE KEY UPDATE frontier_hash = '%s'" % hexlify(frontier.frontier_hash)
+
+        if verbosity > 1:
+            print(query2)
+        cursor.execute(query2)
     return add_data
 
 
 def main():
-    # MySQL IP: 127.0.0.1
-    # MySQL Port: 3306
-    # MySQL Pass: password123
-    # "initial_test" db has downloaded a lot of data and has some frontier differences
+    # Defaults:
+    # - MySQL IP: 127.0.0.1
+    # - MySQL Port: 3306
+    # - MySQL Pass: password123
 
     args = parse_args()
 
@@ -161,7 +195,10 @@ def main():
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.database)
         cursor = db.cursor()
 
-    ctx = betactx if args.beta else livectx
+    ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
+
     peers = peercrawler.get_all_peers()
     peer_service_active = False
     if peers is None:
@@ -174,11 +211,15 @@ def main():
         peerman = None
 
     frontserv = frontier_service(ctx, db, cursor, peer_service_active, peerman, args.verbosity)
-    # frontserv.start_service()
 
-    records = frontserv.find_accounts_different_hashes()
-    for rec in records:
-        print(rec)
+    # This will run forever
+    frontserv.single_pass()
+
+    # This is a piece of code which can find accounts with different frontier hashes
+
+    # records = frontserv.find_accounts_different_hashes()
+    # for rec in records:
+    #     print(rec)
 
 
 if __name__ == "__main__":
