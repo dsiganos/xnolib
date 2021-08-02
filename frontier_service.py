@@ -26,7 +26,7 @@ class frontier_service:
 
     def single_pass(self):
         if self.peer_service_active:
-            self.peers = peercrawler.get_all_peers()
+            _, self.peers = peercrawler.get_all_peers()
         else:
             self.peers = self.peerman.get_peers_copy()
 
@@ -138,7 +138,7 @@ def parse_args():
                         help='"forever" argument for the peercrawler thread')
     parser.add_argument('-d', '--delay', type=int, default=0,
                         help='delay between crawls in seconds')
-    parser.add_argument('-v', '--verbosity', type=int, default=0,
+    parser.add_argument('-v', '--verbosity', type=int, default=1,
                         help='verbosity for the peercrawler')
     parser.add_argument('-c', '--create', action='store_true', default=False,
                         help='determines a new database should be created')
@@ -199,7 +199,11 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    peers = peercrawler.get_all_peers()
+    hdr, peers = peercrawler.get_all_peers()
+
+    if hdr is not None and hdr.net_id != ctx["net_id"]:
+        peers = None
+
     peer_service_active = False
     if peers is None:
         thread = peercrawler.spawn_peer_crawler_thread(ctx, forever=args.forever,
