@@ -13,7 +13,8 @@ from pynanocoin import *
 
 
 class peer_manager:
-    def __init__(self, peers=[], verbosity=0):
+    def __init__(self, ctx, peers=[], verbosity=0):
+        self.ctx = ctx
         self.mutex = threading.Lock()
         self.peers = set()
         self.verbosity = verbosity
@@ -30,7 +31,17 @@ class peer_manager:
         with self.mutex:
             return copy.copy(self.peers)
 
-    def get_peers_from_peer(self, peer, ctx):
+    def count_good_peers(self):
+        counter = 0
+        for p in self.get_peers_copy():
+            if p.score >= 1000:
+                counter += 1
+        return counter
+
+    def count_peers(self):
+        return len(self.get_peers_copy())
+
+    def get_peers_from_peer(self, peer):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(3)
@@ -47,7 +58,7 @@ class peer_manager:
             # connected to peer, do handshake followed by listening for the first keepalive
             # once we get the first keepalive, we have what we need and we move on
             try:
-                peer_id = perform_handshake_exchange(ctx, s)
+                peer_id = perform_handshake_exchange(self.ctx, s)
                 peer.peer_id = peer_id
                 if self.verbosity >= 2:
                     print('  %s' % hexlify(peer_id))
@@ -71,7 +82,7 @@ class peer_manager:
                 peer.score = 1
                 print('Exception %s: %s' % (type(e), e))
 
-    def crawl_once(self, ctx):
+    def crawl_once(self):
         if self.verbosity >= 1:
             print('Starting a peer crawl')
 
@@ -82,23 +93,23 @@ class peer_manager:
         for p in peers_copy:
             if self.verbosity >= 2:
                 print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
-            self.get_peers_from_peer(p, ctx)
+            self.get_peers_from_peer(p)
 
-    def crawl(self, ctx, forever, delay):
-        addresses = get_all_dns_addresses(ctx['peeraddr'])
-        initial_peers = [peer(ip_addr(ipaddress.IPv6Address(a)), ctx['peerport']) for a in addresses]
+    def crawl(self, forever, delay):
+        addresses = get_all_dns_addresses(self.ctx['peeraddr'])
+        initial_peers = [peer(ip_addr(ipaddress.IPv6Address(a)), self.ctx['peerport']) for a in addresses]
 
         self.add_peers(initial_peers)
         if self.verbosity >= 1:
             print(self)
 
-        self.crawl_once(ctx)
+        self.crawl_once()
         if self.verbosity >= 1:
             print(self)
 
         while forever:
             time.sleep(delay)
-            self.crawl_once(ctx)
+            self.crawl_once()
             if self.verbosity >= 1:
                 print(self)
 
@@ -134,17 +145,46 @@ def parse_args():
     return parser.parse_args()
 
 
+class peer_service_header:
+    def __init__(self, net_id, good_peers, total_peers, software_ver = "1.1", protocol_ver = 1):
+        self.magic = b'PEER'
+        assert(isinstance(net_id, network_id))
+        assert(isinstance(software_ver, str))
+        self.net_id = net_id
+        self.good_peers = good_peers
+        self.total_peers = total_peers
+        self.software_ver = software_ver
+        self.protocol_ver = protocol_ver
+
+    def serialise(self):
+        data = self.magic
+        data += self.net_id.id.to_bytes(1, "big")
+        data += string_to_bytes(self.software_ver, 100)
+        data += self.protocol_ver.to_bytes(1, "big")
+        data += self.good_peers.to_bytes(8, "big")
+        data += self.total_peers.to_bytes(8, "big")
+        return data
+
+    @classmethod
+    def parse(cls, data):
+        assert(len(data) == 122)
+        assert(data[0:4] == b'PEER')
+        return peer_service_header(network_id(data[4]), int.from_bytes(data[107:114], "big"),
+                                   int.from_bytes(data[114:], "big"), software_ver=data[5:105].decode("utf-8"),
+                                   protocol_ver=data[106])
+
+
 class peer_crawler_thread(threading.Thread):
     def __init__(self, ctx, forever, delay, verbosity=0):
         threading.Thread.__init__(self, daemon=True)
         self.ctx = ctx
         self.forever = forever
         self.delay = delay
-        self.peerman = peer_manager(verbosity=verbosity)
+        self.peerman = peer_manager(ctx, verbosity=verbosity)
 
     def run(self):
         print('Starting peer crawler in a thread')
-        self.peerman.crawl(self.ctx, self.forever, self.delay)
+        self.peerman.crawl(self.forever, self.delay)
         print('Peer crawler thread ended')
 
 
@@ -164,8 +204,11 @@ def run_peer_service_forever(peerman, addr='::1', port=12345):
     while True:
         conn, addr = s.accept()
         conn.settimeout(5)
+        hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
+        data = hdr.serialise()
         json_list = jsonpickle.encode(peerman.get_peers_copy())
-        conn.send(json_list.encode())
+        data += json_list.encode()
+        conn.send(data)
         conn.close()
 
 
@@ -175,12 +218,25 @@ def get_all_peers(addr='::1'):
     s.settimeout(5)
     try:
         s.connect((addr, 12345))
-    except ConnectionRefusedError:
-        return None
-    json_peers = readall(s)
+        response = readall(s)
+        hdr = peer_service_header.parse(response[0:122])
+    except (ConnectionRefusedError, TypeError) as e:
+        print("Error getting peers: %s" % str(e))
+        return None, None
+
+    json_peers = response[122:]
     peers = jsonpickle.decode(json_peers)
     s.close()
-    return peers
+    return hdr, peers
+
+
+def string_to_bytes(string, length):
+    data = string.encode("utf-8")
+    assert (len(data) <= length)
+    size_offset = length - len(data)
+    if size_offset != 0:
+        data += b'\x00' * size_offset
+    return data
 
 
 def main():
@@ -196,7 +252,7 @@ def main():
         run_peer_service_forever(crawler_thread.peerman, port=args.port)
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
-        peerman = peer_manager(verbosity=verbosity)
+        peerman = peer_manager(ctx, verbosity=verbosity)
         peerman.crawl(ctx, args.forever, args.delay)
 
 
