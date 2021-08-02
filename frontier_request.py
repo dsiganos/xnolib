@@ -53,8 +53,13 @@ fork2 = binascii.unhexlify(b'CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F6545
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--beta', action='store_true', default=False,
-                        help='use beta network')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-b', '--beta', action='store_true', default=False,
+                       help='use beta network')
+    group.add_argument('-t', '--test', action='store_true', default=False,
+                       help='use test network')
+
     parser.add_argument('-c', '--count', type=int, default=0xffffffff,
                         help='number of frontiers to download, if not set, all frontiers are downloaded')
     parser.add_argument('-m', '--maxage', type=int, default=0xffffffff,
@@ -93,7 +98,10 @@ def frontier_to_db(tx, counter, frontier):
 def main():
     args = parse_args()
 
-    ctx = betactx if args.beta else livectx
+    ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
+
     confirmed = not args.notconfirmed
 
     if args.peer:
