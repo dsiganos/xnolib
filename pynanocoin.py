@@ -342,6 +342,12 @@ class peer:
             return False
         return True
 
+    def deduct_score(self, score):
+        if self.score - score < 0:
+            self.score = 0
+        else:
+            self.score -= score
+
     @classmethod
     def parse_peer(cls, data):
         assert(len(data) == 18)
