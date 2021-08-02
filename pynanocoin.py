@@ -175,12 +175,19 @@ class network_id:
         self.parse_header(int(rawbyte))
 
     def parse_header(self, rawbyte):
-        # if not (rawbyte in [ord('A'), ord('B'), ord('C')]):
-        #     raise ParseErrorBadNetworkId()
+        if not (rawbyte in [ord('X'), ord('B'), ord('C')]):
+            raise ParseErrorBadNetworkId()
         self.id = rawbyte
 
     def __str__(self):
         return chr(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, network_id):
+            return False
+        elif self.id != other.id:
+            return False
+        return True
 
 
 class message_type:
