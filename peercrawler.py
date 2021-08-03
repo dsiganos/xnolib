@@ -253,7 +253,7 @@ def main():
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
         peerman = peer_manager(ctx, verbosity=verbosity)
-        peerman.crawl(ctx, args.forever, args.delay)
+        peerman.crawl(args.forever, args.delay)
 
 
 if __name__ == "__main__":
