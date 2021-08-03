@@ -212,7 +212,7 @@ def run_peer_service_forever(peerman, addr='::1', port=12345):
         conn.close()
 
 
-def get_peers_from_service(addr='::1'):
+def get_peers_from_service(net_id, addr = '::1'):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(5)
@@ -220,9 +220,11 @@ def get_peers_from_service(addr='::1'):
         s.connect((addr, 12345))
         response = readall(s)
         hdr = peer_service_header.parse(response[0:122])
+        if hdr.net_id != net_id:
+            raise PeerServiceUnavailable("Peer service for the given network is unavailable")
     except (ConnectionRefusedError, TypeError) as e:
         print("Error getting peers: %s" % str(e))
-        return None, None
+        raise PeerServiceUnavailable("Peer service is unavailable")
 
     json_peers = response[122:]
     peers = jsonpickle.decode(json_peers)
