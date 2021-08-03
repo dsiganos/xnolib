@@ -4,3 +4,4 @@ ed25519-blake2b
 GitPython
 lmdb
 jsonpickle
+mysql-connector-python
