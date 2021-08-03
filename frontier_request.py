@@ -106,9 +106,9 @@ def main():
 
     if args.peer:
         peerstr = str(ip_addr.from_string(args.peer))
-        s = get_initial_connected_socket(ctx, [peerstr])
+        s, peer = get_initial_connected_socket(ctx, [peerstr])
     else:
-        s = get_initial_connected_socket(ctx)
+        s, peer = get_initial_connected_socket(ctx)
     assert s
 
     s.settimeout(60)

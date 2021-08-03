@@ -25,6 +25,6 @@ block = block_send(example_block_send["prev"], example_block_send["dest"], examp
                    example_block_send["sig"], example_block_send["work"])
 msg = msg_publish(header, block)
 
-s = get_initial_connected_socket(betactx)
+s, _ = get_initial_connected_socket(betactx)
 s.send(msg.serialise())
 print(s.recv(1000))

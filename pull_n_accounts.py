@@ -13,7 +13,7 @@ def valid_account(acc):
     return True
 
 ctx = livectx
-s = get_initial_connected_socket(ctx)
+s, _ = get_initial_connected_socket(ctx)
 assert s
 
 manager = block_manager(None, None)

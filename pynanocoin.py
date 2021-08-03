@@ -1806,13 +1806,13 @@ def get_initial_connected_socket(ctx, peers=None):
         try:
             s.connect((peeraddr, ctx['peerport']))
             print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
-            return s
+            return s, peeraddr
         except socket.error as e:
             print('Failed to connect to %s' % peeraddr)
             print(e)
 
     print('Failed to connect to any of the peering servers')
-    return None
+    return None, None
 
 
 def get_account_blocks(s, account):

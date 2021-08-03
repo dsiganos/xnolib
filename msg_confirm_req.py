@@ -304,7 +304,7 @@ def confirm_blocks_by_hash(blocks, s):
 
 def main():
     ctx = livectx
-    s = get_initial_connected_socket(ctx)
+    s, _ = get_initial_connected_socket(ctx)
     s.settimeout(20)
     perform_handshake_exchange(ctx, s)
 

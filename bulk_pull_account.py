@@ -106,7 +106,7 @@ def read_account_entries_hash_amount_addr(s):
 
 
 def main():
-    s = get_initial_connected_socket(livectx)
+    s, _ = get_initial_connected_socket(livectx)
     account = binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5')
     hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
 

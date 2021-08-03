@@ -5,7 +5,7 @@ import socket
 from pynanocoin import *
 
 ctx = livectx
-s = get_initial_connected_socket(ctx)
+s, _ = get_initial_connected_socket(ctx)
 assert s
 
 blocks = get_account_blocks(s, ctx["genesis_pub"])
