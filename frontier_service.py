@@ -28,51 +28,43 @@ class frontier_service:
 
     def single_pass(self):
         if self.peer_service_active:
-            _, self.peers = peercrawler.get_all_peers()
+            _, peers = peercrawler.get_all_peers()
         else:
-            self.peers = self.peerman.get_peers_copy()
+            peers = self.peerman.get_peers_copy()
+        self.merge_peers(peers)
 
         for p in self.peers:
             if p.score <= 0:
+                self.remove_peer_data(p)
+                self.peers.remove(p)
                 continue
-            if p not in self.visited_peers:
-                self.manage_peer_frontiers(p)
-                self.visited_peers.append(p)
+            elif p not in self.visited_peers:
+                try:
+                    self.manage_peer_frontiers(p)
+                    self.visited_peers.append(p)
+                    self.db.commit()
+                except (ConnectionRefusedError, socket.timeout) as ex:
+                    p.deduct_score(200)
+                    print(ex)
+                except PyNanoCoinException:
+                    continue
 
     def manage_peer_frontiers(self, p):
-        # Attempts to connect to a peer recursively (if it fails)
-        if p.score <= 0:
-            self.remove_peer_data(p)
-            self.peers.remove(p)
-
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(15)
 
-        # Testing a peers connection
-        try:
-            s.connect((str(p.ip), p.port))
-        except Exception as ex:
-            p.deduct_score(200)
-            print(ex)
-
-            # Will try to connect to the peer again, until the score is 0 (recursively)
-            return self.manage_peer_frontiers(p)
+        s.connect((str(p.ip), p.port))
 
         # maxacc argument can be removed in final version
         req = frontier_request.frontier_request(self.ctx, maxacc=1000)
         s.send(req.serialise())
 
-        try:
-            frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
-            self.db.commit()
-
-        except PyNanoCoinException:
-            return
+        frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
 
     def remove_peer_data(self, p):
-        self.cursor.execute("DELETE FROM frontiers WHERE peer_id = '%s'" % p.serialise())
-        self.cursor.execute("DELETE FROM peers WHERE peer_id = '%s'" % p.serialise())
+        self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
+        self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
 
     # Function which will query all accounts with different frontier hashes
     def find_accounts_different_hashes(self):
@@ -99,6 +91,11 @@ class frontier_service:
         self.cursor.execute("SELECT COUNT(*) FROM frontiers")
         result = self.cursor.fetchall()
         return result[0]
+
+    def merge_peers(self, peers):
+        for p in peers:
+            if p not in self.peers:
+                self.peers.append(p)
 
 
 class frontiers_record:
