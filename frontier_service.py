@@ -23,9 +23,7 @@ class frontier_service:
             self.single_pass()
 
     def single_pass(self):
-        _, peers = peercrawler.get_peers_from_service()
-        if peers is None:
-            raise PeerServiceUnavailable("Peer service is unreachable")
+        _, peers = peercrawler.get_peers_from_service(self.ctx["net_id"])
         self.merge_peers(peers)
 
         for p in self.peers:
@@ -33,15 +31,18 @@ class frontier_service:
                 self.remove_peer_data(p)
                 self.peers.remove(p)
                 continue
+
             elif p not in self.visited_peers:
                 try:
                     self.manage_peer_frontiers(p)
                     self.visited_peers.append(p)
                     self.db.commit()
+
                 except (ConnectionRefusedError, socket.timeout) as ex:
                     p.deduct_score(200)
                     if self.verbosity >= 1:
                         print(ex)
+
                 except PyNanoCoinException as ex:
                     p.deduct_score(200)
                     if self.verbosity >=1:
@@ -199,13 +200,7 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    hdr, peers = peercrawler.get_peers_from_service()
-
-    if hdr is not None and hdr.net_id != ctx["net_id"]:
-        raise PeerServiceUnavailable("Peer service for the given ctx is unavailable")
-
-    if peers is None:
-        raise PeerServiceUnavailable("Peer service is unreachable")
+    _, __ = peercrawler.get_peers_from_service(ctx["net_id"])
 
     frontserv = frontier_service(ctx, db, cursor, args.verbosity)
 
