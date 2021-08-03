@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 import argparse
 import time
 from sql_utils import *
