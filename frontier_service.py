@@ -45,8 +45,12 @@ class frontier_service:
                     self.db.commit()
                 except (ConnectionRefusedError, socket.timeout) as ex:
                     p.deduct_score(200)
-                    print(ex)
-                except PyNanoCoinException:
+                    if self.verbosity >= 1:
+                        print(ex)
+                except PyNanoCoinException as ex:
+                    p.deduct_score(200)
+                    if self.verbosity >=1:
+                        print(ex)
                     continue
 
     def manage_peer_frontiers(self, p):
