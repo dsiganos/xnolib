@@ -28,7 +28,7 @@ class frontier_service:
 
     def single_pass(self):
         if self.peer_service_active:
-            _, peers = peercrawler.get_all_peers()
+            _, peers = peercrawler.get_peers_from_service()
         else:
             peers = self.peerman.get_peers_copy()
         self.merge_peers(peers)
@@ -200,7 +200,7 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    hdr, peers = peercrawler.get_all_peers()
+    hdr, peers = peercrawler.get_peers_from_service()
 
     if hdr is not None and hdr.net_id != ctx["net_id"]:
         peers = None
