@@ -10,14 +10,10 @@ from pynanocoin import *
 
 
 class frontier_service:
-    def __init__(self, ctx, db, cursor, peer_service_active = False, peerman = None, verbosity = 0):
-        assert(peerman is None if peer_service_active else not None)
-        assert(isinstance(peerman, peercrawler.peer_manager) or peerman is None)
+    def __init__(self, ctx, db, cursor, verbosity = 0):
         self.ctx = ctx
         self.db = db
         self.cursor = cursor
-        self.peer_service_active = peer_service_active
-        self.peerman = peerman
         self.verbosity = verbosity
         self.peers = []
         self.visited_peers = []
@@ -27,10 +23,9 @@ class frontier_service:
             self.single_pass()
 
     def single_pass(self):
-        if self.peer_service_active:
-            _, peers = peercrawler.get_peers_from_service()
-        else:
-            peers = self.peerman.get_peers_copy()
+        _, peers = peercrawler.get_peers_from_service()
+        if peers is None:
+            raise PeerServiceUnavailable("Peer service is unreachable")
         self.merge_peers(peers)
 
         for p in self.peers:
@@ -207,19 +202,12 @@ def main():
     hdr, peers = peercrawler.get_peers_from_service()
 
     if hdr is not None and hdr.net_id != ctx["net_id"]:
-        peers = None
+        raise PeerServiceUnavailable("Peer service for the given ctx is unavailable")
 
-    peer_service_active = False
     if peers is None:
-        thread = peercrawler.spawn_peer_crawler_thread(ctx, forever=args.forever,
-                                                       delay=args.delay, verbosity=args.verbosity)
-        peerman = thread.peerman
-        time.sleep(1)
-    else:
-        peer_service_active = True
-        peerman = None
+        raise PeerServiceUnavailable("Peer service is unreachable")
 
-    frontserv = frontier_service(ctx, db, cursor, peer_service_active, peerman, args.verbosity)
+    frontserv = frontier_service(ctx, db, cursor, args.verbosity)
 
     # This will run forever
     frontserv.single_pass()
