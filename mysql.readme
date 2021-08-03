@@ -1,0 +1,16 @@
+
+How to install mysql and set it up on Ubuntu:
+
+# install the thw sql srever
+sudo apt install mysql-server
+
+# setup the server software
+sudo mysql_secure_installation
+
+# create a user for nano
+sudo mysql
+> CREATE USER 'nano'@'localhost' IDENTIFIED BY 'password123';
+> GRANT PRIVILEGE ON *.* TO 'nano'@'localhost';
+
+# now you should be able to login with password123
+mysql -u nano -p
