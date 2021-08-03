@@ -76,5 +76,5 @@ class BadTelemetryReply(PyNanoCoinException):
     pass
 
 
-class SocketClosedByPeer(PyNanoCoinException):
+class PeerServiceUnavailable(PyNanoCoinException):
     pass
