@@ -143,10 +143,10 @@ def main():
         assert peers
     else:
         if args.peer:
-            peers = [Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'])]
+            peers = [Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'], 1000)]
         else:
             peer = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-            peers = [Peer(ip_addr(ipaddress.IPv6Address(peer)), ctx['peerport'])]
+            peers = [Peer(ip_addr(ipaddress.IPv6Address(peer)), ctx['peerport'], 1000)]
 
     for peer in peers:
         if peer.score <= 0:
