@@ -78,3 +78,7 @@ class BadTelemetryReply(PyNanoCoinException):
 
 class PeerServiceUnavailable(PyNanoCoinException):
     pass
+
+
+class FrontierServiceSlowPeer(PyNanoCoinException):
+    pass
