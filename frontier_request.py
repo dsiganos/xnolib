@@ -4,6 +4,8 @@ import binascii
 import random
 import socket
 import argparse
+import time
+
 import lmdb
 import peercrawler
 from exceptions import *
@@ -83,19 +85,22 @@ def parse_args():
 def read_all_frontiers(s, frontier_handler):
     counter = 1
     while True:
+        starttime = time.time()
         frontier = read_frontier_response(s)
-
+        endtime = time.time()
+        readtime = endtime - starttime
         if frontier.is_end_marker():
             return
 
-        frontier_handler(counter, frontier)
+        frontier_handler(counter, frontier, readtime)
         counter += 1
 
 
-def print_handler(counter, frontier):
+def print_handler(counter, frontier, readtime):
     print(counter, hexlify(frontier.frontier_hash), hexlify(frontier.account), get_account_id(frontier.account))
 
 
+# TODO: Add readtime as an argument if this function will be used in the read_all_fronteirs()
 def frontier_to_db(tx, counter, frontier):
     tx.put(frontier.account, frontier.frontier_hash)
 
