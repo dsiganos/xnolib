@@ -323,7 +323,7 @@ class message_header:
 
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
-class peer:
+class Peer:
     def __init__(self, ip = ip_addr(), port = 0, score = -1):
         assert isinstance(ip, ip_addr)
         self.ip = ip
@@ -360,7 +360,7 @@ class peer:
         assert(len(data) == 18)
         ip = parse_ipv6(data[0:16])
         port = int.from_bytes(data[16:], "little")
-        return peer(ip_addr(ip), port)
+        return Peer(ip_addr(ip), port)
 
     def __str__(self):
         return '%s:%s (score:%s)' % (str(self.ip), self.port, self.score)
@@ -379,7 +379,7 @@ class message_keepalive:
         if peers is None:
             self.peers = []
             for i in range(0, 8):
-                self.peers.append(peer())
+                self.peers.append(Peer())
         else:
             self.peers = peers
 
@@ -408,7 +408,7 @@ class message_keepalive:
         end_index = 18
         peers_list = []
         for i in range(0, no_of_peers):
-            p = peer.parse_peer(rawdata[start_index:end_index])
+            p = Peer.parse_peer(rawdata[start_index:end_index])
             peers_list.append(p)
             start_index = end_index
             end_index += 18

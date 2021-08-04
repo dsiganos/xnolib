@@ -97,7 +97,7 @@ class peer_manager:
 
     def crawl(self, forever, delay):
         addresses = get_all_dns_addresses(self.ctx['peeraddr'])
-        initial_peers = [peer(ip_addr(ipaddress.IPv6Address(a)), self.ctx['peerport']) for a in addresses]
+        initial_peers = [Peer(ip_addr(ipaddress.IPv6Address(a)), self.ctx['peerport']) for a in addresses]
 
         self.add_peers(initial_peers)
         if self.verbosity >= 1:
