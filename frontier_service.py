@@ -38,14 +38,10 @@ class frontier_service:
                     self.visited_peers.append(p)
                     self.db.commit()
 
-                except (ConnectionRefusedError, socket.timeout) as ex:
+                except (ConnectionRefusedError, socket.timeout, PyNanoCoinException,
+                        FrontierServiceSlowPeer) as ex:
                     p.deduct_score(200)
                     if self.verbosity >= 1:
-                        print(ex)
-
-                except PyNanoCoinException as ex:
-                    p.deduct_score(200)
-                    if self.verbosity >=1:
                         print(ex)
                     continue
 
@@ -118,7 +114,7 @@ class frontiers_record:
 
 class peer_frontiers:
     def __init__(self, p, frontiers):
-        assert(isinstance(p, peer))
+        assert(isinstance(p, Peer))
         assert(isinstance(frontiers, list))
         self.p = p
         self.frontiers = frontiers
@@ -156,7 +152,8 @@ def parse_args():
 
 # MySQL closure
 def mysql_handler(p, cursor, verbosity):
-    assert(isinstance(p, peer))
+    assert(isinstance(p, Peer))
+    times = []
     query1 = "INSERT INTO Peers(peer_id, ip_address, port, score) "
     query1 += "VALUES('%s', '%s', %d, %d) " % (hexlify(p.serialise()), str(p.ip), p.port, p.score)
     query1 += "ON DUPLICATE KEY UPDATE port = port"
@@ -164,7 +161,11 @@ def mysql_handler(p, cursor, verbosity):
         print(query1)
     cursor.execute(query1)
 
-    def add_data(counter, frontier):
+    def add_data(counter, frontier, readtime):
+        times.append(readtime)
+        if counter > 4:
+            if find_average_time(times) > 0.05:
+                raise FrontierServiceSlowPeer("peer: %s is too slow" % str(p))
         query2 = "INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) "
         query2 += "VALUES ('%s', '%s', '%s') " % (hexlify(p.serialise()), hexlify(frontier.account),
                                                  hexlify(frontier.frontier_hash))
@@ -174,6 +175,13 @@ def mysql_handler(p, cursor, verbosity):
             print(query2)
         cursor.execute(query2)
     return add_data
+
+
+def find_average_time(times):
+    n = 0.0
+    for t in times:
+        n += t
+    return n / len(times)
 
 
 def main():
