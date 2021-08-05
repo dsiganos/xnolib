@@ -16,7 +16,7 @@ class frontier_service:
         self.cursor = cursor
         self.verbosity = verbosity
         self.peers = []
-        self.blacklist = []
+        self.blacklist = blacklist_manager(Peer, 1800)
 
     def start_service(self):
         while True:
@@ -30,7 +30,7 @@ class frontier_service:
             if p.score <= 0:
                 self.remove_peer_data(p)
                 self.peers.remove(p)
-                self.blacklist.append(blacklist_entry(p, time.time()))
+                self.blacklist.add_item(p)
                 continue
 
             try:
@@ -89,34 +89,66 @@ class frontier_service:
 
     def merge_peers(self, peers):
         for p in peers:
-            b = self.get_blacklist_entry(p)
-
-            if b is not None:
-                if b.has_expired():
-                    assert(p not in self.peers)
-                    self.peers.append(p)
-                else:
-                    continue
-
+            if self.blacklist.is_blacklisted(p):
+                continue
             elif p not in self.peers:
                 self.peers.append(p)
 
-    def get_blacklist_entry(self, p):
-        for b in self.blacklist:
-            if p == b.peer:
-                return b
-        return None
-
 
 class blacklist_entry:
-    def __init__(self, peer, time_added):
-        self.peer = peer
+    def __init__(self, item, time_added):
+        self.item = item
         self.time = time_added
 
-    def has_expired(self):
-        if time.time() - self.time > 1800:
+    def has_expired(self, expiry_time):
+        if time.time() - self.time > expiry_time:
             return True
         return False
+
+
+class blacklist_manager:
+    def __init__(self, object_type, expiry_time = None):
+        self.blacklist = []
+        self.object_type = object_type
+        self.expiry_time = expiry_time
+
+    def add_item(self, item):
+        if not isinstance(item, self.object_type):
+            raise BlacklistItemTypeError("This black list holds items of item type : %s, type %s given" %
+                                         (str(self.object_type), str(item.type())))
+        elif self.get_entry(item) is None:
+            self.blacklist.append(blacklist_entry(item, time.time()))
+
+    def is_blacklisted(self, item):
+        entry = self.get_entry(item)
+        if entry is None:
+            return False
+        elif self.expiry_time is not None:
+            if entry.has_expired(self.expiry_time):
+                self.remove_entry(entry)
+                return False
+            else:
+                return True
+        else:
+            return True
+
+    def remove_entry(self, entry):
+        self.blacklist.remove(entry)
+
+    def remove_item(self, item):
+        entry = self.get_entry(item)
+        if entry is not None:
+            self.remove_entry(entry)
+
+    def set_expiry_time(self, expiry_time):
+        assert(isinstance(expiry_time, int))
+        self.expiry_time = expiry_time
+
+    def get_entry(self, item):
+        for b in self.blacklist:
+            if item == b.item:
+                return b
+        return None
 
 
 class frontiers_record:
