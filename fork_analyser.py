@@ -60,7 +60,7 @@ def pull_blocks(ctx, blockman, peer, hsh):
         #    print(b)
 
 ctx=livectx
-peers = peercrawler.get_peers_from_service()
+peers = peercrawler.get_peers_from_service(ctx)
 if peers is None:
     peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=ctx, forever=True, delay=30, verbosity=1)
     peerman = peercrawler_thread.peerman
@@ -100,7 +100,7 @@ blockman = block_manager(workdir, gitrepo)
 stop = False
 while True:
     if peerman is None:
-        peers = peercrawler.get_peers_from_service()
+        peers = peercrawler.get_peers_from_service(ctx)
     else:
         peerman.get_peers_copy()
     print()

@@ -143,7 +143,7 @@ def main():
                                     confirmed = confirmed)
 
     if args.all:
-        _, peers = peercrawler.get_peers_from_service()
+        _, peers = peercrawler.get_peers_from_service(ctx)
         assert peers
     else:
         if args.peer:

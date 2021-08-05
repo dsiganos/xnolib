@@ -23,7 +23,7 @@ class frontier_service:
             self.single_pass()
 
     def single_pass(self):
-        _, peers = peercrawler.get_peers_from_service(self.ctx["net_id"])
+        _, peers = peercrawler.get_peers_from_service(self.ctx)
         self.merge_peers(peers)
 
         for p in self.peers:
@@ -208,7 +208,7 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    _, __ = peercrawler.get_peers_from_service(ctx["net_id"])
+    _, __ = peercrawler.get_peers_from_service(ctx)
 
     frontserv = frontier_service(ctx, db, cursor, args.verbosity)
 
