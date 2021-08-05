@@ -92,7 +92,7 @@ def read_all_frontiers(s, frontier_handler):
         if frontier.is_end_marker():
             return
 
-        frontier_handler(counter, frontier)
+        frontier_handler(counter, frontier, readtime)
         counter += 1
 
 
