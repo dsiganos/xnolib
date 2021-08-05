@@ -7,7 +7,7 @@ from ipaddress import IPv6Address
 
 class TestComms(unittest.TestCase):
     def setUp(self):
-        data = "524122222202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
+        data = "524222222202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
         self.data = binascii.unhexlify(data)
         ip1 = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         ip2 = Peer(ip_addr(IPv6Address("::ffff:18fb:4f64")), 54000)
@@ -20,38 +20,38 @@ class TestComms(unittest.TestCase):
         self.peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
 
     def test_header_serialisation(self):
-        h = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
+        h = message_header(network_id(66), [34, 34, 34], message_type(2), 0)
         self.assertEqual(h.serialise_header(), self.data[:8])
 
     def test_header_deserialisation(self):
-        h = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
-        h2 = message_header.parse_header(self.data[0:8])
+        h = message_header(network_id(66), [34, 34, 34], message_type(2), 0)
+        h2 = message_header.parse_header(h.serialise_header())
         self.assertEqual(h2, h)
 
     def test_peer_deserialisation(self):
-        p = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
-        p1 = peer.parse_peer(self.data[8:26])
+        p = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        p1 = Peer.parse_peer(self.data[8:26])
         self.assertEqual(p, p1)
 
     def test_peer_serialisation(self):
-        p = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        p = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         self.assertEqual(self.data[8:26], p.serialise())
 
     def test_full_keepalive_serialisation(self):
-        h = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
+        h = message_header(network_id(66), [34, 34, 34], message_type(2), 0)
         keepalive = message_keepalive(h, self.peer_list)
         self.assertEqual(self.data, keepalive.serialise())
 
     def test_equality_headers(self):
-        h = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
-        h1 = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
+        h = message_header(network_id(66), [34, 34, 34], message_type(2), 0)
+        h1 = message_header(network_id(66), [34, 34, 34], message_type(2), 0)
         self.assertTrue(h1 == h)
 
     def test_equality_peer(self):
-        p = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
-        p2 = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
-        p3 = peer(ip_addr(IPv6Address("::ffff:9df5:d113")), 54000)
-        p4 = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54001)
+        p = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        p2 = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        p3 = Peer(ip_addr(IPv6Address("::ffff:9df5:d113")), 54000)
+        p4 = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54001)
         self.assertTrue(p == p2)
         self.assertTrue(p != p3)
         self.assertTrue(p != p4)
@@ -62,7 +62,7 @@ class TestComms(unittest.TestCase):
         self.assertEqual(self.data, keepalive.serialise())
 
     def test_keepalive_full_loop2(self):
-        h = message_header(network_id(65), [34, 34, 34], message_type(2), 0)
+        h = message_header(network_id(66), [34, 34, 34], message_type(2), 0)
         keepalive = message_keepalive(h, self.peer_list)
         data = keepalive.serialise()
         h = message_header.parse_header(data[0:8])
@@ -73,6 +73,7 @@ class TestComms(unittest.TestCase):
         header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
         bulk_pull = message_bulk_pull(header, livectx["genesis_pub"])
         expected = b'RC\x12\x12\x12\x06\x00\x00\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.assertEqual(bulk_pull.serialise(), expected)
 
     def test_block_send_serialisation(self):
         prev = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
