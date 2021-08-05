@@ -82,3 +82,7 @@ class PeerServiceUnavailable(PyNanoCoinException):
 
 class FrontierServiceSlowPeer(PyNanoCoinException):
     pass
+
+
+class BlacklistItemTypeError(PyNanoCoinException):
+    pass
