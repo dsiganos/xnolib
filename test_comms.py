@@ -3,7 +3,6 @@ import unittest
 import binascii
 from pynanocoin import *
 from ipaddress import IPv6Address
-from frontier_service import blacklist_entry
 
 
 class TestComms(unittest.TestCase):
