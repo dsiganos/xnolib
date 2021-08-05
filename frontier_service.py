@@ -16,7 +16,7 @@ class frontier_service:
         self.cursor = cursor
         self.verbosity = verbosity
         self.peers = []
-        self.visited_peers = []
+        self.blacklist = []
 
     def start_service(self):
         while True:
@@ -30,20 +30,19 @@ class frontier_service:
             if p.score <= 0:
                 self.remove_peer_data(p)
                 self.peers.remove(p)
+                self.blacklist.append(blacklist_entry(p, time.time()))
                 continue
 
-            elif p not in self.visited_peers:
-                try:
-                    self.manage_peer_frontiers(p)
-                    self.visited_peers.append(p)
-                    self.db.commit()
+            try:
+                self.manage_peer_frontiers(p)
+                self.db.commit()
 
-                except (ConnectionRefusedError, socket.timeout, PyNanoCoinException,
-                        FrontierServiceSlowPeer) as ex:
-                    p.deduct_score(200)
-                    if self.verbosity >= 1:
-                        print(ex)
-                    continue
+            except (ConnectionRefusedError, socket.timeout, PyNanoCoinException,
+                    FrontierServiceSlowPeer) as ex:
+                p.deduct_score(200)
+                if self.verbosity >= 1:
+                    print(ex)
+                continue
 
     def manage_peer_frontiers(self, p):
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -90,8 +89,34 @@ class frontier_service:
 
     def merge_peers(self, peers):
         for p in peers:
-            if p not in self.peers:
+            b = self.get_blacklist_entry(p)
+
+            if b is not None:
+                if b.has_expired():
+                    assert(p not in self.peers)
+                    self.peers.append(p)
+                else:
+                    continue
+
+            elif p not in self.peers:
                 self.peers.append(p)
+
+    def get_blacklist_entry(self, p):
+        for b in self.blacklist:
+            if p == b.peer:
+                return b
+        return None
+
+
+class blacklist_entry:
+    def __init__(self, peer, time_added):
+        self.peer = peer
+        self.time = time_added
+
+    def has_expired(self):
+        if time.time() - self.time > 1800:
+            return True
+        return False
 
 
 class frontiers_record:
