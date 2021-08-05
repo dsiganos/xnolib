@@ -1,21 +1,23 @@
+import time
 import unittest
 import binascii
 from pynanocoin import *
 from ipaddress import IPv6Address
+from frontier_service import blacklist_entry
 
 
 class TestComms(unittest.TestCase):
     def setUp(self):
         data = "524122222202000000000000000000000000ffff9df5d11ef0d200000000000000000000ffff18fb4f64f0d200000000000000000000ffff405a48c2f0d200000000000000000000ffff95382eecf0d200000000000000000000ffff2e044970f0d200000000000000000000ffff68cdcd53f0d200000000000000000000ffffb3a2bdeff0d200000000000000000000ffff74ca6b61f0d2"
         self.data = binascii.unhexlify(data)
-        ip1 = peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
-        ip2 = peer(ip_addr(IPv6Address("::ffff:18fb:4f64")), 54000)
-        ip3 = peer(ip_addr(IPv6Address("::ffff:405a:48c2")), 54000)
-        ip4 = peer(ip_addr(IPv6Address("::ffff:9538:2eec")), 54000)
-        ip5 = peer(ip_addr(IPv6Address("::ffff:2e04:4970")), 54000)
-        ip6 = peer(ip_addr(IPv6Address("::ffff:68cd:cd53")), 54000)
-        ip7 = peer(ip_addr(IPv6Address("::ffff:b3a2:bdef")), 54000)
-        ip8 = peer(ip_addr(IPv6Address("::ffff:74ca:6b61")), 54000)
+        ip1 = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
+        ip2 = Peer(ip_addr(IPv6Address("::ffff:18fb:4f64")), 54000)
+        ip3 = Peer(ip_addr(IPv6Address("::ffff:405a:48c2")), 54000)
+        ip4 = Peer(ip_addr(IPv6Address("::ffff:9538:2eec")), 54000)
+        ip5 = Peer(ip_addr(IPv6Address("::ffff:2e04:4970")), 54000)
+        ip6 = Peer(ip_addr(IPv6Address("::ffff:68cd:cd53")), 54000)
+        ip7 = Peer(ip_addr(IPv6Address("::ffff:b3a2:bdef")), 54000)
+        ip8 = Peer(ip_addr(IPv6Address("::ffff:74ca:6b61")), 54000)
         self.peer_list = [ip1, ip2, ip3, ip4, ip5, ip6, ip7, ip8]
 
     def test_header_serialisation(self):
