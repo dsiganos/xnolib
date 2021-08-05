@@ -92,15 +92,14 @@ def read_all_frontiers(s, frontier_handler):
         if frontier.is_end_marker():
             return
 
-        frontier_handler(counter, frontier, readtime)
+        frontier_handler(counter, frontier)
         counter += 1
 
 
-def print_handler(counter, frontier, readtime):
+def print_handler(counter, frontier):
     print(counter, hexlify(frontier.frontier_hash), hexlify(frontier.account), get_account_id(frontier.account))
 
 
-# TODO: Add readtime as an argument if this function will be used in the read_all_fronteirs()
 def frontier_to_db(tx, counter, frontier):
     tx.put(frontier.account, frontier.frontier_hash)
 
