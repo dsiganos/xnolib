@@ -203,6 +203,10 @@ def parse_args():
                         help='the ip of the sql server')
     parser.add_argument('-c', '--create', action='store_true', default=False,
                         help='determines a new database should be created')
+    parser.add_argument('-D', '--differences', action='store_true', default=False,
+                        help='If you want the service to get differences or not')
+    parser.add_argument('-s', '--service', action='store_true', default=False,
+                        help='runs the service, can be forever depending on the -f argument')
 
     return parser.parse_args()
 
@@ -265,18 +269,22 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    _, __ = peercrawler.get_peers_from_service(ctx)
-
     frontserv = frontier_service(ctx, db, cursor, args.verbosity)
 
     # This will run forever
-    frontserv.single_pass()
+    if args.service:
+        peercrawler.get_peers_from_service(ctx)
+        if args.forever:
+            frontserv.start_service()
+
+        else:
+            frontserv.single_pass()
 
     # This is a piece of code which can find accounts with different frontier hashes
-
-    # records = frontserv.find_accounts_different_hashes()
-    # for rec in records:
-    #     print(rec)
+    if args.differences:
+        records = frontserv.find_accounts_different_hashes()
+        for rec in records:
+            print(rec)
 
 
 if __name__ == "__main__":
