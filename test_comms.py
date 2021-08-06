@@ -3,7 +3,7 @@ import unittest
 import binascii
 from pynanocoin import *
 from ipaddress import IPv6Address
-
+from frontier_service import blacklist_manager, blacklist_entry
 
 class TestComms(unittest.TestCase):
     def setUp(self):
@@ -303,6 +303,38 @@ class TestComms(unittest.TestCase):
         self.assertEqual(manager.accounts[0].blocks[b1.hash()], b1)
         self.assertEqual(manager.accounts[0].blocks[b2.hash()], b2)
         self.assertEqual(manager.accounts[0].blocks[b3.hash()], b3)
+
+    def test_blacklist_add_duplicate_item(self):
+        peer = self.peer_list[0]
+        manager = blacklist_manager(Peer)
+
+        manager.add_item(peer)
+        manager.add_item(peer)
+        self.assertEqual(len(manager.blacklist), 1)
+
+    def test_blacklist_different_item_types(self):
+        manager = blacklist_manager(Peer)
+        net_id = network_id(67)
+        peer = self.peer_list[0]
+        manager.add_item(peer)
+
+        try:
+            manager.add_item(net_id)
+            self.assertTrue(False)
+        except BlacklistItemTypeError:
+            self.assertTrue(True)
+
+    def test_blacklist_is_blacklisted(self):
+        manager1 = blacklist_manager(Peer)
+        manager2 = blacklist_manager(Peer, 5)
+        peer = self.peer_list[0]
+        manager1.add_item(peer)
+        self.assertTrue(manager1.is_blacklisted(peer))
+
+        manager2.add_item(peer)
+        self.assertTrue(manager2.is_blacklisted(peer))
+        time.sleep(5)
+        self.assertTrue(not manager2.is_blacklisted(peer))
 
 
 if __name__ == '__main__':
