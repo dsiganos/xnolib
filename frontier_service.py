@@ -115,7 +115,7 @@ class blacklist_manager:
     def add_item(self, item):
         if not isinstance(item, self.object_type):
             raise BlacklistItemTypeError("This black list holds items of item type : %s, type %s given" %
-                                         (str(self.object_type), str(item.type())))
+                                         (str(self.object_type), str(type(item))))
         elif self.get_entry(item) is None:
             self.blacklist.append(blacklist_entry(item, time.time()))
 
@@ -186,7 +186,7 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
-    parser.add_argument('-f', '--forever', action="store_true", default=True,
+    parser.add_argument('-f', '--forever', action="store_true", default=False,
                         help='"forever" argument for the peercrawler thread')
     parser.add_argument('-d', '--delay', type=int, default=0,
                         help='delay between crawls in seconds')
