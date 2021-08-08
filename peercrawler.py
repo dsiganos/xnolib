@@ -4,6 +4,7 @@ import random
 import socket
 import copy
 import time
+import sys
 import argparse
 import threading
 import jsonpickle
@@ -132,6 +133,9 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
+    parser.add_argument('-c', '--connect',
+                        help='connect to peercrawler service given by arg and get list of peers')
+
     parser.add_argument('-v', '--verbosity', type=int,
                         help='verbosity level')
     parser.add_argument('-f', '--forever', action='store_true', default=True,
@@ -241,12 +245,23 @@ def string_to_bytes(string, length):
     return data
 
 
+def do_connect(ctx, server):
+    print('server =', server)
+    _, peers = get_peers_from_service(ctx, addr=server)
+    peerman = peer_manager(ctx, peers, 2)
+    print(peerman)
+
+
 def main():
     args = parse_args()
 
     ctx = livectx
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
+
+    if args.connect:
+        do_connect(ctx, args.connect)
+        sys.exit(0)
 
     if args.service:
         verbosity = args.verbosity if (args.verbosity is not None) else 0
