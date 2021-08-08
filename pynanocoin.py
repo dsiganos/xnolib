@@ -1877,9 +1877,9 @@ testctx = {
 
 
 genesis_block_open = {
-    "source": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "representative": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "account": b'\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba',
-    "signature": b'\x9f\x0c\x93<\x8a\xde\x00M\x80\x8e\xa1\x98_\xa7F\xa7\xe9[\xa2\xa3\x8f\x86v@\xf5>\xc8\xf1\x80\xbd\xfe\x9e,\x12h\xde\xad|&d\xf3V\xe3z\xba6+\xc5\x8eF\xdb\xa0>R:{Z\x19\xe4\xb6\xeb\x12\xbb\x02',
-    "work": b'b\xf0T\x17\xdd?\xb6\x91'
+    "source": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+    "representative": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+    "account": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+    "signature": binascii.unhexlify('9F0C933C8ADE004D808EA1985FA746A7E95BA2A38F867640F53EC8F180BDFE9E2C1268DEAD7C2664F356E37ABA362BC58E46DBA03E523A7B5A19E4B6EB12BB02'),
+    "work": binascii.unhexlify('62F05417DD3FB691')
 }
