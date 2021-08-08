@@ -43,6 +43,7 @@ def pull_blocks(ctx, blockman, peer, hsh):
         s.send(bulk_pull.serialise())
 
         # pull blocks from peer
+        blocks_pulled = 0
         while True:
             block = read_block_from_socket(s)
             if block is None:
@@ -51,6 +52,9 @@ def pull_blocks(ctx, blockman, peer, hsh):
             block.ancillary['peers'].add('[%s]:%s c:%s unc:%s' % peerinfo)
             print(block)
             blockman.process(block)
+            blocks_pulled += 1
+
+    return blocks_pulled
 
         #a, b = blockman.accounts[0].check_forks()
         #if a is not None or b is not None:
@@ -59,14 +63,26 @@ def pull_blocks(ctx, blockman, peer, hsh):
         #    print(a)
         #    print(b)
 
+
+def once(ctx, blockman, forkacc):
+    hdr, peers = peercrawler.get_peers_from_service(ctx, addr='::ffff:46.101.61.203')
+    print('Starting a round of pulling blocks with %s peers' % len(peers))
+
+    pulls = 0
+    for peer in peers:
+        try:
+            blocks_pulled = pull_blocks(ctx, blockman, peer, forkacc)
+            print('%s: %s' % (peer, blocks_pulled))
+            pulls += 1
+        except (PyNanoCoinException, OSError) as e:
+            peer.score = 0
+            print('FAILED to pull blocks from %s' % peer)
+            print(e)
+
+    print('Pulled blocks from %s out of %s peers' % (pulls, len(peers)))
+
+
 ctx=livectx
-peers = peercrawler.get_peers_from_service(ctx)
-if peers is None:
-    peercrawler_thread = peercrawler.spawn_peer_crawler_thread(ctx=ctx, forever=True, delay=30, verbosity=1)
-    peerman = peercrawler_thread.peerman
-    time.sleep(1)
-else:
-    peerman = None
 
 fork1 = binascii.unhexlify('7D6FE3ABD8E2F7598911E13DC9C5CD2E71210C1FBD90D503C7A2041FBF58EEFD')
 fork2 = binascii.unhexlify('CC83DA473B2B1BA277F64359197D4A36866CC84A7D43B1F65457324497C75F75')
@@ -97,36 +113,8 @@ print(workdir)
 gitrepo = git.Repo.init(workdir)
 
 blockman = block_manager(workdir, gitrepo)
-stop = False
-while True:
-    if peerman is None:
-        peers = peercrawler.get_peers_from_service(ctx)
-    else:
-        peerman.get_peers_copy()
-    print()
-    print('Starting a round of pulling blocks with %s peers' % len(peers))
-    pulls = 0
-    for peer in peers:
-        try:
-            pull_blocks(ctx, blockman, peer, fork3)
-            pulls += 1
-#            if pulls >= 1:
-#                stop = True
-#                break
-        except OSError as e:
-            peer.score = 0
-            print(e)
-        except PyNanoCoinException as e:
-            peer.score = 0
-            print(e)
+once(ctx, blockman, fork1)
 
-    #print(blockman.accounts[0].str_blocks())
-    #for acc in blockman.accounts:
-    #    print(acc)
-    #print(blockman)
-    #time.sleep(3)
-
-#print(blockman.unprocessed_blocks[0])
 for acc in blockman.accounts:
     print(acc)
 print(blockman)
