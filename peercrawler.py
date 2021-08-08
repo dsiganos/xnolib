@@ -50,7 +50,7 @@ class peer_manager:
             # try to connect to peer
             try:
                 s.connect((str(peer.ip), peer.port))
-            except socket.error as error:
+            except OSError as error:
                 peer.score = 0
                 if self.verbosity >= 3:
                     print('Failed to connect to peer %s, error: %s' % (peer, error))
@@ -74,11 +74,7 @@ class peer_manager:
 
                 # timeout whilst waiting for keepalive, score it with 2
                 peer.score = 2
-            except OSError as e:
-                # peer was connectable but some other error happpened, score it with 1
-                peer.score = 1
-                print('Exception %s: %s' % (type(e), e))
-            except PyNanoCoinException as e:
+            except (PyNanoCoinException, OSError) as e:
                 # peer was connectable but some other error happpened, score it with 1
                 peer.score = 1
                 print('Exception %s: %s' % (type(e), e))
@@ -230,7 +226,7 @@ def get_peers_from_service(ctx, addr = '::1'):
         hdr = peer_service_header.parse(response[0:122])
         if hdr.net_id != ctx['net_id']:
             raise PeerServiceUnavailable("Peer service for the given network is unavailable")
-    except (ConnectionRefusedError, TypeError) as e:
+    except (PyNanoCoinException, OSError, TypeError) as e:
         print("Error getting peers: %s" % str(e))
         raise PeerServiceUnavailable("Peer service is unavailable")
 
