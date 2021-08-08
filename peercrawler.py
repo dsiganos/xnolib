@@ -140,7 +140,7 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='run peer crawler as a service')
-    parser.add_argument('-p', '--port', type=int, default=12345,
+    parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')
     return parser.parse_args()
 
@@ -194,7 +194,7 @@ def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
     return t
 
 
-def run_peer_service_forever(peerman, addr='::1', port=12345):
+def run_peer_service_forever(peerman, addr='::1', port=7070):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -217,7 +217,7 @@ def get_peers_from_service(ctx, addr = '::1'):
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(5)
     try:
-        s.connect((addr, 12345))
+        s.connect((addr, 7070))
         response = readall(s)
         hdr = peer_service_header.parse(response[0:122])
         if hdr.net_id != ctx['net_id']:
