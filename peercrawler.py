@@ -108,11 +108,15 @@ class peer_manager:
         if self.verbosity >= 1:
             print(self)
 
+        count = 1
         while forever:
-            time.sleep(delay)
+            # for a faster startup, do not delay the first 5 times
+            if count > 5:
+                time.sleep(delay)
             self.crawl_once()
             if self.verbosity >= 1:
                 print(self)
+            count += 1
 
     def __str__(self):
         with self.mutex:
