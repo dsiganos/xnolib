@@ -64,9 +64,17 @@ def pull_blocks(ctx, blockman, peer, hsh):
         #    print(b)
 
 
-def once(ctx, blockman, forkacc):
+def once(ctx, workdir, forkacc):
+    workdir = '%s/%s' % (workdir, hexlify(forkacc))
+    print(workdir)
+
     hdr, peers = peercrawler.get_peers_from_service(ctx, addr='::ffff:46.101.61.203')
     print('Starting a round of pulling blocks with %s peers' % len(peers))
+
+    # initialise a git project in the temporary work directory
+    gitrepo = git.Repo.init(workdir)
+
+    blockman = block_manager(workdir, gitrepo)
 
     pulls = 0
     for peer in peers:
@@ -79,6 +87,10 @@ def once(ctx, blockman, forkacc):
             print('FAILED to pull blocks from %s' % peer)
             print(e)
 
+    for acc in blockman.accounts:
+        print(acc)
+    print(blockman)
+    print(workdir)
     print('Pulled blocks from %s out of %s peers' % (pulls, len(peers)))
 
 
@@ -104,18 +116,10 @@ acc_ids = [
     fork2,
 ]
 
-workdirname = 'fork_analyser.data'
-os.makedirs(workdirname, exist_ok=True)
-workdir = tempfile.mkdtemp(dir=workdirname)
+topworkdir = 'fork_analyser.data'
+os.makedirs(topworkdir, exist_ok=True)
+workdir = tempfile.mkdtemp(dir=topworkdir)
 print(workdir)
 
-# initialise a git project in the temporary work directory
-gitrepo = git.Repo.init(workdir)
-
-blockman = block_manager(workdir, gitrepo)
-once(ctx, blockman, fork1)
-
-for acc in blockman.accounts:
-    print(acc)
-print(blockman)
-print(workdir)
+once(ctx, workdir, fork1)
+once(ctx, workdir, fork2)
