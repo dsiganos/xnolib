@@ -1,6 +1,7 @@
 #!/bin/env python3
 
 import argparse
+import sys
 import time
 from sql_utils import *
 import frontier_request
@@ -203,6 +204,8 @@ def parse_args():
                         help='the ip of the sql server')
     parser.add_argument('-c', '--create', action='store_true', default=False,
                         help='determines a new database should be created')
+    parser.add_argument('-del', '--delete', action='store_true', default=False,
+                        help='determines whether the named database should be deleted')
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
     parser.add_argument('-s', '--service', action='store_true', default=False,
@@ -229,7 +232,7 @@ def mysql_handler(p, cursor, verbosity):
                 raise FrontierServiceSlowPeer("peer: %s is too slow" % str(p))
         query2 = "INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) "
         query2 += "VALUES ('%s', '%s', '%s') " % (hexlify(p.serialise()), hexlify(frontier.account),
-                                                 hexlify(frontier.frontier_hash))
+                                                  hexlify(frontier.frontier_hash))
         query2 += "ON DUPLICATE KEY UPDATE frontier_hash = '%s'" % hexlify(frontier.frontier_hash)
 
         if verbosity > 1:
@@ -253,7 +256,12 @@ def main():
 
     args = parse_args()
 
-    if args.create:
+    if args.delete:
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
+        db.cursor().execute("DROP DATABASE %s" % args.db)
+        sys.exit(0)
+
+    elif args.create:
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
         create_new_database(db.cursor(), name=args.db)
         create_db_structure_frontier_service(db.cursor())
