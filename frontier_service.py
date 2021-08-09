@@ -197,7 +197,7 @@ def parse_args():
 
     parser.add_argument('--rmdb', action='store_true', default=False,
                         help='determines whether the frontier service tables should be reset')
-    parser.add_argument('--db', type=str, default="peer_frontiers",
+    parser.add_argument('--db', type=str, default=None,
                         help='the name of the database that will be either created or connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
                         help='the username for the connection')
@@ -262,29 +262,36 @@ def main():
     # TODO: Remove the -c, replace with code which will create a new db if one doesn't exist
     # TODO: Add dumpdb option
 
-
     args = parse_args()
+
+    ctx = livectx
+    db_name = "live_net_frontiers"
+    if args.beta:
+        ctx = betactx
+        db_name = "beta_net_frontiers"
+    elif args.test:
+        ctx = testctx
+        db_name = "test_net_frontiers"
+
+    if args.db is None:
+        args.db = db_name
 
     if args.rmdb:
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
         db.cursor().execute("DROP DATABASE %s" % args.db)
         sys.exit(0)
 
-    elif args.create:
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
-        create_new_database(db.cursor(), name=args.db)
-        create_db_structure_frontier_service(db.cursor())
-        db.close()
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
-        cursor = db.cursor()
-
     else:
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
-        cursor = db.cursor()
-
-    ctx = livectx
-    if args.beta: ctx = betactx
-    if args.test: ctx = testctx
+        try:
+            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
+            cursor = db.cursor()
+        except mysql.connector.errors.ProgrammingError as err:
+            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
+            create_new_database(db.cursor(), name=args.db)
+            create_db_structure_frontier_service(db.cursor())
+            db.close()
+            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
+            cursor = db.cursor()
 
     frontserv = frontier_service(ctx, db, cursor, args.verbosity)
 
