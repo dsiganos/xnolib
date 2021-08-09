@@ -206,8 +206,6 @@ def parse_args():
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='the ip of the sql server')
 
-    parser.add_argument('-c', '--create', action='store_true', default=False,
-                        help='determines a new database should be created')
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
     parser.add_argument('-s', '--service', action='store_true', default=False,
