@@ -296,31 +296,43 @@ def confirm_blocks_by_hash(blocks, s):
 
     resp = search_for_response(s, req)
 
-    if resp is None:
-        return False
-    else:
-        return True
+    return resp is not None
 
 
 def main():
+    args = parse_args()
+
     ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
+
     s, _ = get_initial_connected_socket(ctx)
     s.settimeout(20)
-    perform_handshake_exchange(ctx, s)
 
-    args = parse_args()
+    perform_handshake_exchange(ctx, s)
+    print('handshake done')
+
     if args.block:
         send_confirm_req_block(s)
-    elif args.hashes:
+    elif args.hash:
         send_confirm_req_hash(s)
     else:
-        print("Please specify either -B or -H for sending a confirm_req using a block or hashes respectively")
+        assert False
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-B', '--block', action="store_true", required=False, default=False)
-    parser.add_argument('-H', '--hashes', action="store_true", required=False, default=False)
+
+    group1 = parser.add_mutually_exclusive_group(required=True)
+    group1.add_argument('-B', '--block', action="store_true", default=False)
+    group1.add_argument('-H', '--hash', action="store_true", default=False)
+
+    group2 = parser.add_mutually_exclusive_group()
+    group2.add_argument('-b', '--beta', action='store_true', default=False,
+                        help='use beta network')
+    group2.add_argument('-t', '--test', action='store_true', default=False,
+                        help='use test network')
+
     return parser.parse_args()
 
 
