@@ -204,8 +204,8 @@ def parse_args():
                         help='the ip of the sql server')
     parser.add_argument('-c', '--create', action='store_true', default=False,
                         help='determines a new database should be created')
-    parser.add_argument('-del', '--delete', action='store_true', default=False,
-                        help='determines whether the named database should be deleted')
+    parser.add_argument('-rmdb', '--resetdb', action='store_true', default=False,
+                        help='determines whether the frontier service tables should be reset')
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
     parser.add_argument('-s', '--service', action='store_true', default=False,
@@ -256,9 +256,11 @@ def main():
 
     args = parse_args()
 
-    if args.delete:
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
-        db.cursor().execute("DROP DATABASE %s" % args.db)
+    if args.resetdb:
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
+        db.cursor().execute("DELETE FROM Frontiers")
+        db.cursor().execute("DELETE FROM Peers")
+        db.commit()
         sys.exit(0)
 
     elif args.create:
