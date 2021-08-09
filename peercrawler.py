@@ -221,7 +221,7 @@ def get_peers_from_service(ctx, addr = '::1'):
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(5)
     try:
-        s.connect((addr, 7070))
+        s.connect((addr, ctx['peercrawlerport']))
         response = readall(s)
         hdr = peer_service_header.parse(response[0:122])
         if hdr.net_id != ctx['net_id']:
