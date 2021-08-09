@@ -28,18 +28,18 @@ def frontier_req(ctx, s, peer, acc_id):
         (peer.ip, peer.port, hexlify(peer.aux['confirmed_frontier']), hexlify(peer.aux['unconfirmed_frontier'])))
 
 
-def pull_blocks(ctx, blockman, peer, hsh):
-    print('pull blocks for account %s' % hexlify(hsh))
+def pull_blocks(ctx, blockman, peer, acc):
+    print('pull blocks for account %s' % hexlify(acc))
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
         s.connect((str(peer.ip), peer.port))
 
-        frontier_req(ctx, s, peer, hsh)
+        frontier_req(ctx, s, peer, acc)
 
         # send a block pull request
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(6), 0)
-        bulk_pull = message_bulk_pull(hdr, hexlify(hsh))
+        bulk_pull = message_bulk_pull(hdr, hexlify(acc))
         s.send(bulk_pull.serialise())
 
         # pull blocks from peer
