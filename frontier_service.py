@@ -158,6 +158,7 @@ class frontiers_record:
         self.frontier_hash = frontier_hash
         self.account = account
 
+    # This method exists because cursor.fetchall() returns the data in the form of tuples
     @classmethod
     def from_tuple(cls, data):
         assert(isinstance(data, tuple))
@@ -211,6 +212,8 @@ def parse_args():
                         help='If you want the service to get differences or not')
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='runs the service, can be forever depending on the -f argument')
+    parser.add_argument('--dumpdb', action='store_true', default=False,
+                        help='option to dump all the data in the database')
 
     return parser.parse_args()
 
@@ -255,6 +258,11 @@ def main():
     # - MySQL Port: 3306
     # - MySQL Pass: password123
 
+    # TODO: Automatically choose database name using ctx
+    # TODO: Remove the -c, replace with code which will create a new db if one doesn't exist
+    # TODO: Add dumpdb option
+
+
     args = parse_args()
 
     if args.rmdb:
@@ -292,6 +300,11 @@ def main():
     # This is a piece of code which can find accounts with different frontier hashes
     if args.differences:
         records = frontserv.find_accounts_different_hashes()
+        for rec in records:
+            print(rec)
+
+    if args.dumpdb:
+        records = frontserv.get_all_records()
         for rec in records:
             print(rec)
 
