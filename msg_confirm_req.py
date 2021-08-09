@@ -130,9 +130,12 @@ class vote_common:
         return vote_common(account, sig, seq)
 
     def __str__(self):
+        final_str = ''
+        if self.seq == 0xffffffffffffffff:
+            final_str = ' [final vote]'
         string = "Account: %s\n" % hexlify(self.account)
         string += "Signature: %s\n" % hexlify(self.sig)
-        string += "Sequence: %s\n" % self.seq
+        string += "Sequence: %s(%s)%s\n" % (self.seq, hex(self.seq), final_str)
         return string
 
 
