@@ -335,6 +335,7 @@ class TestComms(unittest.TestCase):
         self.assertTrue(manager2.is_blacklisted(peer))
         time.sleep(5)
         self.assertTrue(not manager2.is_blacklisted(peer))
+        self.assertEqual(len(manager2.blacklist), 0)
 
 
 if __name__ == '__main__':
