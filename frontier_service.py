@@ -257,10 +257,8 @@ def main():
     args = parse_args()
 
     if args.resetdb:
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
-        db.cursor().execute("DELETE FROM Frontiers")
-        db.cursor().execute("DELETE FROM Peers")
-        db.commit()
+        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
+        db.cursor().execute("DROP DATABASE %s" % args.db)
         sys.exit(0)
 
     elif args.create:
