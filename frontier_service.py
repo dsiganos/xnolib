@@ -194,6 +194,8 @@ def parse_args():
     parser.add_argument('-v', '--verbosity', type=int, default=1,
                         help='verbosity for the peercrawler')
 
+    parser.add_argument('--rmdb', action='store_true', default=False,
+                        help='determines whether the frontier service tables should be reset')
     parser.add_argument('--db', type=str, default="peer_frontiers",
                         help='the name of the database that will be either created or connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
@@ -202,10 +204,9 @@ def parse_args():
                         help='password for the database connection')
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='the ip of the sql server')
+
     parser.add_argument('-c', '--create', action='store_true', default=False,
                         help='determines a new database should be created')
-    parser.add_argument('-rmdb', '--resetdb', action='store_true', default=False,
-                        help='determines whether the frontier service tables should be reset')
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
     parser.add_argument('-s', '--service', action='store_true', default=False,
@@ -256,7 +257,7 @@ def main():
 
     args = parse_args()
 
-    if args.resetdb:
+    if args.rmdb:
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
         db.cursor().execute("DROP DATABASE %s" % args.db)
         sys.exit(0)
