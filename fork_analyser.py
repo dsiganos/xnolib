@@ -29,7 +29,7 @@ def frontier_req(ctx, s, peer, acc_id):
 
 
 def pull_blocks(ctx, blockman, peer, acc):
-    print('pull blocks for account %s' % hexlify(acc))
+    print('pull blocks for account %s from peer %s' % (hexlify(acc), peer))
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
