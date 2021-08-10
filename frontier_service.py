@@ -55,7 +55,6 @@ class frontier_service:
         # maxacc argument can be removed in final version
         req = frontier_request.frontier_request(self.ctx, maxacc=1000)
         s.send(req.serialise())
-
         frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
 
     def remove_peer_data(self, p):
@@ -69,8 +68,7 @@ class frontier_service:
         query_accounts_different_hashes(self.cursor)
 
         for record in self.cursor.fetchall():
-            f_rec = frontiers_record.from_tuple(record)
-            fetched_records.append(f_rec)
+            fetched_records.append(record[0])
 
         return fetched_records
 
@@ -190,8 +188,6 @@ def parse_args():
 
     parser.add_argument('-f', '--forever', action="store_true", default=False,
                         help='"forever" argument for the peercrawler thread')
-    parser.add_argument('-d', '--delay', type=int, default=0,
-                        help='delay between crawls in seconds')
     parser.add_argument('-v', '--verbosity', type=int, default=1,
                         help='verbosity for the peercrawler')
 
