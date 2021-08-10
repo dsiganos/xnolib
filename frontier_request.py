@@ -16,6 +16,7 @@ from pynanocoin import *
 class frontier_request:
     def __init__(self, ctx, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff, confirmed=False):
         self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
+        assert(len(start_account) == 32)
         self.start_account = start_account
         self.maxage = maxage
         self.maxacc = maxacc
@@ -27,6 +28,15 @@ class frontier_request:
         data += self.maxage.to_bytes(4, 'little')
         data += self.maxacc.to_bytes(4, 'little')
         return data
+
+    def __str__(self):
+        string = str(self.header) + "\n"
+        string += "Start account: %s\n" % hexlify(self.start_account)
+        string += "max age: %d\n" % self.maxage
+        string += "max accounts: %d\n" % self.maxacc
+        string += "confirmed: %s\n" % self.confirmed
+        return string
+
 
 
 class frontier_entry:
