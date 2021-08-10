@@ -22,6 +22,6 @@ def create_db_structure_frontier_service(cursor):
 
 
 def query_accounts_different_hashes(cursor):
-    cursor.execute("SELECT * FROM frontiers f1 JOIN frontiers f2" +
-                   " WHERE f1.account_hash = f2.account_hash and f1.frontier_hash != f2.frontier_hash")
+    cursor.execute("SELECT DISTINCT f1.account_hash FROM frontiers f1 JOIN frontiers f2 " +
+                   "WHERE f1.account_hash = f2.account_hash and f1.frontier_hash != f2.frontier_hash")
     return cursor
