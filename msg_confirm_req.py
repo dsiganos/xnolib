@@ -21,6 +21,10 @@ class hash_pair:
     def serialise(self):
         return self.hsh + self.root
 
+    @classmethod
+    def parse(self, data):
+        assert len(data) == 64
+        return hash_pair(data[0:32], data[32:64])
 
 class confirm_req_hash:
     def __init__(self, hdr, hash_pairs):
@@ -33,16 +37,12 @@ class confirm_req_hash:
 
     @classmethod
     def parse(self, hdr, data):
-        assert(isinstance(hdr, message_header))
-        item_count = hdr.count_get()
-        assert(len(data) / 64 == item_count)
+        assert  isinstance(hdr, message_header)
+        assert(len(data) / 64 == hdr.count_get())
 
         hash_pairs = []
-        for i in range(0, item_count):
-            hsh = data[0:32]
-            root = data[32:64]
-            pair = hash_pair(hsh, root)
-            hash_pairs.append(pair)
+        for i in range(0, hdr.count_get()):
+            hash_pairs.append(hash_pair.parse(data[0:64]))
             data = data[64:]
 
         return confirm_req_hash(hdr, hash_pairs)
