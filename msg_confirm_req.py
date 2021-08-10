@@ -8,20 +8,18 @@ from pynanocoin import *
 
 
 class hash_pair:
-    def __init__(self, first, second):
-        assert(len(first) == 32 and len(second) == 32)
-        self.first = first
-        self.second = second
+    def __init__(self, hsh, root):
+        assert len(hsh) == 32 and len(root) == 32
+        self.hsh = hsh
+        self.root = root
 
     def __str__(self):
-        string =  "  First: %s\n" % hexlify(self.first)
-        string += "  Second: %s\n" % hexlify(self.second)
+        string =  "  Hash: %s\n" % hexlify(self.hsh)
+        string += "  Root: %s\n" % hexlify(self.root)
         return string
 
     def serialise(self):
-        data = self.first
-        data += self.second
-        return data
+        return self.hsh + self.root
 
 
 class confirm_req_hash:
@@ -41,9 +39,9 @@ class confirm_req_hash:
 
         hash_pairs = []
         for i in range(0, item_count):
-            first = data[0:32]
-            second = data[32:64]
-            pair = hash_pair(first, second)
+            hsh = data[0:32]
+            root = data[32:64]
+            pair = hash_pair(hsh, root)
             hash_pairs.append(pair)
             data = data[64:]
 
@@ -59,13 +57,13 @@ class confirm_req_hash:
         assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
         if isinstance(confirm_ack, confirm_ack_hash):
             for h in self.hash_pairs:
-                if h.first not in confirm_ack.hashes:
+                if h.hsh not in confirm_ack.hashes:
                     return False
 
         elif isinstance(confirm_ack, confirm_ack_block):
             assert(len(self.hash_pairs) == 1)
             for h in self.hash_pairs:
-                if h.first != confirm_ack.block.hash():
+                if h.hsh != confirm_ack.block.hash():
                     return False
 
         return True
