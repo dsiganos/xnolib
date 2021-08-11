@@ -154,7 +154,7 @@ def main():
 
     if args.all:
         hdr, peers = peercrawler.get_peers_from_service(ctx)
-        assert(peers and hdr.protocol_ver == 2)
+        assert peers
     else:
         if args.peer:
             peers = [Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'], 1000)]

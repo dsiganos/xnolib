@@ -69,7 +69,6 @@ def once(ctx, workdir, forkacc):
     print(workdir)
 
     hdr, peers = peercrawler.get_peers_from_service(ctx, addr='::ffff:46.101.61.203')
-    assert(hdr.protocol_ver == 2)
     print('Starting a round of pulling blocks with %s peers' % len(peers))
 
     # initialise a git project in the temporary work directory

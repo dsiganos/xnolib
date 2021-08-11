@@ -226,6 +226,7 @@ def get_peers_from_service(ctx, addr = '::1'):
         s.connect((addr, ctx['peercrawlerport']))
         response = readall(s)
         hdr = peer_service_header.parse(response[0:122])
+        assert(hdr.protocol_ver == 2)
         if hdr.net_id != ctx['net_id']:
             raise PeerServiceUnavailable("Peer service for the given network is unavailable")
     except (PyNanoCoinException, OSError, TypeError) as e:

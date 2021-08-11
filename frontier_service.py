@@ -25,7 +25,7 @@ class frontier_service:
 
     def single_pass(self):
         hdr, peers = peercrawler.get_peers_from_service(self.ctx)
-        assert(peers and hdr.protocol_ver == 2)
+        assert peers
         self.merge_peers(peers)
 
         for p in self.peers:
@@ -293,7 +293,6 @@ def main():
     # This will run forever
     if args.service:
         hdr, _ = peercrawler.get_peers_from_service(ctx)
-        assert(hdr.protocol_ver == 2)
         if args.forever:
             frontserv.start_service()
 
