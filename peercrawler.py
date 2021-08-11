@@ -9,6 +9,7 @@ import argparse
 import threading
 import jsonpickle
 from functools import reduce
+import msg_confirm_req
 
 from pynanocoin import *
 
@@ -61,6 +62,7 @@ class peer_manager:
             try:
                 peer_id = perform_handshake_exchange(self.ctx, s)
                 peer.peer_id = peer_id
+                peer.set_is_voting(is_voting_peer(self.ctx, peer))
                 if self.verbosity >= 2:
                     print('  %s' % hexlify(peer_id))
                 starttime = time.time()
@@ -250,6 +252,25 @@ def do_connect(ctx, server):
     _, peers = get_peers_from_service(ctx, addr=server)
     peerman = peer_manager(ctx, peers, 2)
     print(peerman)
+
+
+def is_voting_peer(ctx, peer):
+    assert(isinstance(peer, Peer))
+    block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
+                       ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
+                       ctx["genesis_block"]["work"])
+
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    s.settimeout(10)
+    try:
+        s.connect((str(peer.ip), peer.port))
+        perform_handshake_exchange(ctx, s)
+        outcome = msg_confirm_req.confirm_block(ctx, block, s)
+    except (socket.timeout, OSError) as e:
+        outcome = False
+    s.close()
+    return outcome
 
 
 def main():

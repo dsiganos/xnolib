@@ -324,11 +324,12 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class Peer:
-    def __init__(self, ip = ip_addr(), port = 0, score = -1):
+    def __init__(self, ip = ip_addr(), port = 0, score = -1, is_voting = False):
         assert isinstance(ip, ip_addr)
         self.ip = ip
         self.port = port
         self.peer_id = None
+        self.is_voting = is_voting
         self.aux = {}
 
         # sideband info, not used for equality and hashing
@@ -362,8 +363,11 @@ class Peer:
         port = int.from_bytes(data[16:], "little")
         return Peer(ip_addr(ip), port)
 
+    def set_is_voting(self, bool):
+        self.is_voting = bool
+
     def __str__(self):
-        return '%s:%s (score:%s)' % (str(self.ip), self.port, self.score)
+        return '%s:%s (score:%s, is_voting: %s)' % (str(self.ip), self.port, self.score, self.is_voting)
 
     def __eq__(self, other):
         return self.ip == other.ip and self.port == other.port
@@ -1142,6 +1146,7 @@ class block_state:
 
 class block_manager:
     def __init__(self, ctx, workdir, gitrepo):
+        self.ctx = ctx
         self.accounts = []
         self.processed_blocks = []
         self.unprocessed_blocks = set()
