@@ -300,8 +300,16 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    s, _ = get_initial_connected_socket(ctx)
-    s.settimeout(20)
+    if args.peer:
+        peer = Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'], 1000)
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(20)
+        s.connect((str(peer.ip), peer.port))
+
+    else:
+        s, _ = get_initial_connected_socket(ctx)
+        s.settimeout(20)
 
     perform_handshake_exchange(ctx, s)
     print('handshake done')
@@ -326,6 +334,9 @@ def parse_args():
                         help='use beta network')
     group2.add_argument('-t', '--test', action='store_true', default=False,
                         help='use test network')
+
+    parser.add_argument('-p', '--peer',
+                        help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
 
     return parser.parse_args()
 
