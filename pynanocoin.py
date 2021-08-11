@@ -1150,9 +1150,9 @@ class block_manager:
         self.gitrepo = gitrepo
 
         # create genesis account and block
-        open_block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-                                genesis_block_open["account"], genesis_block_open["signature"],
-                                genesis_block_open["work"])
+        open_block = block_open(live_genesis_block["source"], live_genesis_block["representative"],
+                                live_genesis_block["account"], live_genesis_block["signature"],
+                                live_genesis_block["work"])
         open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
         self.accounts.append(nano_account(self, open_block))
 
@@ -1850,6 +1850,34 @@ def extensions_to_extented_params(extensions):
     return extensions & EXTENDED_PARAM_MASK
 
 
+live_genesis_block = {
+    "hash": binascii.unhexlify("991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948"),
+    "source": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+    "representative": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+    "account": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+    "signature": binascii.unhexlify('9F0C933C8ADE004D808EA1985FA746A7E95BA2A38F867640F53EC8F180BDFE9E2C1268DEAD7C2664F356E37ABA362BC58E46DBA03E523A7B5A19E4B6EB12BB02'),
+    "work": binascii.unhexlify('62F05417DD3FB691')
+}
+
+beta_genesis_block = {
+    "hash": binascii.unhexlify("01A92459E69440D5C1088D3B31F4CA678BE944BAB3776C2E6B7665E9BD99BD5A"),
+    "source": binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
+    "representative": binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
+    "account": binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
+    "signature": binascii.unhexlify("4BD7F96F9ED2721BCEE5EAED400EA50AD00524C629AE55E9AFF11220D2C1B00C3D4B3BB770BF67D4F8658023B677F91110193B6C101C2666931F57046A6DB806"),
+    "work": binascii.unhexlify("79D4E27DC873C6F2")
+}
+
+test_genesis_block = {
+    "hash": binascii.unhexlify("B1D60C0B886B57401EF5A1DAA04340E53726AA6F4D706C085706F31BBD100CEE"),
+    "source": binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
+    "representative": binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
+    "account": binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
+    "signature": binascii.unhexlify("15049467CAEE3EC768639E8E35792399B6078DA763DA4EBA8ECAD33B0EDC4AF2E7403893A5A602EB89B978DABEF1D6606BB00F3C0EE11449232B143B6E07170E"),
+    "work": binascii.unhexlify("BC1EF279C1A34EB1")
+}
+
+
 livectx = {
     'net_id': network_id(ord('C')),
     'peeraddr': "peering.nano.org",
@@ -1857,7 +1885,8 @@ livectx = {
     'peercrawlerport': 7070,
     'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
     'another_pub': '059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5',
-    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6'
+    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6',
+    'genesis_block': live_genesis_block
 }
 
 
@@ -1867,6 +1896,7 @@ betactx = {
     'peerport': 54000,
     'peercrawlerport': 7071,
     'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+    'genesis_block': beta_genesis_block
 }
 
 
@@ -1876,13 +1906,6 @@ testctx = {
     'peerport': 17075,
     'peercrawlerport': 7072,
     'genesis_pub': '45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED',
+    'genesis_block': test_genesis_block
 }
 
-
-genesis_block_open = {
-    "source": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
-    "representative": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
-    "account": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
-    "signature": binascii.unhexlify('9F0C933C8ADE004D808EA1985FA746A7E95BA2A38F867640F53EC8F180BDFE9E2C1268DEAD7C2664F356E37ABA362BC58E46DBA03E523A7B5A19E4B6EB12BB02'),
-    "work": binascii.unhexlify('62F05417DD3FB691')
-}
