@@ -214,13 +214,14 @@ def get_next_confirm_ack(s):
     return hdr, data
 
 
-def send_confirm_req_block(s):
-    block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-                       genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
+def send_confirm_req_block(ctx, s):
+    block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
+                       ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
+                       ctx["genesis_block"]["work"])
 
     print("The block we send hash: %s" % hexlify(block.hash()))
 
-    outcome = confirm_block(block, s)
+    outcome = confirm_block(ctx, block, s)
 
     if not outcome:
         print("block %s not confirmed!" % hexlify(block.hash()))
@@ -228,12 +229,14 @@ def send_confirm_req_block(s):
         print("block %s confirmed!" % hexlify(block.hash()))
 
 
-def send_confirm_req_hash(s):
-    block = block_open(genesis_block_open["source"], genesis_block_open["representative"],
-                       genesis_block_open["account"], genesis_block_open["signature"], genesis_block_open["work"])
+def send_confirm_req_hash(ctx, s):
+    block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
+                       ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
+                       ctx["genesis_block"]["work"])
+
     # print(block)
 
-    outcome = confirm_blocks_by_hash([block], s)
+    outcome = confirm_blocks_by_hash(ctx, [block], s)
 
     if not outcome:
         print("blocks not confirmed!")
@@ -268,8 +271,8 @@ def convert_blocks_to_hash_pairs(blocks):
     return pairs
 
 
-def confirm_block(block, s):
-    hdr = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
+def confirm_block(ctx, block, s):
+    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
     s.send(req.serialise())
 
@@ -281,9 +284,9 @@ def confirm_block(block, s):
         return True
 
 
-def confirm_blocks_by_hash(blocks, s):
+def confirm_blocks_by_hash(ctx, blocks, s):
     assert(isinstance(blocks, list))
-    hdr = message_header(network_id(67), [18, 18, 18], message_type(4), 0)
+    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
     pairs = convert_blocks_to_hash_pairs(blocks)
     req = confirm_req_hash(hdr, pairs)
     s.send(req.serialise())
@@ -315,9 +318,9 @@ def main():
     print('handshake done')
 
     if args.block:
-        send_confirm_req_block(s)
+        send_confirm_req_block(ctx, s)
     elif args.hash:
-        send_confirm_req_hash(s)
+        send_confirm_req_hash(ctx, s)
     else:
         assert False
 
