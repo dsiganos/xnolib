@@ -265,7 +265,6 @@ def is_voting_peer(ctx, peer, s):
         outcome = confirm_req.confirm_block(ctx, block, s)
     except (socket.timeout, OSError) as e:
         outcome = False
-    s.close()
     return outcome
 
 
