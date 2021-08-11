@@ -8,7 +8,7 @@ ctx = livectx
 s, _ = get_initial_connected_socket(ctx)
 assert s
 
-blocks = get_account_blocks(s, ctx["genesis_pub"])
+blocks = get_account_blocks(ctx, s, ctx["genesis_pub"])
 
 manager = block_manager(None, None)
 while len(blocks) != 0:

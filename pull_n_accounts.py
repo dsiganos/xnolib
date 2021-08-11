@@ -25,7 +25,7 @@ count = 0
 while next_account is not None:
     if count == 10:
         break
-    blocks = get_account_blocks(s, next_account)
+    blocks = get_account_blocks(ctx, s, next_account)
     while len(blocks) != 0:
         block = blocks.pop()
         manager.process(block)
