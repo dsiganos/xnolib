@@ -9,7 +9,7 @@ import argparse
 import threading
 import jsonpickle
 from functools import reduce
-import msg_confirm_req
+import confirm_req
 
 from pynanocoin import *
 
@@ -262,7 +262,7 @@ def is_voting_peer(ctx, peer, s):
                        ctx["genesis_block"]["work"])
 
     try:
-        outcome = msg_confirm_req.confirm_block(ctx, block, s)
+        outcome = confirm_req.confirm_block(ctx, block, s)
     except (socket.timeout, OSError) as e:
         outcome = False
     s.close()
