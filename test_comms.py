@@ -4,6 +4,7 @@ import binascii
 from pynanocoin import *
 from ipaddress import IPv6Address
 from frontier_service import blacklist_manager, blacklist_entry
+from peercrawler import is_voting_peer
 
 class TestComms(unittest.TestCase):
     def setUp(self):
@@ -336,6 +337,19 @@ class TestComms(unittest.TestCase):
         time.sleep(5)
         self.assertTrue(not manager2.is_blacklisted(peer))
         self.assertEqual(len(manager2.blacklist), 0)
+
+    def test_is_voting_peers(self):
+        ctx = livectx
+        p = Peer(ip_addr(ipaddress.IPv6Address("::ffff:94.130.135.50")), 7075)
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+        try:
+            s.connect((str(p.ip), 7075))
+            perform_handshake_exchange(ctx, s)
+            self.assertTrue(is_voting_peer(ctx, p, s))
+        except OSError:
+            self.assertTrue(False)
 
 
 if __name__ == '__main__':
