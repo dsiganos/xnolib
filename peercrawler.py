@@ -152,7 +152,7 @@ def parse_args():
 
 
 class peer_service_header:
-    def __init__(self, net_id, good_peers, total_peers, software_ver = "1.1", protocol_ver = 1):
+    def __init__(self, net_id, good_peers, total_peers, software_ver = "1.1", protocol_ver = 2):
         self.magic = b'PEER'
         assert(isinstance(net_id, network_id))
         assert(isinstance(software_ver, str))
