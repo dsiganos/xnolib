@@ -1141,7 +1141,7 @@ class block_state:
 
 
 class block_manager:
-    def __init__(self, workdir, gitrepo):
+    def __init__(self, ctx, workdir, gitrepo):
         self.accounts = []
         self.processed_blocks = []
         self.unprocessed_blocks = set()
@@ -1150,9 +1150,9 @@ class block_manager:
         self.gitrepo = gitrepo
 
         # create genesis account and block
-        open_block = block_open(live_genesis_block["source"], live_genesis_block["representative"],
-                                live_genesis_block["account"], live_genesis_block["signature"],
-                                live_genesis_block["work"])
+        open_block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
+                                ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
+                                ctx["genesis_block"]["work"])
         open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
         self.accounts.append(nano_account(self, open_block))
 

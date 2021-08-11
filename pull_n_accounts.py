@@ -16,7 +16,7 @@ ctx = livectx
 s, _ = get_initial_connected_socket(ctx)
 assert s
 
-manager = block_manager(None, None)
+manager = block_manager(ctx, None, None)
 
 next_account = binascii.unhexlify(ctx["genesis_pub"])
 

@@ -10,7 +10,7 @@ assert s
 
 blocks = get_account_blocks(ctx, s, ctx["genesis_pub"])
 
-manager = block_manager(None, None)
+manager = block_manager(ctx, None, None)
 while len(blocks) != 0:
     block = blocks.pop()
     manager.process(block)

@@ -296,7 +296,7 @@ class TestComms(unittest.TestCase):
         b1 = block_send(block1["prev"], block1["dest"], block1["bal"], block1["sig"], block1["work"])
         b2 = block_send(block2["prev"], block2["dest"], block2["bal"], block2["sig"], block2["work"])
         b3 = block_send(block3["prev"], block3["dest"], block3["bal"], block3["sig"], block3["work"])
-        manager = block_manager(None, None)
+        manager = block_manager(livectx, None, None)
         manager.process(b1)
         manager.process(b2)
         manager.process(b3)

@@ -74,7 +74,7 @@ def once(ctx, workdir, forkacc):
     # initialise a git project in the temporary work directory
     gitrepo = git.Repo.init(workdir)
 
-    blockman = block_manager(workdir, gitrepo)
+    blockman = block_manager(ctx, workdir, gitrepo)
 
     pulls = 0
     for peer in peers:
