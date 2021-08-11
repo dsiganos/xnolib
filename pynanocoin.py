@@ -1815,8 +1815,8 @@ def get_initial_connected_socket(ctx, peers=None):
     return None, None
 
 
-def get_account_blocks(s, account):
-    hdr = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
+def get_account_blocks(ctx, s, account):
+    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
     if isinstance(account, bytes):
         account = hexlify(account)
     bulk_pull = message_bulk_pull(hdr, account)
