@@ -296,6 +296,26 @@ def confirm_blocks_by_hash(ctx, blocks, s):
     return resp is not None
 
 
+def confirm_req_peer(ctx, do_block, peeraddr=None):
+    if peeraddr:
+        peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), ctx['peerport'], 1000)
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+        s.connect((str(peer.ip), peer.port))
+    else:
+        s, _ = get_initial_connected_socket(ctx)
+
+    perform_handshake_exchange(ctx, s)
+    print('handshake done')
+
+    s.settimeout(10)
+    if do_block:
+        send_confirm_req_block(ctx, s)
+    else:
+        send_confirm_req_hash(ctx, s)
+
+
 def main():
     args = parse_args()
 
@@ -303,26 +323,7 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    if args.peer:
-        peer = Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'], 1000)
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(20)
-        s.connect((str(peer.ip), peer.port))
-
-    else:
-        s, _ = get_initial_connected_socket(ctx)
-        s.settimeout(20)
-
-    perform_handshake_exchange(ctx, s)
-    print('handshake done')
-
-    if args.block:
-        send_confirm_req_block(ctx, s)
-    elif args.hash:
-        send_confirm_req_hash(ctx, s)
-    else:
-        assert False
+    confirm_req_peer(ctx, args.block, args.peer)
 
 
 def parse_args():
