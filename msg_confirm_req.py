@@ -53,17 +53,17 @@ class confirm_req_hash:
             data += h.serialise()
         return data
 
-    def is_response(self, confirm_ack):
-        assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
-        if isinstance(confirm_ack, confirm_ack_hash):
+    def is_response(self, ack):
+        assert(isinstance(ack, confirm_ack_block) or isinstance(ack, confirm_ack_hash))
+        if isinstance(ack, confirm_ack_hash):
             for h in self.hash_pairs:
-                if h.hsh not in confirm_ack.hashes:
+                if h.hsh not in ack.hashes:
                     return False
 
-        elif isinstance(confirm_ack, confirm_ack_block):
+        elif isinstance(ack, confirm_ack_block):
             assert(len(self.hash_pairs) == 1)
             for h in self.hash_pairs:
-                if h.hsh != confirm_ack.block.hash():
+                if h.hsh != ack.block.hash():
                     return False
 
         return True
@@ -93,15 +93,15 @@ class confirm_req_block:
         data += self.block.serialise(False)
         return data
 
-    def is_response(self, confirm_ack):
-        assert(isinstance(confirm_ack, confirm_ack_block) or isinstance(confirm_ack, confirm_ack_hash))
+    def is_response(self, ack):
+        assert(isinstance(ack, confirm_ack_block) or isinstance(ack, confirm_ack_hash))
 
-        if isinstance(confirm_ack, confirm_ack_block):
-            if self.block.hash() != confirm_ack.block.hash():
+        if isinstance(ack, confirm_ack_block):
+            if self.block.hash() != ack.block.hash():
                 return False
 
-        if isinstance(confirm_ack, confirm_ack_hash):
-            if self.block.hash() not in confirm_ack.hashes:
+        if isinstance(ack, confirm_ack_hash):
+            if self.block.hash() not in ack.hashes:
                 return False
 
         return True
@@ -205,13 +205,6 @@ class confirm_ack_block:
         string += str(self.hdr)
         string += "\n"
         string += str(self.block)
-
-
-def check_confirm_req_response(confirm_req, confirm_ack):
-    # TODO: Check this
-    assert(isinstance(confirm_req, confirm_req_hash) or isinstance(confirm_req, confirm_req_block))
-    assert(isinstance(confirm_ack, confirm_ack_hash) or isinstance(confirm_ack, confirm_ack_block))
-    return confirm_req.is_response(confirm_ack)
 
 
 def get_next_confirm_ack(s):
