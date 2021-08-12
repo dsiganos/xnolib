@@ -177,7 +177,7 @@ class peer_service_header:
         assert(data[0:4] == b'PEER')
         return peer_service_header(network_id(data[4]), int.from_bytes(data[107:114], "big"),
                                    int.from_bytes(data[114:], "big"), software_ver=data[5:105].decode("utf-8"),
-                                   protocol_ver=data[106])
+                                   protocol_ver=data[105])
 
     def __str__(self):
         s = ''
