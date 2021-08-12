@@ -247,7 +247,7 @@ def send_confirm_req_hash(ctx, s):
 def search_for_response(s, req):
     assert(isinstance(req, confirm_req_block) or isinstance(req, confirm_req_hash))
     starttime = time.time()
-    while time.time() - starttime <= 15:
+    while time.time() - starttime <= 10:
         hdr, data = get_next_confirm_ack(s)
         if hdr.block_type() == 1:
             ack = confirm_ack_hash.parse(hdr, data)
