@@ -124,7 +124,8 @@ class peer_manager:
             good = reduce(lambda c, p: c + int(p.score >= 1000), self.peers, 0)
             s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(self.peers), good)
             for p in self.peers:
-                s += '%41s:%5s (score:%4s)\n' % ('[%s]' % p.ip, p.port, p.score)
+                voting_str = ' (voting)' if p.is_voting else ''
+                s += '%41s:%5s (score:%4s)%s\n' % ('[%s]' % p.ip, p.port, p.score, voting_str)
                 #if p.score >= 1000:
                 #    s += 'ID: %s, voting:%s\n' % (get_account_id(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
