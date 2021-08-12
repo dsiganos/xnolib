@@ -306,14 +306,17 @@ def confirm_req_peer(ctx, do_block, peeraddr=None):
     else:
         s, _ = get_initial_connected_socket(ctx)
 
-    perform_handshake_exchange(ctx, s)
-    print('handshake done')
+    try:
+        perform_handshake_exchange(ctx, s)
+        print('handshake done')
 
-    s.settimeout(10)
-    if do_block:
-        send_confirm_req_block(ctx, s)
-    else:
-        send_confirm_req_hash(ctx, s)
+        s.settimeout(10)
+        if do_block:
+            send_confirm_req_block(ctx, s)
+        else:
+            send_confirm_req_hash(ctx, s)
+    finally:
+        s.close()
 
 
 def main():
