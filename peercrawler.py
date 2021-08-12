@@ -222,42 +222,41 @@ def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
 
 
 def run_peer_service_forever(peerman, addr='', port=7070):
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((addr, port))
-    s.listen()
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((addr, port))
+        s.listen()
 
-    while True:
-        conn, addr = s.accept()
-        conn.settimeout(5)
-        hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
-        data = hdr.serialise()
-        json_list = jsonpickle.encode(peerman.get_peers_copy())
-        data += json_list.encode()
-        conn.send(data)
-        conn.close()
+        while True:
+            conn, addr = s.accept()
+            conn.settimeout(5)
+            hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
+            data = hdr.serialise()
+            json_list = jsonpickle.encode(peerman.get_peers_copy())
+            data += json_list.encode()
+            conn.send(data)
+            conn.close()
 
 
 def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-    s.settimeout(5)
-    try:
-        s.connect((addr, ctx['peercrawlerport']))
-        response = readall(s)
-        hdr = peer_service_header.parse(response[0:peer_service_header.size])
-        assert(hdr.protocol_ver == 2)
-        if hdr.net_id != ctx['net_id']:
-            raise PeerServiceUnavailable("Peer service for the given network is unavailable")
-    except (PyNanoCoinException, OSError, TypeError) as e:
-        print("Error getting peers: %s" % str(e))
-        s.close()
-        raise PeerServiceUnavailable("Peer service is unavailable")
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(5)
+        try:
+            s.connect((addr, ctx['peercrawlerport']))
+            response = readall(s)
+            hdr = peer_service_header.parse(response[0:peer_service_header.size])
+            assert(hdr.protocol_ver == 2)
+            if hdr.net_id != ctx['net_id']:
+                raise PeerServiceUnavailable("Peer service for the given network is unavailable")
+        except (PyNanoCoinException, OSError, TypeError) as e:
+            print("Error getting peers: %s" % str(e))
+            s.close()
+            raise PeerServiceUnavailable("Peer service is unavailable")
 
-    json_peers = response[peer_service_header.size:]
-    peers = jsonpickle.decode(json_peers)
-    s.close()
+        json_peers = response[peer_service_header.size:]
+        peers = jsonpickle.decode(json_peers)
     return hdr, peers
 
 

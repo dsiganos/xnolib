@@ -47,16 +47,16 @@ class frontier_service:
                 continue
 
     def manage_peer_frontiers(self, p):
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(15)
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(15)
 
-        s.connect((str(p.ip), p.port))
+            s.connect((str(p.ip), p.port))
 
-        # maxacc argument can be removed in final version
-        req = frontier_request.frontier_request(self.ctx, maxacc=1000)
-        s.send(req.serialise())
-        frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
+            # maxacc argument can be removed in final version
+            req = frontier_request.frontier_request(self.ctx, maxacc=1000)
+            s.send(req.serialise())
+            frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
 
     def remove_peer_data(self, p):
         self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
