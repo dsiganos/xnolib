@@ -363,9 +363,6 @@ class Peer:
         port = int.from_bytes(data[16:], "little")
         return Peer(ip_addr(ip), port)
 
-    def set_is_voting(self, bool):
-        self.is_voting = bool
-
     def __str__(self):
         return '%s:%s (score:%s, is_voting: %s)' % (str(self.ip), self.port, self.score, self.is_voting)
 

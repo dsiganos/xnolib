@@ -58,13 +58,17 @@ class peer_manager:
                 return
 
             # connected to peer, do handshake followed by listening for the first keepalive
-            # once we get the first keepalive, we have what we need and we move on
+            # and the reply to the confirm request
+            # once we get the first keepalive and the confirm ack mtaching the req sent
+            # then we have what we need and we move on
             try:
                 peer_id = perform_handshake_exchange(self.ctx, s)
                 peer.peer_id = peer_id
-                peer.set_is_voting(is_voting_peer(self.ctx, peer, s))
+                req = send_confirm_req_genesis(self.ctx, peer, s)
+
                 if self.verbosity >= 2:
-                    print('  %s' % hexlify(peer_id))
+                    print('  ID:%s' % hexlify(peer_id))
+
                 starttime = time.time()
                 while time.time() - starttime <= 10:
                     hdr, payload = get_next_hdr_payload(s)
@@ -72,7 +76,23 @@ class peer_manager:
                         keepalive = message_keepalive.parse_payload(hdr, payload)
                         self.add_peers(keepalive.peers)
                         peer.score = 1000
-                        return
+                        if peer.is_voting:
+                            return
+                    if hdr.msg_type == message_type(message_type_enum.confirm_ack):
+                        if hdr.block_type() == 1:
+                            ack = confirm_req.confirm_ack_hash.parse(hdr, payload)
+                        else:
+                            ack = confirm_req.confirm_ack_block.parse(hdr, payload)
+                        if req.is_response(ack):
+                            peer.is_voting = True
+                            if self.verbosity >= 2:
+                                print('  Voting: true')
+                            if peer.score >= 1000:
+                                return
+
+                # peer could timeout because it is non voting, but if the score is set, it is still a good peer
+                if peer.score >= 1000:
+                    return
 
                 # timeout whilst waiting for keepalive, score it with 2
                 peer.score = 2
@@ -122,6 +142,8 @@ class peer_manager:
             s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(self.peers), good)
             for p in self.peers:
                 s += '%41s:%5s (score:%4s)\n' % ('[%s]' % p.ip, p.port, p.score)
+                #if p.score >= 1000:
+                #    s += 'ID: %s, voting:%s\n' % (get_account_id(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
         return s
 
@@ -270,17 +292,16 @@ def do_connect(ctx, server):
     print(peerman)
 
 
-def is_voting_peer(ctx, peer, s):
+def send_confirm_req_genesis(ctx, peer, s):
     assert(isinstance(peer, Peer))
     block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
                        ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
                        ctx["genesis_block"]["work"])
 
-    try:
-        outcome = confirm_req.confirm_block(ctx, block, s)
-    except (socket.timeout, OSError) as e:
-        outcome = False
-    return outcome
+    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(message_type_enum.confirm_req), 0)
+    req = confirm_req.confirm_req_block(hdr, block)
+    s.send(req.serialise())
+    return req
 
 
 def main():
