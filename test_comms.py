@@ -4,7 +4,7 @@ import binascii
 from pynanocoin import *
 from ipaddress import IPv6Address
 from frontier_service import blacklist_manager, blacklist_entry
-from peercrawler import is_voting_peer
+from peercrawler import send_confirm_req_genesis, get_peers_from_service
 
 class TestComms(unittest.TestCase):
     def setUp(self):
@@ -347,8 +347,10 @@ class TestComms(unittest.TestCase):
         try:
             s.connect((str(p.ip), 7075))
             perform_handshake_exchange(ctx, s)
-            self.assertTrue(is_voting_peer(ctx, p, s))
+            self.assertTrue(send_confirm_req_genesis(ctx, p, s))
+            s.close()
         except OSError:
+            s.close()
             self.assertTrue(False)
 
 
