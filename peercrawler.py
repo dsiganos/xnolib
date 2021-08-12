@@ -64,7 +64,6 @@ class peer_manager:
             try:
                 peer_id = perform_handshake_exchange(self.ctx, s)
                 peer.peer_id = peer_id
-                req = send_confirm_req_genesis(self.ctx, peer, s)
 
                 if self.verbosity >= 2:
                     print('  ID:%s' % hexlify(peer_id))
@@ -76,24 +75,8 @@ class peer_manager:
                         keepalive = message_keepalive.parse_payload(hdr, payload)
                         self.add_peers(keepalive.peers)
                         peer.score = 1000
-                        if peer.is_voting:
-                            return
-                    if hdr.msg_type == message_type(message_type_enum.confirm_ack):
-                        if hdr.block_type() == 1:
-                            ack = confirm_req.confirm_ack_hash.parse(hdr, payload)
-                        else:
-                            ack = confirm_req.confirm_ack_block.parse(hdr, payload)
-                        if req.is_response(ack):
-                            peer.is_voting = True
-                            if self.verbosity >= 2:
-                                print('  Voting: true')
-                            if peer.score >= 1000:
-                                return
-
-                # peer could timeout because it is non voting, but if the score is set, it is still a good peer
-                if peer.score >= 1000:
-                    return
-
+                        peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
+                        return
                 # timeout whilst waiting for keepalive, score it with 2
                 peer.score = 2
             except (PyNanoCoinException, OSError) as e:
@@ -162,7 +145,7 @@ def parse_args():
 
     parser.add_argument('-v', '--verbosity', type=int,
                         help='verbosity level')
-    parser.add_argument('-f', '--forever', action='store_true', default=True,
+    parser.add_argument('-f', '--forever', action='store_true', default=False,
                         help='loop forever looking for new peers')
     parser.add_argument('-d', '--delay', type=int, default=300,
                         help='delay between crawls in seconds')
@@ -268,6 +251,7 @@ def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
             raise PeerServiceUnavailable("Peer service for the given network is unavailable")
     except (PyNanoCoinException, OSError, TypeError) as e:
         print("Error getting peers: %s" % str(e))
+        s.close()
         raise PeerServiceUnavailable("Peer service is unavailable")
 
     json_peers = response[peer_service_header.size:]
@@ -298,10 +282,14 @@ def send_confirm_req_genesis(ctx, peer, s):
                        ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
                        ctx["genesis_block"]["work"])
 
-    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(message_type_enum.confirm_req), 0)
-    req = confirm_req.confirm_req_block(hdr, block)
-    s.send(req.serialise())
-    return req
+    try:
+        outcome = confirm_req.confirm_block(ctx, block, s)
+    except (PyNanoCoinException, OSError):
+        outcome = False
+
+    return outcome
+
+
 
 
 def main():
