@@ -255,7 +255,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
         conn.close()
 
 
-def get_peers_from_service(ctx, addr = '::1'):
+def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(5)
