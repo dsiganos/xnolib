@@ -7,5 +7,7 @@ from pynanocoin import *
 ctx = livectx
 s, _ = get_initial_connected_socket(ctx)
 assert s
-
-perform_handshake_exchange(ctx, s)
+try:
+    perform_handshake_exchange(ctx, s)
+finally:
+    s.close()
