@@ -179,6 +179,15 @@ class peer_service_header:
                                    int.from_bytes(data[114:], "big"), software_ver=data[5:105].decode("utf-8"),
                                    protocol_ver=data[106])
 
+    def __str__(self):
+        s = ''
+        s += 'NetID:      %s\n' % self.net_id
+        s += 'GoodPeers:  %s\n' % self.good_peers
+        s += 'TotalPeers: %s\n' % self.total_peers
+        s += 'ProtoVers:  %s\n' % self.protocol_ver
+        s += 'SwVers:     %s'   % self.software_ver
+        return s
+
 
 class peer_crawler_thread(threading.Thread):
     def __init__(self, ctx, forever, delay, verbosity=0):
