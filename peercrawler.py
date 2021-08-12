@@ -152,6 +152,8 @@ def parse_args():
 
 
 class peer_service_header:
+    size = 124
+
     def __init__(self, net_id, good_peers, total_peers, software_ver = "devel", protocol_ver = 2):
         self.magic = b'PEER'
         assert(isinstance(net_id, network_id))
@@ -165,19 +167,23 @@ class peer_service_header:
     def serialise(self):
         data = self.magic
         data += self.net_id.id.to_bytes(1, "big")
-        data += string_to_bytes(self.software_ver, 100)
-        data += self.protocol_ver.to_bytes(1, "big")
+        data += self.protocol_ver.to_bytes(3, "big")
         data += self.good_peers.to_bytes(8, "big")
         data += self.total_peers.to_bytes(8, "big")
+        data += string_to_bytes(self.software_ver, 100)
         return data
 
     @classmethod
     def parse(cls, data):
-        assert(len(data) == 122)
+        assert(len(data) == peer_service_header.size)
         assert(data[0:4] == b'PEER')
-        return peer_service_header(network_id(data[4]), int.from_bytes(data[106:114], "big"),
-                                   int.from_bytes(data[114:], "big"), software_ver=data[5:105].decode("utf-8"),
-                                   protocol_ver=data[105])
+        return peer_service_header(
+            net_id = network_id(data[4]),
+            protocol_ver = int.from_bytes(data[5:8], "big"),
+            good_peers = int.from_bytes(data[8:16], "big"),
+            total_peers = int.from_bytes(data[16:24], "big"),
+            software_ver=data[24:].decode("utf-8")
+        )
 
     def __str__(self):
         s = ''
@@ -234,7 +240,7 @@ def get_peers_from_service(ctx, addr = '::1'):
     try:
         s.connect((addr, ctx['peercrawlerport']))
         response = readall(s)
-        hdr = peer_service_header.parse(response[0:122])
+        hdr = peer_service_header.parse(response[0:peer_service_header.size])
         assert(hdr.protocol_ver == 2)
         if hdr.net_id != ctx['net_id']:
             raise PeerServiceUnavailable("Peer service for the given network is unavailable")
@@ -242,7 +248,7 @@ def get_peers_from_service(ctx, addr = '::1'):
         print("Error getting peers: %s" % str(e))
         raise PeerServiceUnavailable("Peer service is unavailable")
 
-    json_peers = response[122:]
+    json_peers = response[peer_service_header.size:]
     peers = jsonpickle.decode(json_peers)
     s.close()
     return hdr, peers
