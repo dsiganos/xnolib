@@ -107,25 +107,29 @@ def read_account_entries_hash_amount_addr(s):
 
 def main():
     s, _ = get_initial_connected_socket(livectx)
-    account = binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5')
-    hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
+    try:
+        account = binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5')
+        hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
 
-    # Change the flag to see the different results (in range 0-2)
-    flag = 1
+        # Change the flag to see the different results (in range 0-2)
+        flag = 1
 
-    msg = bulk_pull_account(hdr, account, flag)
-    s.send(msg.serialise())
+        msg = bulk_pull_account(hdr, account, flag)
+        s.send(msg.serialise())
 
-    # All entries start with a frontier_balance_entry
-    front_hash = read_socket(s, 32)
-    balance = int.from_bytes(read_socket(s, 16), "big")
+        # All entries start with a frontier_balance_entry
+        front_hash = read_socket(s, 32)
+        balance = int.from_bytes(read_socket(s, 16), "big")
 
-    print("frontier hash: %s     balance: %d     flag: %d" % (hexlify(front_hash), balance, flag))
-    resp = bulk_pull_account_response(front_hash, balance)
-    entries = read_account_entries(s, flag)
-    for e in entries:
-        resp.add_entry(e)
-    print(resp)
+        print("frontier hash: %s     balance: %d     flag: %d" % (hexlify(front_hash), balance, flag))
+        resp = bulk_pull_account_response(front_hash, balance)
+        entries = read_account_entries(s, flag)
+        for e in entries:
+            resp.add_entry(e)
+        print(resp)
+
+    finally:
+        s.close()
 
     # data = s.recv(1000)
     # print(data)

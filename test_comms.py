@@ -341,17 +341,17 @@ class TestComms(unittest.TestCase):
     def test_is_voting_peers(self):
         ctx = livectx
         p = Peer(ip_addr(ipaddress.IPv6Address("::ffff:94.130.135.50")), 7075)
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(3)
-        try:
-            s.connect((str(p.ip), 7075))
-            perform_handshake_exchange(ctx, s)
-            self.assertTrue(send_confirm_req_genesis(ctx, p, s))
-            s.close()
-        except OSError:
-            s.close()
-            self.assertTrue(False)
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(3)
+            try:
+                s.connect((str(p.ip), 7075))
+                perform_handshake_exchange(ctx, s)
+                self.assertTrue(send_confirm_req_genesis(ctx, p, s))
+                s.close()
+            except OSError:
+                s.close()
+                self.assertTrue(False)
 
 
 if __name__ == '__main__':

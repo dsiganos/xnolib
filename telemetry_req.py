@@ -105,19 +105,21 @@ def main():
     else:
         s, _ = get_initial_connected_socket(ctx)
     assert s
+    try:
+        perform_handshake_exchange(ctx, s)
 
-    perform_handshake_exchange(ctx, s)
+        req = telemetry_req(ctx)
+        s.send(req.serialise())
 
-    req = telemetry_req(ctx)
-    s.send(req.serialise())
-
-    hdr, data = get_next_hdr_payload(s)
-    while hdr.msg_type != message_type(13):
         hdr, data = get_next_hdr_payload(s)
-    print(hdr)
+        while hdr.msg_type != message_type(13):
+            hdr, data = get_next_hdr_payload(s)
+        print(hdr)
 
-    resp = telemetry_ack.parse(data)
-    print(resp)
+        resp = telemetry_ack.parse(data)
+        print(resp)
+    finally:
+        s.close()
 
 
 if __name__ == "__main__":
