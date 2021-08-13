@@ -88,8 +88,13 @@ class telemetry_ack:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--beta', action='store_true', default=False,
-                        help='use beta network')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-b', '--beta', action='store_true', default=False,
+                       help='use beta network')
+    group.add_argument('-t', '--test', action='store_true', default=False,
+                       help='use test network')
+
     parser.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
     return parser.parse_args()
@@ -97,7 +102,10 @@ def parse_args():
 
 def main():
     args = parse_args()
-    ctx = betactx if args.beta else livectx
+
+    ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
 
     if args.peer:
         peerstr = str(ip_addr.from_string(args.peer))
