@@ -1118,10 +1118,16 @@ class block_manager:
     def next_acc_iter(self):
         for a in self.accounts:
             for block_hash, b in a.blocks.items():
-                if not isinstance(b, block_send):
+                if not (isinstance(b, block_send) or isinstance(b, block_state)):
                     continue
-                elif not self.account_exists(b.destination):
-                    yield b.destination
+                elif isinstance(b, block_send):
+                    if not self.account_exists(b.destination):
+                        yield b.destination
+                elif isinstance(b, block_state):
+                    if b.link == b'\x00' * 32:
+                        continue
+                    if not self.account_exists(b.link):
+                        yield b.link
         yield None
 
     def process_one(self, block):
@@ -1158,7 +1164,7 @@ class block_manager:
             # check if account exists
             if self.account_exists(block.get_account()):
                 print('state open block (%s) for already opened account %s' %
-                    (hexlify(block.hash()), acctools.to_account_addr(block.account)))
+                     (hexlify(block.hash()), acctools.to_account_addr(block.account)))
                 return True
 
             # create the account
