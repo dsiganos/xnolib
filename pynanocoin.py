@@ -10,6 +10,7 @@ import ed25519_blake2
 import ed25519_blake2b
 import git
 
+import acctools
 from exceptions import *
 
 
@@ -27,24 +28,6 @@ def parse_ipv6(data):
     if len(data) != 16:
         raise ParseErrorBadIPv6()
     return ipaddress.IPv6Address(data)
-
-
-def account_id_to_name(acc_id_bin):
-    assert (len(acc_id_bin) == 32)
-
-    genesis_live = binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA')
-    genesis_beta = binascii.unhexlify('259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A')
-    dev_fund     = binascii.unhexlify('42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279')
-    burn = b'\x00' * 32
-
-    named_accounts = {
-        genesis_live: 'genesis live',
-        genesis_beta: 'genesis beta',
-        dev_fund:     'dev fund',
-        burn:         'burn',
-    }
-
-    return named_accounts.get(acc_id_bin, '')
 
 
 # returns a list of ipv4 mapped ipv6 strings
@@ -78,34 +61,6 @@ def node_id_handshake_size(is_query, is_response):
     if is_response:
         size += 32 + 64
     return size
-
-
-# this function expects account to be a 32 byte bytearray
-def get_account_id(account, prefix='nano_'):
-    assert (len(account) == 32)
-
-    RFC_3548 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-    ENCODING = b"13456789abcdefghijkmnopqrstuwxyz"
-
-    h = blake2b(digest_size=5)
-    h.update(account)
-    checksum = h.digest()
-
-    # prefix account to make it even length for base32, add checksum in reverse byte order
-    account2 = b'\x00\x00\x00' + account + checksum[::-1]
-
-    # use the optimized base32 lib to speed this up
-    encode_account = base64.b32encode(account2)
-
-    # simply translate the result from RFC3548 to Nano's encoding, snip off the leading useless bytes
-    encode_account = encode_account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
-
-    label = account_id_to_name(account)
-    if label != '':
-        label = ' (' + label + ')'
-
-    # add prefix, label and return
-    return prefix + encode_account.decode() + label
 
 
 class ip_addr:
@@ -580,7 +535,7 @@ class block_send:
         acc_id = None
         if self.ancillary["account"] is not None:
             hexacc = hexlify(self.ancillary["account"])
-            acc_id = get_account_id(self.ancillary["account"])
+            acc_id = acctools.to_account_addr(self.ancillary["account"])
         return hexacc, acc_id
 
     def hash(self):
@@ -617,7 +572,7 @@ class block_send:
         string += "Hash : %s\n" % hexlify(self.hash())
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Dest : %s\n" % hexlify(self.destination)
-        string += "       %s\n" % get_account_id(self.destination)
+        string += "       %s\n" % acctools.to_account_addr(self.destination)
         string += "Bal  : %f\n" % (self.balance / (10**30))
         string += "Sign : %s\n" % hexlify(self.signature)
         string += "Work : %s\n" % hexlify(self.work)
@@ -698,7 +653,7 @@ class block_receive:
     def str_ancillary_data(self):
         if self.ancillary["account"] is not None:
             hexacc = hexlify(self.ancillary["account"])
-            account = get_account_id(self.ancillary["account"])
+            account = acctools.to_account_addr(self.ancillary["account"])
         else:
             hexacc = None
             account = self.ancillary["account"]
@@ -865,7 +820,7 @@ class block_open:
         string += "Src  : %s\n" % hexlify(self.source)
         string += "Repr : %s\n" % hexlify(self.representative)
         string += "Acc  : %s\n" % hexacc
-        string += "       %s\n" % get_account_id(self.account)
+        string += "       %s\n" % acctools.to_account_addr(self.account)
         string += "Sign : %s\n" % hexlify(self.signature)
         string += "Work : %s\n" % hexlify(self.work)
         string += self.str_ancillary_data()
@@ -938,7 +893,7 @@ class block_change:
     def str_ancillary_data(self):
         if self.ancillary["account"] is not None:
             hexacc = hexlify(self.ancillary["account"])
-            account = get_account_id(self.ancillary["account"])
+            account = acctools.to_account_addr(self.ancillary["account"])
         else:
             hexacc = None
             account = self.ancillary["account"]
@@ -1092,7 +1047,7 @@ class block_state:
         string = "------------- Block State -------------\n"
         string += "Hash : %s\n" % hexlify(self.hash())
         string += "Acc  : %s\n" % hexacc
-        string += "       %s\n" % get_account_id(self.account)
+        string += "       %s\n" % acctools.to_account_addr(self.account)
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Repr : %s\n" % hexlify(self.representative)
         string += "Bal  : %f\n" % (self.balance / (10**30))
@@ -1203,7 +1158,7 @@ class block_manager:
             # check if account exists
             if self.account_exists(block.get_account()):
                 print('state open block (%s) for already opened account %s' %
-                    (hexlify(block.hash()), account_id_to_name(block.account)))
+                    (hexlify(block.hash()), acctools.to_account_addr(block.account)))
                 return True
 
             # create the account
@@ -1236,7 +1191,7 @@ class block_manager:
         # check if account exists
         if self.account_exists(block.get_account()):
             print('open block (%s) for already opened account %s' %
-                (hexlify(block.hash()), account_id_to_name(block.account)))
+                (hexlify(block.hash()), acctools.to_account_addr(block.account)))
             return True
 
         # find the associated send block
@@ -1479,7 +1434,7 @@ class block_manager:
         string += "Accounts:\n\n"
         for a in self.accounts:
             string += "    Public Key : %s\n" % hexlify(a.account)
-            string += "    ID         : %s\n\n" % get_account_id(a.account)
+            string += "    ID         : %s\n\n" % acctools.to_account_addr(a.account)
         return string
 
 
@@ -1505,7 +1460,7 @@ class nano_account:
                 filename = '%s/%s' % (self.workdir, hashstr)
                 writefile(filename, str(merged_block) + '\n')
             #print('block (%s) already exists in account %s' %
-            #    (hexlify(block.hash()), account_id_to_name(block.get_account())))
+            #    (hexlify(block.hash()), acctools.to_account_addr(block.get_account())))
             return
 
         # if previous is none then it must be a starting block
@@ -1525,7 +1480,7 @@ class nano_account:
             self._add_block(block, prevblk)
         else:
             print('added block: %s to account %s' %
-                (hexlify(block.hash()), account_id_to_name(self.account)))
+                (hexlify(block.hash()), acctools.to_account_addr(self.account)))
             self._add_block(block, prevblk)
             prevblk.ancillary['next'] = block.hash()
 
@@ -1623,7 +1578,7 @@ class nano_account:
         lastblk = self.get_last_block()
         string = "------------- Nano Account -------------\n"
         string += "Account : %s\n" % hexlify(self.account)
-        string += "        : %s\n" % get_account_id(self.account)
+        string += "        : %s\n" % acctools.to_account_addr(self.account)
         string += "Blocks  : %d\n" % len(self.blocks)
         string += "First   : %s\n" % hexlify(self.first.hash())
         string += "Last    : %s\n" % hexlify(lastblk.hash())

@@ -9,8 +9,9 @@ import argparse
 import threading
 import jsonpickle
 from functools import reduce
-import confirm_req
 
+import confirm_req
+import acctools
 from pynanocoin import *
 
 
@@ -127,7 +128,7 @@ class peer_manager:
                 voting_str = ' (voting)' if p.is_voting else ''
                 s += '%41s:%5s (score:%4s)%s\n' % ('[%s]' % p.ip, p.port, p.score, voting_str)
                 #if p.score >= 1000:
-                #    s += 'ID: %s, voting:%s\n' % (get_account_id(p.peer_id, prefix='node_'), p.is_voting)
+                #    s += 'ID: %s, voting:%s\n' % (acctools.to_account_addr(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
         return s
 
@@ -288,8 +289,6 @@ def send_confirm_req_genesis(ctx, peer, s):
         outcome = False
 
     return outcome
-
-
 
 
 def main():

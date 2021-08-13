@@ -8,8 +8,8 @@ import time
 
 import lmdb
 import peercrawler
+import acctools
 from exceptions import *
-
 from pynanocoin import *
 
 
@@ -48,7 +48,7 @@ class frontier_entry:
         return self.account == (b'\x00' * 32) and self.frontier_hash == (b'\x00' * 32)
 
     def __str__(self):
-        string = "%s\n" % get_account_id(self.account)
+        string = "%s\n" % acctools.to_account_addr(self.account)
         string += "%s\n" % binascii.hexlify(self.frontier_hash).decode("utf-8").upper()
         return string
 
@@ -107,7 +107,8 @@ def read_all_frontiers(s, frontier_handler):
 
 
 def print_handler(counter, frontier, readtime):
-    print(counter, hexlify(frontier.frontier_hash), hexlify(frontier.account), get_account_id(frontier.account))
+    print(counter, hexlify(frontier.frontier_hash),
+          hexlify(frontier.account), acctools.to_account_addr(frontier.account))
 
 
 def frontier_to_db(tx, counter, frontier):

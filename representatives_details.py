@@ -5,6 +5,8 @@ import json
 import argparse
 import peercrawler
 import pynanocoin
+import acctools
+import constants
 
 #def parse_args():
 #    parser = argparse.ArgumentParser()
@@ -15,9 +17,12 @@ import pynanocoin
 #args = parse_args()
 
 
+RPC_URL = 'http://[::1]:7076'
+#RPC_URL = 'https://mynano.ninja/api/node'
+
+
 def weight_to_percentage(weight):
-    # TODO
-    pass
+    return weight * 100 / constants.max_nano_supply
 
 
 class Representative:
@@ -30,18 +35,22 @@ class Representative:
         self.voting = None
 
     def __str__(self):
+        friendly_str = acctools.to_friendly_name(self.account)
+        if friendly_str != '':
+            friendly_str = ' (' + friendly_str + ')'
         s = ''
-        s += 'Account:  %s\n' % self.account
-        s += 'Endpoint: %s\n' % self.endpoint
-        s += 'Node ID:  %s\n' % self.node_id
-        s += 'Weight: %s\n'   % self.weight
-        s += 'ProtoVer: %s, ' % self.protover
-        s += 'Voting: %s'     % self.voting
+        s += 'Account:  %s%s\n'     % (self.account, friendly_str)
+        s += '  FriendlyName: %s\n' % acctools.to_friendly_name(self.account)
+        s += '  Endpoint: %s\n'     % self.endpoint
+        s += '  Node ID:  %s\n'     % self.node_id
+        s += '  Weight: %s (%s)\n'  % (self.weight, weight_to_percentage(int(self.weight)))
+        s += '  ProtoVer: %s, '     % self.protover
+        s += '  Voting: %s'         % self.voting
         return s
         
 
 def post(session, params, timeout=5):
-    resp = session.post('http://[::1]:7076', json=params, timeout=5)
+    resp = session.post(RPC_URL, json=params, timeout=5)
     return resp.json()
 
 
@@ -101,7 +110,7 @@ def get_representatives_details():
     for peer in peers:
         for rep in reps:
             if peer.peer_id:
-                if pynanocoin.get_account_id(peer.peer_id, prefix='node_') == rep.node_id:
+                if acctools.to_account_addr(peer.peer_id, prefix='node_') == rep.node_id:
                     rep.voting = peer.is_voting
 
     return reps
