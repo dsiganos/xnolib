@@ -87,3 +87,12 @@ for f in frontiers:
 
 print(count)
 print(manager)
+
+for acc in manager.accounts:
+    print(acc)
+    block = acc.first
+    while block is not None:
+        print(block)
+        block = acc.find_next(block)
+
+print('DONE')
