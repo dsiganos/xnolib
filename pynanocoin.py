@@ -30,10 +30,16 @@ def parse_ipv6(data):
     return ipaddress.IPv6Address(data)
 
 
-# returns a list of ipv4 mapped ipv6 strings
-def get_all_dns_addresses(url):
-    result = dns.resolver.resolve(url, 'A')
+# return a list of ipv4 mapped ipv6 strings
+def get_all_dns_addresses(addr):
+    result = dns.resolver.resolve(addr, 'A')
     return ['::ffff:' + x.to_text() for x in result]
+
+
+# return DNS adresses as Peer objects
+def get_all_dns_addresses_as_peers(addr, peerport, score):
+    addresses = get_all_dns_addresses(addr)
+    return [ Peer(ip_addr(ipaddress.IPv6Address(a)), peerport, score) for a in addresses ]
 
 
 def confirm_req_size(block_type, i_count):
