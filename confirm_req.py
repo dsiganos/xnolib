@@ -296,9 +296,11 @@ def confirm_blocks_by_hash(ctx, blocks, s):
     return resp is not None
 
 
-def confirm_req_peer(ctx, do_block, peeraddr=None):
+def confirm_req_peer(ctx, do_block, peeraddr=None, peerport=None):
+    if peerport is None:
+        peerport = ctx['peerport']
     if peeraddr:
-        peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), ctx['peerport'], 1000)
+        peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
