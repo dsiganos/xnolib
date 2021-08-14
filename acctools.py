@@ -26,6 +26,9 @@ accounts = {
     'nano_3jyt9ye4yerydg91twwgxo7edke84a7cbjtomq4bg7uh5anqwiture4h1saa' : 'Huobi Hot Wallet #2',
     'nano_1e3t7fh57qozn1fkcdzatypygbcoxs9r3ku9tsqx69fn5za4fqfjrihf5w7c' : 'Mercatox Cold Wallet',
     'nano_1b9wguhh39at8qtm93oghd6r4f4ubk7zmqc9oi5ape6yyz4s1gamuwn3jjit' : '465 Digital Investments - Node 1',
+    'nano_1niabkx3gbxit5j5yyqcpas71dkffggbr6zpd3heui8rpoocm5xqbdwq44oh' : 'KuCoin',
+    'nano_3robocazheuxet5ju1gtif4cefkhfbupkykc97hfanof859ie9ajpdfhy3ez' : 'RoboCash DBA FynCom',
+    'nano_1aoxwfsmu6wazes9jq4xu695jx5txa3qrrfsrg4w4uk35bhmxkn378fwebng' : '1.NANONODE.FR',
 }
 
 
