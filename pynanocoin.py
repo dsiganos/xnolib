@@ -855,7 +855,7 @@ class block_open:
         return True
 
     def __hash__(self):
-        hash((self.source, self.representative, self.account))
+        return hash((self.source, self.representative, self.account))
 
 
 class block_change:
