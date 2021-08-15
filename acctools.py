@@ -29,6 +29,8 @@ accounts = {
     'nano_1niabkx3gbxit5j5yyqcpas71dkffggbr6zpd3heui8rpoocm5xqbdwq44oh' : 'KuCoin',
     'nano_3robocazheuxet5ju1gtif4cefkhfbupkykc97hfanof859ie9ajpdfhy3ez' : 'RoboCash DBA FynCom',
     'nano_1aoxwfsmu6wazes9jq4xu695jx5txa3qrrfsrg4w4uk35bhmxkn378fwebng' : '1.NANONODE.FR',
+    'nano_3rw4un6ys57hrb39sy1qx8qy5wukst1iiponztrz9qiz6qqa55kxzx4491or' : 'NanoVault',
+    'nano_3uip1jmeo4irjuua9xiyosq6fkgogwd6bf5uqopb1m6mfq6g3n8cna6h3tuk' : 'BitGrail Trustee'
 }
 
 
