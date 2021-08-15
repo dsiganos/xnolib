@@ -1205,6 +1205,18 @@ class block_manager:
                 (hexlify(block.hash()), acctools.to_account_addr(block.account)))
             return True
 
+        # do we trust all open blocks?
+        if self.trust_open_blocks:
+            # with an open block, we do not know the balance and there is no way
+            # to know it without pulling an indeterminate number of blocks/accounts
+            # so setting it to zero for now since we are focused on forks when trusting open blocks
+            block.ancillary["balance"] = 0
+            # create the account
+            acc = nano_account(self, block)
+            self.accounts.append(acc)
+            print('Opened new account\n%s' % acc)
+            return True
+
         # find the associated send block
         srcblk, _ = self.find_ledger_block_by_hash(block.source)
         if srcblk is None:
