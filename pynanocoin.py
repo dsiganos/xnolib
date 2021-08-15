@@ -1065,11 +1065,8 @@ class block_state:
         return string
 
     def __hash__(self):
-        STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
-        return hash((STATE_BLOCK_HEADER_BYTES, self.account,
-                     self.previous, self.representative,
-                     self.balance.to_bytes(16, "big"),
-                     self.link))
+        return hash((self.account, self.previous, self.representative,
+                     self.balance, self.link))
 
     def __eq__(self, other):
         if not isinstance(other, block_state):
