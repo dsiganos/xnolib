@@ -298,16 +298,21 @@ def confirm_blocks_by_hash(ctx, blocks, s):
 
 
 def confirm_req_peer(ctx, do_block, peeraddr=None, peerport=None):
-    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-        if peerport is None:
-            peerport = ctx['peerport']
-        if peeraddr:
-            peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)
+    peer = None
+    if peerport is None:
+        peerport = ctx['peerport']
+    if peeraddr:
+        peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+
+    else:
+        s, _ = get_initial_connected_socket(ctx)
+
+    with s:
+        s.settimeout(3)
+        if peer is not None:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.settimeout(3)
             s.connect((str(peer.ip), peer.port))
-        else:
-            s, _ = get_initial_connected_socket(ctx)
 
         perform_handshake_exchange(ctx, s)
         print('handshake done')
