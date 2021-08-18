@@ -298,7 +298,6 @@ def confirm_blocks_by_hash(ctx, blocks, s):
 
 
 def confirm_req_peer(ctx, do_block, peeraddr=None, peerport=None):
-    peer = None
     if peerport is None:
         peerport = ctx['peerport']
     if peeraddr:
