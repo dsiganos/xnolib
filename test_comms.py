@@ -1,6 +1,8 @@
 import time
 import unittest
 import binascii
+
+from msg_handshake import perform_handshake_exchange
 from pynanocoin import *
 from ipaddress import IPv6Address
 from frontier_service import blacklist_manager, blacklist_entry
