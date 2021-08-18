@@ -86,3 +86,7 @@ class FrontierServiceSlowPeer(PyNanoCoinException):
 
 class BlacklistItemTypeError(PyNanoCoinException):
     pass
+
+
+class VerificationErrorNoAccount(PyNanoCoinException):
+    pass
