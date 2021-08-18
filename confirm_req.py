@@ -308,7 +308,7 @@ def confirm_req_peer(ctx, do_block, peeraddr=None, peerport=None):
         s, _ = get_initial_connected_socket(ctx)
 
     with s:
-        if peeraddr is not None:
+        if peeraddr:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.connect((peeraddr, peerport))
             s.settimeout(3)
