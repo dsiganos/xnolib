@@ -353,6 +353,71 @@ class TestComms(unittest.TestCase):
                 s.close()
                 self.assertTrue(False)
 
+    def test_verify_block(self):
+        block1 = {
+            "prev": binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
+            "dest": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal": 337010421085160209006996005437231978653,
+            "sig": binascii.unhexlify(
+                '5B11B17DB9C8FE0CC58CAC6A6EECEF9CB122DA8A81C6D3DB1B5EE3AB065AA8F8CB1D6765C8EB91B58530C5FF5987AD95E6D34BB57F44257E20795EE412E61600'),
+            "work": binascii.unhexlify('3C82CC724905EE95')
+        }
+
+        block2 = {
+            "prev": binascii.unhexlify('A170D51B94E00371ACE76E35AC81DC9405D5D04D4CEBC399AEACE07AE05DD293'),
+            "dest": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal": 333738475249381954550617403442695745851,
+            "sig": binascii.unhexlify(
+                'D6CAB5845050A058806D18C38E022322664A7E169498206420619F2ED031E7ED6FC80D5F33701B54B34B4DF2B65F02ECD8B5E26E44EC11B17570E1EE008EEC0E'),
+            "work": binascii.unhexlify('96B201F33F0394AE')
+        }
+
+        block3 = {
+            "prev": binascii.unhexlify('28129ABCAB003AB246BA22702E0C218794DFFF72AD35FD56880D8E605C0798F6'),
+            "dest": binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5'),
+            "bal": 330466529413603700094238801448159513049,
+            "sig": binascii.unhexlify(
+                '7F5ABE59D6C25EEEFE28174A6646D6E228FFDE3ACBA1293EDFFA057CE739AF9DAC89A4D1783BD30E2B4F0154815A959A57424C5EA35EA3ADF0CD2AF981BF7103'),
+            "work": binascii.unhexlify('6B8567274385A390')
+        }
+        b1 = block_send(block1["prev"], block1["dest"], block1["bal"], block1["sig"], block1["work"])
+        b2 = block_send(block2["prev"], block2["dest"], block2["bal"], block2["sig"], block2["work"])
+        b3 = block_send(block3["prev"], block3["dest"], block3["bal"], block3["sig"], block3["work"])
+        b1.ancillary["account"] = binascii.unhexlify(livectx["genesis_pub"])
+        b2.ancillary["account"] = binascii.unhexlify(livectx["genesis_pub"])
+        b3.ancillary["account"] = binascii.unhexlify(livectx["genesis_pub"])
+        self.assertTrue(valid_block(livectx, b1))
+        self.assertTrue(valid_block(livectx, b2))
+        self.assertTrue(valid_block(livectx, b3))
+
+    def test_epoch_validation(self):
+        epochv2 = {
+            'account': binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+            'prev': binascii.unhexlify('6875C0DBFE5C44D8F8CFF431BC69ED5587C68F89F0663F2BC1FBBFCB46DC5989'),
+            'rep': binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+            'bal': 325586539664609129644855132177,
+            'link': binascii.unhexlify('65706F636820763220626C6F636B000000000000000000000000000000000000'),
+            'sign': binascii.unhexlify('B0FD724D1B341C7FB117AC51EB6B8D0BD56F424E7188F31718321C8B0CAEC92AE402D382917D65E9ECC741B3B31203569E9FB7B898EC4A08BEBCE859EA24BB0E'),
+            'work': binascii.unhexlify('494DBB4E8BD688AA')
+        }
+
+        epochv1 = {
+            'account': binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+            'prev': binascii.unhexlify('ECCB8CB65CD3106EDA8CE9AA893FEAD497A91BCA903890CBD7A5C59F06AB9113'),
+            'rep': binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+            'bal': 325586539664609129644855132177,
+            'link': binascii.unhexlify('65706F636820763120626C6F636B000000000000000000000000000000000000'),
+            'sign': binascii.unhexlify('57BFE93F4675FC16DF0CCFC7EE4F78CC68047B5C14E2E2EED243F17348D8BAB3CCA04F8CBC2D291B4DDEC5F7A74C1BE1E872DF78D560C46365EB15270A1D1201'),
+            'work': binascii.unhexlify('0F78168D5B30191D')
+        }
+        ev1 = block_state(epochv1['account'], epochv1['prev'], epochv1['rep'], epochv1['bal'],
+                          epochv1['link'], epochv1['sign'], epochv1['work'])
+        ev2 = block_state(epochv2['account'], epochv2['prev'], epochv2['rep'], epochv2['bal'],
+                          epochv2['link'], epochv2['sign'], epochv2['work'])
+        print(ev2)
+
+        self.assertTrue(valid_block(livectx, ev1))
+        self.assertTrue(valid_block(livectx, ev2))
 
 if __name__ == '__main__':
     unittest.main()
