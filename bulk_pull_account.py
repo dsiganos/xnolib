@@ -1,4 +1,5 @@
 #!/bin/env python3
+import argparse
 
 from pynanocoin import *
 
@@ -105,14 +106,38 @@ def read_account_entries_hash_amount_addr(s):
     return entries
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    group1 = parser.add_mutually_exclusive_group()
+    group1.add_argument('-b', '--beta', action='store_true', default=False,
+                        help='use beta network')
+    group1.add_argument('-t', '--test', action='store_true', default=False,
+                        help='use test network')
+    parser.add_argument('-a', '--account', type=str,
+                        help='Account from which we pull')
+    parser.add_argument('-f', '--flag', type=int, default=0,
+                        help='Flag for the bulk_pull_account')
+
+    return parser.parse_args()
+
 def main():
-    s, _ = get_initial_connected_socket(livectx)
+    args = parse_args()
+
+    ctx = livectx
+    if args.beta: ctx = betactx
+    elif args.test: ctx = testctx
+
+    s, _ = get_initial_connected_socket(ctx)
     try:
-        account = binascii.unhexlify('059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5')
+        if args.account is None:
+            account = binascii.unhexlify(ctx['genesis_pub'])
+        else:
+            account = binascii.unhexlify(args.account)
         hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
 
         # Change the flag to see the different results (in range 0-2)
-        flag = 1
+        flag = args.flag
 
         msg = bulk_pull_account(hdr, account, flag)
         s.send(msg.serialise())
@@ -121,7 +146,7 @@ def main():
         front_hash = read_socket(s, 32)
         balance = int.from_bytes(read_socket(s, 16), "big")
 
-        print("frontier hash: %s     balance: %d     flag: %d" % (hexlify(front_hash), balance, flag))
+        print("flag: %d" % flag)
         resp = bulk_pull_account_response(front_hash, balance)
         entries = read_account_entries(s, flag)
         for e in entries:
