@@ -1035,6 +1035,16 @@ class block_state:
         data += self.work
         return data
 
+    def is_epoch_v2_block(self):
+        if self.link[0:14] == b'epoch v2 block':
+            return True
+        return False
+
+    def is_epoch_v1_block(self):
+        if self.link[0:14] == b'epoch v1 block':
+            return True
+        return False
+
     @classmethod
     def parse(cls, data):
         assert(len(data) == block_length_by_type(6))
@@ -1735,9 +1745,20 @@ def verify_pow(block):
         return pow_validate(block.work, block.previous)
 
 
-def valid_block(block):
+def valid_block(ctx, block):
+    if isinstance(block, block_state):
+        if block.is_epoch_v2_block():
+            sig_valid = verify(block.hash(), block.signature, binascii.unhexlify(ctx["epoch_v2_signing_account"]))
+        elif block.is_epoch_v1_block():
+            sig_valid = verify(block.hash(), block.signature, binascii.unhexlify(ctx["genesis_pub"]))
+    else:
+        if block.get_account() is None:
+            raise VerificationErrorNoAccount()
+        sig_valid = verify(block.hash(), block.signature, block.get_account())
+
     work_valid = verify_pow(block)
-    sig_valid = verify(block.hash(), block.signature, block.get_account())
+    print(sig_valid)
+    print(work_valid)
     return work_valid and sig_valid
 
 
@@ -1866,6 +1887,7 @@ livectx = {
     'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
     'another_pub': '059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5',
     'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6',
+    'epoch_v2_signing_account': 'dd24a9200d4bf8247981e4ac63dbde38fd2319386970a26d02ecc98c79975db1',
     'genesis_block': live_genesis_block
 }
 
@@ -1876,6 +1898,7 @@ betactx = {
     'peerport': 54000,
     'peercrawlerport': 7071,
     'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
+    'epoch_v2_signing_account': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
     'genesis_block': beta_genesis_block
 }
 
@@ -1886,6 +1909,7 @@ testctx = {
     'peerport': 17075,
     'peercrawlerport': 7072,
     'genesis_pub': '45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED',
+    'epoch_v2_signing_account': '45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED',
     'genesis_block': test_genesis_block
 }
 
