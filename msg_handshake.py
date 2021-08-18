@@ -111,14 +111,6 @@ def perform_handshake_exchange(ctx, s):
     return recvd_response.account
 
 
-def node_id_handshake_size(is_query, is_response):
-    size = 0
-    if is_query:
-        size += 32
-    if is_response:
-        size += 32 + 64
-    return size
-
 
 def main():
     ctx = livectx

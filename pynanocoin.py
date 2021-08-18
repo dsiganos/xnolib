@@ -12,7 +12,6 @@ import git
 
 import acctools
 from exceptions import *
-from msg_handshake import *
 
 
 def writefile(filename, content):
@@ -1734,6 +1733,15 @@ def extensions_to_block_type(extensions):
 def extensions_to_extented_params(extensions):
     EXTENDED_PARAM_MASK = 0x0001
     return extensions & EXTENDED_PARAM_MASK
+
+
+def node_id_handshake_size(is_query, is_response):
+    size = 0
+    if is_query:
+        size += 32
+    if is_response:
+        size += 32 + 64
+    return size
 
 
 live_genesis_block = {
