@@ -237,7 +237,7 @@ def send_confirm_req_hash(ctx, s):
 
     # print(block)
 
-    outcome = confirm_blocks_by_hash(ctx, [block], s)
+    outcome = confirm_blocks_by_hash(ctx, convert_blocks_to_hash_pairs([block]), s)
 
     if not outcome:
         print("blocks not confirmed!")
@@ -285,10 +285,9 @@ def confirm_block(ctx, block, s):
         return True
 
 
-def confirm_blocks_by_hash(ctx, blocks, s):
-    assert(isinstance(blocks, list))
+def confirm_blocks_by_hash(ctx, pairs, s):
+    assert(isinstance(pairs, list))
     hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
-    pairs = convert_blocks_to_hash_pairs(blocks)
     req = confirm_req_hash(hdr, pairs)
     s.send(req.serialise())
 
