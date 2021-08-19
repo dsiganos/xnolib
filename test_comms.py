@@ -421,5 +421,23 @@ class TestComms(unittest.TestCase):
         self.assertTrue(valid_block(livectx, ev1))
         self.assertTrue(valid_block(livectx, ev2))
 
+    def test_peer_from_str(self):
+        string1 = '[::1234:1234]:12345'
+        string2 = '1.2.3.4:12345'
+        string3 = 'server.google.com:12345'
+        ip1, port1 = peer_from_str(string1)
+        ip2, port2 = peer_from_str(string2)
+        ip3, port3 = peer_from_str(string3)
+
+        self.assertEqual(ip1, '::1234:1234')
+        self.assertEqual(port1, 12345)
+
+        self.assertEqual(ip2, '1.2.3.4')
+        self.assertEqual(port2, 12345)
+
+        self.assertEqual(ip3, 'server.google.com')
+        self.assertEqual(port2, 12345)
+
+
 if __name__ == '__main__':
     unittest.main()
