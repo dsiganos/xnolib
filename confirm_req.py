@@ -230,7 +230,7 @@ def send_confirm_req_block(ctx, s):
         print("block %s confirmed!" % hexlify(block.hash()))
 
 
-def send_confirm_req_hash(ctx, s):
+def send_example_confirm_req_hash(ctx, s):
     block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
                        ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
                        ctx["genesis_block"]["work"])
@@ -296,7 +296,8 @@ def confirm_blocks_by_hash(ctx, pairs, s):
     return resp is not None
 
 
-def confirm_req_peer(ctx, do_block, peeraddr=None, peerport=None):
+def confirm_req_peer(ctx, do_block, hash, peeraddr=None, peerport=None):
+    assert (hash is None if do_block else hash is not None)
     if peerport is None:
         peerport = ctx['peerport']
     if peeraddr:
@@ -315,21 +316,28 @@ def confirm_req_peer(ctx, do_block, peeraddr=None, peerport=None):
         print('handshake done')
 
         s.settimeout(10)
-        if do_block:
+        if hash is None:
             send_confirm_req_block(ctx, s)
         else:
-            send_confirm_req_hash(ctx, s)
+            raw_pair = hash.split(':')
+            pair = hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
+            outcome = confirm_blocks_by_hash(ctx, [pair], s)
+            print("Finished with confirmed status: %s" % outcome)
 
 
 
 def main():
+    # Example hash pair:
+    #   hash: 991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948
+    #   root: E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA
+    # Known voting peer: ::ffff:94.130.135.50
     args = parse_args()
 
     ctx = livectx
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    confirm_req_peer(ctx, args.block, args.peer)
+    confirm_req_peer(ctx, args.block, args.hash, args.peer)
 
 
 def parse_args():
@@ -337,7 +345,7 @@ def parse_args():
 
     group1 = parser.add_mutually_exclusive_group(required=True)
     group1.add_argument('-B', '--block', action="store_true", default=False)
-    group1.add_argument('-H', '--hash', action="store_true", default=False)
+    group1.add_argument('-H', '--hash', type=str, default=None)
 
     group2 = parser.add_mutually_exclusive_group()
     group2.add_argument('-b', '--beta', action='store_true', default=False,
