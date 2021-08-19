@@ -2,7 +2,8 @@ import time
 import unittest
 import binascii
 
-from msg_handshake import perform_handshake_exchange
+from msg_handshake import perform_handshake_exchange, handshake_response, handshake_query, handshake_response_query, \
+    handshake_exchange_server
 from pynanocoin import *
 from ipaddress import IPv6Address
 from frontier_service import blacklist_manager, blacklist_entry
@@ -437,6 +438,35 @@ class TestComms(unittest.TestCase):
 
         self.assertEqual(ip3, 'server.google.com')
         self.assertEqual(port2, 12345)
+
+    def test_signing_verifying(self):
+        signing_key, verifying_key = ed25519_blake2b.create_keypair()
+        my_cookie = os.urandom(32)
+        sig = signing_key.sign(my_cookie)
+        self.assertEqual(verifying_key.verify(sig, my_cookie), None)
+
+    def test_handshake_server(self):
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(1000)
+            s.bind(('::1', 6060))
+            s.listen()
+            conn, _ = s.accept()
+            with conn:
+                query = handshake_query.parse_query(livectx, read_socket(conn, 40))
+                handshake_exchange_server(livectx, conn, query)
+                print("server done")
+
+    def test_handshake_client(self):
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(1000)
+            s.connect(('::1', 6060))
+            perform_handshake_exchange(livectx, s)
+            print("done")
+
+
+
 
 
 if __name__ == '__main__':
