@@ -13,6 +13,7 @@ from functools import reduce
 import confirm_req
 import acctools
 from pynanocoin import *
+from msg_handshake import *
 
 
 class peer_manager:
