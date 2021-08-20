@@ -296,8 +296,8 @@ def confirm_blocks_by_hash(ctx, pairs, s):
     return resp is not None
 
 
-def confirm_req_peer(ctx, do_block, hash, peeraddr=None, peerport=None):
-    assert (hash is None if do_block else hash is not None)
+def confirm_req_peer(ctx, block, pair, peeraddr=None, peerport=None):
+    assert (pair is None if block is not None else pair is not None)
     if peerport is None:
         peerport = ctx['peerport']
     if peeraddr:
@@ -316,14 +316,14 @@ def confirm_req_peer(ctx, do_block, hash, peeraddr=None, peerport=None):
         print('handshake done')
 
         s.settimeout(10)
-        if hash is None:
-            send_confirm_req_block(ctx, s)
+        if pair is None:
+            print("Confirm Block")
+            outcome = confirm_block(ctx, block, s)
+            print("Finished with confirmed status: %s" % outcome)
         else:
-            raw_pair = hash.split(':')
-            pair = hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
+            print("Confirm Hash")
             outcome = confirm_blocks_by_hash(ctx, [pair], s)
             print("Finished with confirmed status: %s" % outcome)
-
 
 
 def main():
@@ -337,7 +337,25 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    confirm_req_peer(ctx, args.block, args.hash, args.peer)
+    pair = None
+    peeraddr = None
+    peerport = None
+    block = None
+
+    if args.hash is not None:
+        raw_pair = args.hash.split(':')
+        if len(raw_pair) == 1:
+            pair = hash_pair(binascii.unhexlify(raw_pair[0]), b'\x00' * 32)
+        else:
+            pair = hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
+    else:
+        block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
+                           ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
+                           ctx["genesis_block"]["work"])
+    if args.peer is not None:
+        peeraddr, peerport = peer_from_str(args.peer)
+
+    confirm_req_peer(ctx, block, pair, peeraddr=peeraddr, peerport=peerport)
 
 
 def parse_args():
@@ -345,7 +363,8 @@ def parse_args():
 
     group1 = parser.add_mutually_exclusive_group(required=True)
     group1.add_argument('-B', '--block', action="store_true", default=False)
-    group1.add_argument('-H', '--hash', type=str, default=None)
+    group1.add_argument('-H', '--hash', type=str, default=None,
+                        help='hash or hash-root pair in the form "hash:root"')
 
     group2 = parser.add_mutually_exclusive_group()
     group2.add_argument('-b', '--beta', action='store_true', default=False,
