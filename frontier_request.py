@@ -157,8 +157,9 @@ def main():
         hdr, peers = peercrawler.get_peers_from_service(ctx)
         assert peers
     else:
-        if args.peer:
-            peers = [Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'], 1000)]
+        if args.peer is not None:
+            peeraddr, peerport = peer_from_str(args.peer)
+            peers = [Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)]
         else:
             peer = random.choice(get_all_dns_addresses(ctx['peeraddr']))
             peers = [Peer(ip_addr(ipaddress.IPv6Address(peer)), ctx['peerport'], 1000)]
