@@ -1756,7 +1756,6 @@ def peer_from_str(string):
     return ip_address, port
 
 
-
 live_genesis_block = {
     "hash": binascii.unhexlify("991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948"),
     "source": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
