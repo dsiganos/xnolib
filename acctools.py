@@ -58,6 +58,32 @@ def to_account_addr(account, prefix='nano_'):
     return prefix + encode_account.decode()
 
 
+def account_key(account):
+    """Get the public key for account
+    :param str account: account number
+    :return: 64 hex-char public key
+    :rtype: str
+    :raise AssertionError: for invalid account
+    """
+    account_prefix = "nano_"
+    _B32 = b"13456789abcdefghijkmnopqrstuwxyz"
+    assert (
+        len(account) == len(account_prefix) + 60
+        and account[: len(account_prefix)] == account_prefix
+    )
+
+    account = b"1111" + account[-60:].encode()
+    account = account.translate(bytes.maketrans(_B32, base64._b32alphabet))
+    key = base64.b32decode(account)
+
+    checksum = key[:-6:-1]
+    key = key[3:-5]
+
+    assert hashlib.blake2b(key, digest_size=5).digest() == checksum
+
+    return key.hex()
+
+
 def to_friendly_name(acc):
     if len(acc) == 32:
         addr = to_account_addr(acc)
