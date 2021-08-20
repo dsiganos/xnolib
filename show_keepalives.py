@@ -5,7 +5,7 @@ import random
 import argparse
 
 from pynanocoin import *
-
+from msg_handshake import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
