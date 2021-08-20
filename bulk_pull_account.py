@@ -117,7 +117,8 @@ def parse_args():
     parser.add_argument('-a', '--account', type=str,
                         help='Account from which we pull')
     parser.add_argument('-f', '--flag', type=int, default=0,
-                        help='Flag for the bulk_pull_account')
+                        help='Flag for the bulk_pull_account:\n  0: hash and amount\n  1: address only\n  '+
+                             '2: hash, amount and address')
 
     return parser.parse_args()
 
