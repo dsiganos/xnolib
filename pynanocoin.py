@@ -1750,9 +1750,9 @@ def peer_from_str(string):
         ip_address = string[1:ip_end_index]
         port = int(string[ip_end_index + 2:])
     else:
-        ip_end_index = string.index(':')
-        ip_address = string[0:ip_end_index]
-        port = int(string[ip_end_index + 1:])
+        details = string.split(':')
+        ip_address = details[0]
+        port = int(details[1])
     return ip_address, port
 
 
