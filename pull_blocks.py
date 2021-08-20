@@ -29,8 +29,9 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    if args.peer:
-        peer = Peer(ip_addr(ipaddress.IPv6Address(args.peer)), ctx['peerport'], 1000)
+    if args.peer is not None:
+        peeraddr, peerport = peer_from_str(args.peer)
+        peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)
     else:
         _, peers = peercrawler.get_peers_from_service(ctx)
         assert peers
