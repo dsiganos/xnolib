@@ -39,7 +39,10 @@ def main():
     account = ctx["genesis_pub"]
 
     if args.account is not None:
-        account = args.account
+        if len(args.account) == 64:
+            account = args.account
+        else:
+            account = acctools.account_key(args.account)
 
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -50,12 +53,14 @@ def main():
         blocks = get_account_blocks(ctx, s, account)
 
         blockman = block_manager(ctx, None, None)
+        blocks_pulled = len(blocks)
         while len(blocks) != 0:
             block = blocks.pop()
             print(block)
             blockman.process(block)
 
         print(blockman)
+        print("blocks pulled: %d" % blocks_pulled)
 
 if __name__ == "__main__":
     main()
