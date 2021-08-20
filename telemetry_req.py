@@ -2,6 +2,7 @@
 
 import argparse
 from pynanocoin import *
+from msg_handshake import *
 
 
 class telemetry_req:
@@ -107,13 +108,17 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    if args.peer:
-        peerstr = str(ip_addr.from_string(args.peer))
-        s, _ = get_initial_connected_socket(ctx, [peerstr])
+    if args.peer is not None:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     else:
         s, _ = get_initial_connected_socket(ctx)
     assert s
-    try:
+    with s:
+        if args.peer is not None:
+            peeraddr, peerport = peer_from_str(args.peer)
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(3)
+            s.connect((peeraddr, peerport))
         perform_handshake_exchange(ctx, s)
 
         req = telemetry_req(ctx)
@@ -126,8 +131,6 @@ def main():
 
         resp = telemetry_ack.parse(data)
         print(resp)
-    finally:
-        s.close()
 
 
 if __name__ == "__main__":
