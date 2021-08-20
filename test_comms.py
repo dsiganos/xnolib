@@ -465,8 +465,10 @@ class TestComms(unittest.TestCase):
             perform_handshake_exchange(livectx, s)
             print("done")
 
-
-
+    def test_account_key(self):
+        acc_id = acctools.to_account_addr(binascii.unhexlify(livectx["genesis_pub"]))
+        key = acctools.account_key(acc_id)
+        self.assertEqual(key, livectx["genesis_pub"].lower())
 
 
 if __name__ == '__main__':
