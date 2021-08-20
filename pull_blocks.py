@@ -17,6 +17,8 @@ def parse_args():
 
     parser.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly from peer crawler)')
+    parser.add_argument('-a', '--account', type=str, default=None,
+                        help='The account you want to pull blocks from')
     return parser.parse_args()
 
 
@@ -34,13 +36,18 @@ def main():
         assert peers
         peer = random.choice([x for x in peers if x.score >= 1000])
 
+    account = ctx["genesis_pub"]
+
+    if args.account is not None:
+        account = args.account
+
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
         print('connecting to %s' % peer)
         s.connect((str(peer.ip), peer.port))
 
-        blocks = get_account_blocks(ctx, s, ctx["genesis_pub"])
+        blocks = get_account_blocks(ctx, s, account)
 
         blockman = block_manager(ctx, None, None)
         while len(blocks) != 0:
