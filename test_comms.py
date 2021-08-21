@@ -426,9 +426,16 @@ class TestComms(unittest.TestCase):
         string1 = '[::1234:1234]:12345'
         string2 = '1.2.3.4:12345'
         string3 = 'server.google.com:12345'
+        string4 = '192.168.1.1'
+        string5 = '::1234:1234'
+        string6 = '4444:CCCC:DDDD:EEEE:FFFF'
+
         ip1, port1 = peer_from_str(string1)
         ip2, port2 = peer_from_str(string2)
         ip3, port3 = peer_from_str(string3)
+        ip4, port4 = peer_from_str(string4)
+        ip5, port5 = peer_from_str(string5)
+        ip6, port6 = peer_from_str(string6)
 
         self.assertEqual(ip1, '::1234:1234')
         self.assertEqual(port1, 12345)
@@ -437,7 +444,16 @@ class TestComms(unittest.TestCase):
         self.assertEqual(port2, 12345)
 
         self.assertEqual(ip3, 'server.google.com')
-        self.assertEqual(port2, 12345)
+        self.assertEqual(port3, 12345)
+
+        self.assertEqual(ip4, '192.168.1.1')
+        self.assertEqual(port4, None)
+
+        self.assertEqual(ip5, '::1234:1234')
+        self.assertEqual(port5, None)
+
+        self.assertEqual(ip6, '4444:CCCC:DDDD:EEEE:FFFF')
+        self.assertEqual(port6, None)
 
     def test_signing_verifying(self):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
