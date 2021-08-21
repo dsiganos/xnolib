@@ -31,6 +31,8 @@ def main():
 
     if args.peer is not None:
         peeraddr, peerport = peer_from_str(args.peer)
+        if peerport is None:
+            peerport = ctx['peerport']
         peer = Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)
     else:
         _, peers = peercrawler.get_peers_from_service(ctx)

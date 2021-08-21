@@ -159,6 +159,8 @@ def main():
     else:
         if args.peer is not None:
             peeraddr, peerport = peer_from_str(args.peer)
+            if peerport is None:
+                peerport = ctx['peerport']
             peers = [Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)]
         else:
             peer = random.choice(get_all_dns_addresses(ctx['peeraddr']))

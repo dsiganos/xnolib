@@ -1745,14 +1745,28 @@ def node_id_handshake_size(is_query, is_response):
 
 
 def peer_from_str(string):
+    # IPv6 with port
     if string[0] == '[':
         ip_end_index = string.index(']')
         ip_address = string[1:ip_end_index]
         port = int(string[ip_end_index + 2:])
+
+    # IPv6 without port
+    elif string.count(':') > 1:
+        ip_address = string
+        port = None
+
+    #IPv4
     else:
-        details = string.split(':')
-        ip_address = details[0]
-        port = int(details[1])
+        try:
+            # With port
+            details = string.split(':')
+            ip_address = details[0]
+            port = int(details[1])
+        except IndexError:
+            # Without port
+            ip_address = string
+            port = None
     return ip_address, port
 
 
