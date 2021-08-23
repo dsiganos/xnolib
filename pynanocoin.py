@@ -1680,26 +1680,6 @@ def get_next_hdr_payload(s):
     return header, data
 
 
-def get_initial_connected_socket(ctx, peers=None):
-    if peers is None or len(peers) == 0:
-        peers = get_all_dns_addresses(ctx['peeraddr'])
-        random.shuffle(peers)
-    for peeraddr in peers:
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(3)
-        try:
-            s.connect((peeraddr, ctx['peerport']))
-            print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
-            return s, peeraddr
-        except socket.error as e:
-            print('Failed to connect to %s' % peeraddr)
-            print(e)
-
-    print('Failed to connect to any of the peering servers')
-    return None, None
-
-
 def get_account_blocks(ctx, s, account):
     hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
     if isinstance(account, bytes):

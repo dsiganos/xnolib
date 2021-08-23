@@ -4,6 +4,7 @@ import socket
 
 from pynanocoin import *
 from frontier_request import *
+from peercrawler import *
 
 
 def store_frontiers_handler(frontiers):
