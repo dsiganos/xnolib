@@ -6,6 +6,7 @@ import argparse
 
 from pynanocoin import *
 from msg_handshake import *
+from peercrawler import *
 
 def parse_args():
     parser = argparse.ArgumentParser()

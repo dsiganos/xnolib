@@ -6,6 +6,7 @@ import argparse
 
 from pynanocoin import *
 from msg_handshake import perform_handshake_exchange
+from peercrawler import *
 
 
 class hash_pair:
@@ -94,6 +95,22 @@ class confirm_req_block:
         data += self.block.serialise(False)
         return data
 
+    @classmethod
+    def parse(cls, hdr, data):
+        assert hdr.block_type() in range(2, 7)
+        block = None
+        if hdr.block_type() == 2:
+            block = block_send.parse(data)
+        elif hdr.block_type() == 3:
+            block = block_receive.parse(data)
+        elif hdr.block_type() == 4:
+            block = block_open.parse(data)
+        elif hdr.block_type() == 5:
+            block = block_change.parse(data)
+        elif hdr.block_type() == 6:
+            block = block_state.parse(data)
+        return confirm_ack_block(hdr, block)
+
     def is_response(self, ack):
         assert(isinstance(ack, confirm_ack_block) or isinstance(ack, confirm_ack_hash))
 
@@ -163,6 +180,17 @@ class confirm_ack_hash:
 
         return confirm_ack_hash(hdr, common, hashes)
 
+    def is_valid(self):
+        hasher = blake2b(digest_size=32)
+        hasher.update('vote '.encode('utf-8'))
+
+        for h in self.hashes:
+            hasher.update(h)
+
+        hasher.update(self.common.seq.to_bytes(8, 'little'))
+
+        return verify(hasher.digest(), self.common.sig, self.common.account)
+
     def __str__(self):
         string = ""
         string += str(self.hdr)
@@ -175,31 +203,44 @@ class confirm_ack_hash:
             string += "\n"
         return string
 
-
+# TODO: This confirm ack also has a vote_common field
 class confirm_ack_block:
-    def __init__(self, hdr, block):
+    def __init__(self, hdr, common, block):
         assert(isinstance(hdr, message_header))
+        assert(isinstance(common, vote_common))
         self.hdr = hdr
+        self.common = common
         self.block = block
 
     @classmethod
     def parse(cls, hdr, data):
+        common = vote_common.parse(data[0:104])
         assert(isinstance(hdr, message_header))
         block_type = hdr.block_type()
         assert(block_type in range(2, 7))
-        assert(len(data) == block_length_by_type(block_type))
+        assert(len(data) == block_length_by_type(block_type) + 104)
         block = None
         if block_type == 2:
-            block = block_send.parse(data)
+            block = block_send.parse(data[104:])
         elif block_type == 3:
-            block = block_receive.parse(data)
+            block = block_receive.parse(data[104:])
         elif block_type == 4:
-            block = block_open.parse(data)
+            block = block_open.parse(data[104:])
         elif block_type == 5:
-            block = block_change.parse(data)
+            block = block_change.parse(data[104:])
         elif block_type == 6:
-            block = block_state.parse(data)
-        return confirm_ack_block(hdr, block)
+            block = block_state.parse(data[104:])
+        return confirm_ack_block(hdr, common, block)
+
+    def is_valid(self):
+        hasher = blake2b(digest_size=32)
+        hasher.update('vote '.encode('utf-8'))
+
+        hasher.update(self.block.hash())
+
+        hasher.update(self.common.seq.to_bytes(8, 'little'))
+
+        return verify(hasher.digest(), self.common.sig, self.common.account)
 
     def __str__(self):
         string = ""
@@ -292,6 +333,7 @@ def confirm_blocks_by_hash(ctx, pairs, s):
     s.send(req.serialise())
 
     resp = search_for_response(s, req)
+    print(resp)
 
     return resp is not None
 
@@ -363,7 +405,7 @@ def parse_args():
 
     group1 = parser.add_mutually_exclusive_group(required=True)
     group1.add_argument('-B', '--block', action="store_true", default=False)
-    group1.add_argument('-H', '--hash', type=str, default=None,
+    group1.add_argument('-H', '--hash', type=str,
                         help='hash or hash-root pair in the form "hash:root"')
 
     group2 = parser.add_mutually_exclusive_group()
