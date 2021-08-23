@@ -405,7 +405,7 @@ def parse_args():
 
     group1 = parser.add_mutually_exclusive_group(required=True)
     group1.add_argument('-B', '--block', action="store_true", default=False)
-    group1.add_argument('-H', '--hash', type=str,
+    group1.add_argument('-H', '--hash', type=str, default=None,
                         help='hash or hash-root pair in the form "hash:root"')
 
     group2 = parser.add_mutually_exclusive_group()
