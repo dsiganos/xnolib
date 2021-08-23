@@ -261,6 +261,28 @@ def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
     return hdr, peers
 
 
+def get_initial_connected_socket(ctx, peers=None):
+    if peers is None or len(peers) == 0:
+        _, peers = get_peers_from_service(ctx)
+        peers = list(peers)
+        random.shuffle(peers)
+    for peer in peers:
+        peeraddr = str(peer.ip)
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+        try:
+            s.connect((peeraddr, ctx['peerport']))
+            print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
+            return s, peeraddr
+        except socket.error as e:
+            print('Failed to connect to %s' % peeraddr)
+            print(e)
+
+    print('Failed to connect to any of the peering servers')
+    return None, None
+
+
 def string_to_bytes(string, length):
     data = string.encode("utf-8")
     assert (len(data) <= length)
