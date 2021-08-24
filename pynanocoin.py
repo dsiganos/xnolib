@@ -389,6 +389,15 @@ class message_bulk_pull:
             data += self.generate_extended_params()
         return data
 
+    def parse(self, hdr, data):
+        public_key = data[0:32]
+        finish = data[32:64]
+        bp = message_bulk_pull(hdr, public_key, finish)
+        if hdr.ext == 1:
+            count = data[66:]
+            bp = message_bulk_pull(hdr, public_key, finish, count=count)
+        return bp
+
     def generate_extended_params(self):
         assert(self.count is not None)
         data = (0).to_bytes(1, "big")
