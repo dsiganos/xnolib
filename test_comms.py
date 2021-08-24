@@ -571,14 +571,13 @@ class TestComms(unittest.TestCase):
 
     def test_handshake_query_serialise_deserialise(self):
         ctx = livectx
-        query1 = handshake_query(ctx)
+        hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
+        query1 = handshake_query(ctx, hdr)
         serialised = query1.serialise()
         hdr = message_header.parse_header(serialised[0:8])
-        query2 = handshake_query.parse_query(ctx, serialised)
-        query3 = handshake_query.parse_query(ctx, serialised, hdr=hdr)
+        query2 = handshake_query.parse_query(ctx, hdr, serialised[8:])
 
         self.assertEqual(query1, query2)
-        self.assertEqual(query1, query3)
 
     def test_handshake_response_serialise_deserialise(self):
         ctx = livectx
