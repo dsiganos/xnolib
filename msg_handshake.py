@@ -1,4 +1,5 @@
 from pynanocoin import *
+from peercrawler import * 
 
 
 class handshake_query:
@@ -89,8 +90,6 @@ class handshake_response_query:
         my_cookie = os.urandom(32)
         sig = signing_key.sign(cookie)
         return handshake_response_query(ctx, my_cookie, verifying_key.to_bytes(), sig)
-
-
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
