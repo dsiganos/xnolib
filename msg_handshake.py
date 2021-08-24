@@ -17,7 +17,7 @@ class handshake_query:
     def parse_query(cls, ctx, hdr, data):
         assert(len(data) == 32)
         cookie = data
-        return handshake_query(ctx, hdr, cookie)
+        return handshake_query(hdr, cookie)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
