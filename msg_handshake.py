@@ -14,7 +14,7 @@ class handshake_query:
         return data
 
     @classmethod
-    def parse_query(cls, ctx, hdr, data):
+    def parse_query(cls, hdr, data):
         assert(len(data) == 32)
         cookie = data
         return handshake_query(hdr, cookie)
