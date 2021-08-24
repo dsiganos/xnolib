@@ -33,6 +33,16 @@ class frontier_request:
         data += self.maxacc.to_bytes(4, 'little')
         return data
 
+    @classmethod
+    def parse(cls, ctx, data, hdr = None):
+        if hdr is None:
+            hdr = message_header.parse_header(data[0:8])
+            data = data[8:]
+        start_account = data[0:32]
+        maxage = int.from_bytes(data[32:36], 'big')
+        maxacc = int.from_bytes(data[36:], 'big')
+        return frontier_request(ctx, start_account=start_account, maxage=maxage, maxacc=maxacc, hdr=hdr)
+
     def __str__(self):
         string = str(self.header) + "\n"
         string += "Start account: %s\n" % hexlify(self.start_account)
