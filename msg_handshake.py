@@ -156,7 +156,7 @@ class handshake_response_query:
 
 def perform_handshake_exchange(ctx, s):
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
-    msg_handshake = handshake_query(ctx, hdr)
+    msg_handshake = handshake_query(hdr)
     s.send(msg_handshake.serialise())
     try:
         data = read_socket(s, 136)
