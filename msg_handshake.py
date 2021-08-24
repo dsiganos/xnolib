@@ -37,13 +37,10 @@ class handshake_query:
 
 
 class handshake_response:
-    def __init__(self, ctx, account, signature, hdr=None):
-        assert isinstance(hdr, message_header) or hdr is None
-        if hdr is None:
-            self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 2)
-        else:
-            assert hdr.is_response()
-            self.header = hdr
+    def __init__(self, hdr, account, signature):
+        assert isinstance(hdr, message_header)
+        assert hdr.is_response()
+
         self.account = account
         self.sig = signature
 
@@ -57,21 +54,20 @@ class handshake_response:
     def create_response(cls, ctx, cookie):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
         sig = signing_key.sign(cookie)
-        return handshake_response(ctx, verifying_key.to_bytes(), sig)
+        hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 2)
+        return handshake_response(hdr, verifying_key.to_bytes(), sig)
 
     @classmethod
-    def parse_response(cls, ctx, data, hdr=None):
-        assert len(data) == 104
-        assert isinstance(hdr, message_header) or hdr is None
+    def parse_response(cls, hdr, data):
+        assert len(data) == 96
+        assert isinstance(hdr, message_header)
 
-        account = data[8:40]
-        sig = data[40:]
+        account = data[0:32]
+        sig = data[32:]
 
         assert(len(sig) == 64)
 
-        if hdr is not None:
-            return handshake_response(ctx, account, sig, hdr=hdr)
-        return handshake_response(ctx, account, sig)
+        return handshake_response(hdr, account, sig)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
@@ -179,7 +175,8 @@ def handshake_exchange_server(ctx, s, query):
     s.send(response.serialise())
 
     data = read_socket(s, 104)
-    recvd_response = handshake_response.parse_response(ctx, data)
+    hdr = message_header.parse_header(data[0:8])
+    recvd_response = handshake_response.parse_response(hdr, data[8:])
 
     vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
     vk.verify(recvd_response.sig, response.cookie)
