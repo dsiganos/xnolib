@@ -33,6 +33,15 @@ class handshake_query:
         string += "Is response: False\n"
         return string
 
+    def __eq__(self, other):
+        if not isinstance(other, handshake_query):
+            return False
+        elif not self.header == other.header:
+            return False
+        elif not self.cookie == other.cookie:
+            return False
+        return True
+
 
 class handshake_response:
     def __init__(self, ctx, account, signature, hdr=None):
@@ -78,6 +87,17 @@ class handshake_response:
         string += "Is query: False\n"
         string += "Is response: True\n"
         return string
+
+    def __eq__(self, other):
+        if not isinstance(other, handshake_response):
+            return False
+        elif not self.header == other.header:
+            return False
+        elif not self.account == other.account:
+            return False
+        elif not self.sig == other.sig:
+            return False
+        return True
 
 
 class handshake_response_query:
@@ -126,6 +146,19 @@ class handshake_response_query:
         string += "Is query: True\n"
         string += "Is response: True\n"
         return string
+
+    def __eq__(self, other):
+        if not isinstance(other, handshake_response_query):
+            return False
+        elif not self.header == other.header:
+            return False
+        elif not self.cookie == other.cookie:
+            return False
+        elif not self.account == other.account:
+            return False
+        elif not self.sig == other.sig:
+            return False
+        return True
 
 
 def perform_handshake_exchange(ctx, s):
