@@ -2,8 +2,13 @@ from pynanocoin import *
 
 
 class handshake_query:
-    def __init__(self, ctx, cookie=os.urandom(32)):
-        self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 1)
+    def __init__(self, ctx, cookie=os.urandom(32), hdr=None):
+        assert isinstance(hdr, message_header) or hdr is None
+        if hdr is None:
+            self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 1)
+        else:
+            assert hdr.is_query()
+            self.header = hdr
         self.cookie = cookie
 
     def serialise(self):
@@ -12,10 +17,13 @@ class handshake_query:
         return data
 
     @classmethod
-    def parse_query(cls, ctx, data):
+    def parse_query(cls, ctx, data, hdr=None):
         assert(len(data) == 40)
+
         cookie = data[8:]
         assert(len(cookie) == 32)
+        if hdr is not None:
+            return handshake_query(ctx, cookie, hdr=hdr)
         return handshake_query(ctx, cookie)
 
     def __str__(self):
@@ -27,8 +35,13 @@ class handshake_query:
 
 
 class handshake_response:
-    def __init__(self, ctx, account, signature):
-        self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 2)
+    def __init__(self, ctx, account, signature, hdr=None):
+        assert isinstance(hdr, message_header) or hdr is None
+        if hdr is None:
+            self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 2)
+        else:
+            assert hdr.is_response()
+            self.header = hdr
         self.account = account
         self.sig = signature
 
@@ -45,11 +58,17 @@ class handshake_response:
         return handshake_response(ctx, verifying_key.to_bytes(), sig)
 
     @classmethod
-    def parse_response(cls, ctx, data):
-        assert(len(data) == 104)
+    def parse_response(cls, ctx, data, hdr=None):
+        assert len(data) == 104
+        assert isinstance(hdr, message_header) or hdr is None
+
         account = data[8:40]
         sig = data[40:]
+
         assert(len(sig) == 64)
+
+        if hdr is not None:
+            return handshake_response(ctx, account, sig, hdr=hdr)
         return handshake_response(ctx, account, sig)
 
     def __str__(self):
@@ -62,8 +81,14 @@ class handshake_response:
 
 
 class handshake_response_query:
-    def __init__(self, ctx, cookie, account, signature):
-        self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 3)
+    def __init__(self, ctx, cookie, account, signature, hdr=None):
+        assert isinstance(hdr, message_header) or hdr is None
+        if hdr is None:
+            self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 3)
+        else:
+            assert hdr.is_query()
+            assert hdr.is_response()
+            self.header = hdr
         self.cookie = cookie
         self.account = account
         self.sig = signature
@@ -76,15 +101,18 @@ class handshake_response_query:
         return data
 
     @classmethod
-    def parse_query_response(cls, ctx, data):
+    def parse_query_response(cls, ctx, data, hdr=None):
         assert(len(data) == 136)
+
         cookie = data[8:40]
         account = data[40:72]
         sig = data[72:]
+        if hdr is not None:
+            return handshake_response_query(ctx, cookie, account, sig, hdr=hdr)
         return handshake_response_query(ctx, cookie, account, sig)
 
     @classmethod
-    def create_response(self, ctx, cookie):
+    def create_response(cls, ctx, cookie):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
         my_cookie = os.urandom(32)
         sig = signing_key.sign(cookie)
