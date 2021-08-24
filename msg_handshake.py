@@ -2,8 +2,8 @@ from pynanocoin import *
 
 
 class handshake_query:
-    def __init__(self, ctx, hdr, cookie=os.urandom(32)):
-        assert isinstance(hdr, message_header) or hdr is None
+    def __init__(self, hdr, cookie=os.urandom(32)):
+        assert isinstance(hdr, message_header)
         assert hdr.is_query()
         self.header = hdr
         self.cookie = cookie
