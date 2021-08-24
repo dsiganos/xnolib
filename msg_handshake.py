@@ -1,5 +1,4 @@
 from pynanocoin import *
-from peercrawler import * 
 
 
 class handshake_query:
