@@ -51,6 +51,18 @@ class frontier_request:
         string += "confirmed: %s\n" % self.confirmed
         return string
 
+    def __eq__(self, other):
+        if not isinstance(other, frontier_request):
+            return False
+        elif not self.start_account == other.start_account:
+            return False
+        elif not self.header == other.header:
+            return False
+        elif not self.maxage == other.maxage:
+            return False
+        elif not self.maxacc == other.maxacc:
+            return False
+        return True
 
 
 class frontier_entry:
