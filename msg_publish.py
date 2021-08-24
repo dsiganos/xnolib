@@ -11,6 +11,25 @@ class msg_publish:
         data += self.block.serialise(True)
         return data
 
+    @classmethod
+    def parse(cls, hdr, data):
+        assert data[0] in range(2, 7)
+        block = None
+        if data[0] == 2:
+            block = block_send.parse(data)
+        elif data[0] == 3:
+            block = block_receive.parse(data)
+        elif data[0] == 4:
+            block = block_open.parse(data)
+        elif data[0] == 5:
+            block = block_change.parse(data)
+        elif data[0] == 6:
+            block = block_state.parse(data)
+        else:
+            assert False
+        return msg_publish(hdr, block)
+
+
 
 def main():
     header = message_header(network_id(66), [18, 18, 18], message_type(3), 0)
