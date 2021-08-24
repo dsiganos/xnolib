@@ -493,7 +493,9 @@ class TestComms(unittest.TestCase):
             s.listen()
             conn, _ = s.accept()
             with conn:
-                query = handshake_query.parse_query(livectx, read_socket(conn, 40))
+                data = read_socket(conn, 40)
+                hdr = message_header.parse_header(data[0:8])
+                query = handshake_query.parse_query(hdr, data[8:])
                 handshake_exchange_server(livectx, conn, query)
                 print("server done")
 
