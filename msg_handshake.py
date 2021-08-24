@@ -2,13 +2,10 @@ from pynanocoin import *
 
 
 class handshake_query:
-    def __init__(self, ctx, cookie=os.urandom(32), hdr=None):
+    def __init__(self, ctx, hdr, cookie=os.urandom(32)):
         assert isinstance(hdr, message_header) or hdr is None
-        if hdr is None:
-            self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 1)
-        else:
-            assert hdr.is_query()
-            self.header = hdr
+        assert hdr.is_query()
+        self.header = hdr
         self.cookie = cookie
 
     def serialise(self):
@@ -17,14 +14,10 @@ class handshake_query:
         return data
 
     @classmethod
-    def parse_query(cls, ctx, data, hdr=None):
-        assert(len(data) == 40)
-
-        cookie = data[8:]
-        assert(len(cookie) == 32)
-        if hdr is not None:
-            return handshake_query(ctx, cookie, hdr=hdr)
-        return handshake_query(ctx, cookie)
+    def parse_query(cls, ctx, hdr, data):
+        assert(len(data) == 32)
+        cookie = data
+        return handshake_query(ctx, hdr, cookie)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
@@ -162,7 +155,8 @@ class handshake_response_query:
 
 
 def perform_handshake_exchange(ctx, s):
-    msg_handshake = handshake_query(ctx)
+    hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
+    msg_handshake = handshake_query(ctx, hdr)
     s.send(msg_handshake.serialise())
     try:
         data = read_socket(s, 136)
