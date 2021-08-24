@@ -406,6 +406,61 @@ class message_bulk_pull:
         return data
 
 
+class bulk_push:
+    def __init__(self, hdr, blocks):
+        self.hdr = hdr
+        self.blocks = blocks
+    
+    def serialise(self):
+        data = b''
+        data += self.hdr.serialise_header()
+        for b in self.blocks:
+            data += b.serialise(True)
+        data += (1).to_bytes(1, 'big')
+        return data
+    
+    @classmethod
+    def parse(cls, hdr, data):
+        blocks = []
+        ptr = 1
+        block_type = data[0]
+        while block_type != block_type_enum.not_a_block:
+            assert block_type in range(1, 7)
+            block = None
+            if block_type == 2:
+                block = block_send.parse(data[ptr: ptr + block_length_by_type(block_type)])
+            elif block_type == 3:
+                block = block_receive.parse(data[ptr: ptr + block_length_by_type(block_type)])
+            elif block_type == 4:
+                block = block_open.parse(data[ptr: ptr + block_length_by_type(block_type)])
+            elif block_type == 5:
+                block = block_change.parse(data[ptr: ptr + block_length_by_type(block_type)])
+            elif block_type == 6:
+                block = block_state.parse(data[ptr: ptr + block_length_by_type(block_type)])
+            elif block_type == 1:
+                break
+            ptr += block_length_by_type(block_type)
+            blocks.append(block)
+            block_type = data[ptr]
+            ptr += 1
+        return bulk_push(hdr, blocks)
+
+    def __eq__(self, other):
+        if not isinstance(other, bulk_push):
+            return False
+        for b in self.blocks:
+            if b not in other.blocks:
+                return False
+        return True
+
+    def __str__(self):
+        string = str(self.hdr) + '\n'
+        string += 'Blocks being pushed:\n'
+        for b in self.blocks:
+            string += str(b) + '\n'
+        return string
+
+
 class block_send:
     def __init__(self, prev, dest, bal, sig, work):
         assert(isinstance(bal, int))
