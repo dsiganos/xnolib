@@ -115,7 +115,13 @@ def main():
             # TODO: Parsing for handshake messages needs to be done
             elif hdr.msg_type == message_type(message_type_enum.node_id_handshake):
                 if args.handshake:
-                    print(hdr)
+                    if hdr.is_query() and hdr.is_response():
+                        handshake = handshake_response_query.parse_query_response(hdr, payload)
+                    elif hdr.is_query():
+                        handshake = handshake_query.parse_query(hdr, payload)
+                    elif hdr.is_response():
+                        handshake = handshake_response.parse_response(hdr, payload)
+                    print(handshake)
 
             elif hdr.msg_type == message_type(message_type_enum.bulk_pull_account):
                 if args.bulk_pull_acc:
