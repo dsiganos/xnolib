@@ -36,15 +36,14 @@ def parse_args():
                         help='indicates to show bulk_push packets')
     parser.add_argument('-f', '--frontier_req', action='store_true', default=False,
                         help='indicates to show frontier_req packets')
-    parser.add_argument('-n', '--handshake', action='store_true', default=False,
+    parser.add_argument('-H', '--handshake', action='store_true', default=False,
                         help='indicates to show node_id_handshake packets')
     parser.add_argument('-a', '--bulk_pull_acc', action='store_true', default=False,
                         help='indicates to show bulk_pull_account packets')
-    parser.add_argument('-tr', '--telemetry_req', action='store_true', default=False,
+    parser.add_argument('--tr', dest='telemetry_req', action='store_true', default=False,
                         help='indicates to show telemetry_req packets')
-    parser.add_argument('-ta', '--telemetry_ack', action='store_true', default=False,
+    parser.add_argument('--ta', dest='telemetry_ack', action='store_true', default=False,
                         help='indicates to show telemetry_ack packets')
-
 
     return parser.parse_args()
 
