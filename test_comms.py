@@ -34,6 +34,28 @@ class TestComms(unittest.TestCase):
         h2 = message_header.parse_header(h.serialise_header())
         self.assertEqual(h2, h)
 
+    def test_header_set_query_set_response(self):
+        h1 = message_header(network_id(66), [18, 18, 18], message_type(10), 0)
+        h2 = message_header(network_id(66), [18, 18, 18], message_type(10), 0)
+        h3 = message_header(network_id(66), [18, 18, 18], message_type(10), 0)
+
+        h1.set_is_query(True)
+        self.assertTrue(h1.is_query())
+
+        h2.set_is_response(True)
+        self.assertTrue(h2.is_response())
+
+        h3.set_is_response(True)
+        h3.set_is_query(True)
+        self.assertTrue(h3.is_response() and h3.is_query())
+
+        h3.set_is_query(False)
+        self.assertTrue(h3.is_response() and not h3.is_query())
+
+        h3.set_is_query(True)
+        h3.set_is_response(False)
+        self.assertTrue(h3.is_query() and not h3.is_response())
+
     def test_peer_deserialisation(self):
         p = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         p1 = Peer.parse_peer(self.data[8:26])
