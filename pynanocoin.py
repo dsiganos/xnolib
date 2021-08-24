@@ -180,10 +180,10 @@ class message_header:
         header += self.ext.to_bytes(2, "little")
         return header
 
-    def is_handshake_query(self):
+    def is_query(self):
         return self.ext& 1
 
-    def is_handshake_response(self):
+    def is_response(self):
         return self.ext& 2
 
     def count_get(self):
@@ -253,7 +253,7 @@ class message_header:
             return confirm_req_size(self.block_type(), self.count_get());
 
         elif self.msg_type == message_type(message_type_enum.node_id_handshake):
-            return node_id_handshake_size(self.is_handshake_query(), self.is_handshake_response());
+            return node_id_handshake_size(self.is_query(), self.is_response());
 
         elif self.msg_type == message_type(message_type_enum.telemetry_ack):
             return self.telemetry_ack_size()
