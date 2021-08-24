@@ -91,14 +91,12 @@ class handshake_response:
 
 
 class handshake_response_query:
-    def __init__(self, ctx, cookie, account, signature, hdr=None):
-        assert isinstance(hdr, message_header) or hdr is None
-        if hdr is None:
-            self.header = message_header(ctx["net_id"], [18, 18, 18], message_type(10), 3)
-        else:
-            assert hdr.is_query()
-            assert hdr.is_response()
-            self.header = hdr
+    def __init__(self, hdr, cookie, account, signature):
+        assert isinstance(hdr, message_header)
+        assert hdr.is_query()
+        assert hdr.is_response()
+
+        self.header = hdr
         self.cookie = cookie
         self.account = account
         self.sig = signature
@@ -111,22 +109,25 @@ class handshake_response_query:
         return data
 
     @classmethod
-    def parse_query_response(cls, ctx, data, hdr=None):
-        assert(len(data) == 136)
+    def parse_query_response(cls, hdr, data):
+        assert isinstance(hdr, message_header)
+        assert(len(data) == 128)
 
-        cookie = data[8:40]
-        account = data[40:72]
-        sig = data[72:]
-        if hdr is not None:
-            return handshake_response_query(ctx, cookie, account, sig, hdr=hdr)
-        return handshake_response_query(ctx, cookie, account, sig)
+        cookie = data[0:32]
+        account = data[32:64]
+        sig = data[64:]
+
+        assert len(sig) == 64
+
+        return handshake_response_query(hdr, cookie, account, sig)
 
     @classmethod
     def create_response(cls, ctx, cookie):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
         my_cookie = os.urandom(32)
         sig = signing_key.sign(cookie)
-        return handshake_response_query(ctx, my_cookie, verifying_key.to_bytes(), sig)
+        hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 3)
+        return handshake_response_query(hdr, my_cookie, verifying_key.to_bytes(), sig)
 
     def __str__(self):
         string = "Header: [%s]\n" % str(self.header)
@@ -157,7 +158,8 @@ def perform_handshake_exchange(ctx, s):
     s.send(msg_handshake.serialise())
     try:
         data = read_socket(s, 136)
-        recvd_response = handshake_response_query.parse_query_response(ctx, data)
+        hdr = message_header.parse_header(data[0:8])
+        recvd_response = handshake_response_query.parse_query_response(hdr, data[8:])
 
         response = handshake_response.create_response(ctx, recvd_response.cookie)
         s.send(response.serialise())
