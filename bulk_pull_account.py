@@ -2,6 +2,7 @@
 import argparse
 
 from pynanocoin import *
+from peercrawler import *
 
 
 class bulk_pull_account:
@@ -20,6 +21,33 @@ class bulk_pull_account:
         data += self.min_amount.to_bytes(16, "big")
         data += self.flag.to_bytes(1, "big")
         return data
+
+    @classmethod
+    def parse(cls, hdr, data):
+        account = data[0:32]
+        min_amount = int.from_bytes(data[32:48], 'big')
+        flag = data[48]
+        return bulk_pull_account(hdr, account, flag, min_amount=min_amount)
+
+    def __eq__(self, other):
+        if not isinstance(other, bulk_pull_account):
+            return False
+        elif not self.account == other.account:
+            return False
+        elif not self.flag == other.flag:
+            return False
+        elif not self.min_amount == other.min_amount:
+            return False
+        elif not self.header == other.header:
+            return False
+        return True
+
+    def __str__(self):
+        string = str(self.header) + '\n'
+        string += 'Account: %s \n' % hexlify(self.account)
+        string += 'Flag: %d \n' % self.flag
+        string += 'Min Amount: %d\n' % self.min_amount
+        return string
 
 
 class bulk_pull_account_entry:
