@@ -41,6 +41,7 @@ class handshake_response:
         assert isinstance(hdr, message_header)
         assert hdr.is_response()
 
+        self.header = hdr
         self.account = account
         self.sig = signature
 
