@@ -186,6 +186,18 @@ class message_header:
     def is_response(self):
         return self.ext& 2
 
+    def set_is_query(self, bool):
+        QUERY_MASK = 0x0001
+        self.ext = self.ext & 0xfffe
+        if bool:
+            self.ext = self.ext | QUERY_MASK
+
+    def set_is_response(self, bool):
+        RESPONSE_MASK = 0x0002
+        self.ext = self.ext & 0xfffd
+        if bool:
+            self.ext = self.ext | RESPONSE_MASK
+
     def count_get(self):
         COUNT_MASK = 0xf000
         return (self.ext & COUNT_MASK) >> 12
