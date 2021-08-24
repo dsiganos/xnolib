@@ -1,5 +1,6 @@
 from pynanocoin import *
 
+
 class msg_publish:
     def __init__(self, hdr, block):
         assert(isinstance(hdr, message_header))
