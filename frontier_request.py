@@ -14,8 +14,12 @@ from pynanocoin import *
 
 
 class frontier_request:
-    def __init__(self, ctx, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff, confirmed=False):
-        self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
+    def __init__(self, ctx, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff, confirmed=False,
+                 hdr = None):
+        if hdr is None:
+            self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
+        else:
+            self.header = hdr
         assert(len(start_account) == 32)
         self.start_account = start_account
         self.maxage = maxage
