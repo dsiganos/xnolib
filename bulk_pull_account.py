@@ -158,7 +158,7 @@ def main():
     elif args.test: ctx = testctx
 
     s, _ = get_initial_connected_socket(ctx)
-    try:
+    with s:
         if args.account is None:
             account = binascii.unhexlify(ctx['genesis_pub'])
         else:
@@ -181,9 +181,6 @@ def main():
         for e in entries:
             resp.add_entry(e)
         print(resp)
-
-    finally:
-        s.close()
 
     # data = s.recv(1000)
     # print(data)
