@@ -547,6 +547,45 @@ class TestComms(unittest.TestCase):
         bpa2 = bulk_pull_account.parse(hdr1, serialised[8:])
         self.assertEqual(bpa1, bpa2)
 
+    def test_handshake_query_serialise_deserialise(self):
+        ctx = livectx
+        query1 = handshake_query(ctx)
+        serialised = query1.serialise()
+        hdr = message_header.parse_header(serialised[0:8])
+        query2 = handshake_query.parse_query(ctx, serialised)
+        query3 = handshake_query.parse_query(ctx, serialised, hdr=hdr)
+
+        self.assertEqual(query1, query2)
+        self.assertEqual(query1, query3)
+
+    def test_handshake_response_serialise_deserialise(self):
+        ctx = livectx
+        account = os.urandom(32)
+        sig = os.urandom(64)
+        resp1 = handshake_response(ctx, account, sig)
+        serialised = resp1.serialise()
+        hdr = message_header.parse_header(serialised[0:8])
+
+        resp2 = handshake_response.parse_response(ctx, serialised)
+        resp3 = handshake_response.parse_response(ctx, serialised, hdr=hdr)
+
+        self.assertEqual(resp1, resp2)
+        self.assertEqual(resp1, resp3)
+
+    def test_handshake_query_response_serialise_deserialise(self):
+        ctx = livectx
+        cookie = os.urandom(32)
+        account = os.urandom(32)
+        sig = os.urandom(64)
+        hs1 = handshake_response_query(ctx, cookie, account, sig)
+        serialised = hs1.serialise()
+        hdr = message_header.parse_header(serialised[0:8])
+
+        hs2 = handshake_response_query.parse_query_response(ctx, serialised)
+        hs3 = handshake_response_query.parse_query_response(ctx, serialised, hdr=hdr)
+
+        self.assertEqual(hs1, hs2)
+        self.assertEqual(hs1, hs3)
 
 
 if __name__ == '__main__':
