@@ -1,5 +1,5 @@
 from pynanocoin import *
-
+from peercrawler import *
 
 class msg_publish:
     def __init__(self, hdr, block):
