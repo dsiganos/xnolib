@@ -30,7 +30,7 @@ def parse_args():
                         help='indicates the script to show confirm acks')
     parser.add_argument('-p', '--publish', action='store_true', default=False,
                         help='indicates to show msg_publish packets')
-    parser.add_argument('-b' '--bulk_pull', action='store_true', default=False,
+    parser.add_argument('-b', '--bulk_pull', action='store_true', default=False,
                         help='indicates to show bulk_pull packets')
     parser.add_argument('-B', '--bulk_push', action='store_true', default=False,
                         help='indicates to show bulk_push packets')
@@ -44,6 +44,8 @@ def parse_args():
                         help='indicates to show telemetry_req packets')
     parser.add_argument('--ta', dest='telemetry_ack', action='store_true', default=False,
                         help='indicates to show telemetry_ack packets')
+    parser.add_argument('--all', action='store_true', default=False,
+                        help='indicates to show all packets')
 
     return parser.parse_args()
 
@@ -72,17 +74,17 @@ def main():
         while True:
             hdr, payload = get_next_hdr_payload(s)
             if hdr.msg_type == message_type(message_type_enum.keepalive):
-                if args.keepalive:
+                if args.keepalive or args.all:
                     keepalive = message_keepalive.parse_payload(hdr, payload)
                     print(keepalive)
 
             elif hdr.msg_type == message_type(message_type_enum.publish):
-                if args.publish:
+                if args.publish or args.all:
                     publish = msg_publish.parse(hdr, payload)
                     print(publish)
 
             elif hdr.msg_type == message_type(message_type_enum.confirm_req):
-                if args.confirm_req:
+                if args.confirm_req or args.all:
                     if hdr.block_type() == block_type_enum.not_a_block:
                         req = confirm_req_hash.parse(hdr, payload)
                     else:
@@ -90,7 +92,7 @@ def main():
                     print(req)
 
             elif hdr.msg_type == message_type(message_type_enum.confirm_ack):
-                if args.confirm_ack:
+                if args.confirm_ack or args.all:
                     if hdr.block_type() == block_type_enum.not_a_block:
                         ack = confirm_ack_hash.parse(hdr, payload)
                     else:
@@ -98,23 +100,23 @@ def main():
                     print(ack)
 
             elif hdr.msg_type == message_type(message_type_enum.bulk_pull):
-                if args.bulk_pull:
+                if args.bulk_pull or args.all:
                     bp = message_bulk_pull.parse(hdr, payload)
                     print(bp)
 
             elif hdr.msg_type == message_type(message_type_enum.bulk_push):
-                if args.bulk_push:
+                if args.bulk_push or args.all:
                     bp = bulk_push.parse(hdr, payload)
                     print(bp)
 
             elif hdr.msg_type == message_type(message_type_enum.frontier_req):
-                if args.frontier_req:
+                if args.frontier_req or args.all:
                     fr = frontier_request.parse(ctx, payload, hdr=hdr)
                     print(fr)
 
             # TODO: Parsing for handshake messages needs to be done
             elif hdr.msg_type == message_type(message_type_enum.node_id_handshake):
-                if args.handshake:
+                if args.handshake or args.all:
                     if hdr.is_query() and hdr.is_response():
                         handshake = handshake_response_query.parse_query_response(hdr, payload)
                     elif hdr.is_query():
@@ -124,17 +126,18 @@ def main():
                     print(handshake)
 
             elif hdr.msg_type == message_type(message_type_enum.bulk_pull_account):
-                if args.bulk_pull_acc:
+                if args.bulk_pull_acc or args.all:
                     bpa = bulk_pull_account.parse(hdr, payload)
                     print(bpa)
 
             elif hdr.msg_type == message_type(message_type_enum.telemetry_req):
-                if args.telemetry_req:
+                if args.telemetry_req or args.all:
                     print(hdr)
             elif hdr.msg_type == message_type(message_type_enum.telemetry_ack):
-                print(hdr)
-                ta = telemetry_ack.parse(payload)
-                print(ta)
+                if args.telemetry_ack or args.all:
+                    print(hdr)
+                    ta = telemetry_ack.parse(payload)
+                    print(ta)
 
             else:
                 print(hdr)
