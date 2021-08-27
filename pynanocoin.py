@@ -1756,11 +1756,14 @@ def get_next_hdr_payload(s):
     return header, data
 
 
-def get_account_blocks(ctx, s, account):
-    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
+def get_account_blocks(ctx, s, account, no_of_blocks=None):
+    if no_of_blocks is None:
+        hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
+    else:
+        hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 1)
     if isinstance(account, bytes):
         account = hexlify(account)
-    bulk_pull = message_bulk_pull(hdr, account)
+    bulk_pull = message_bulk_pull(hdr, account, count=no_of_blocks)
     s.send(bulk_pull.serialise())
     return read_bulk_pull_response(s)
 
