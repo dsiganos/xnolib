@@ -42,6 +42,7 @@ def get_representative_thread(ctx, acc, representatives, mutex, peers):
             try:
                 peer = random.choice(peers)
                 s.connect((str(peer.ip), peer.port))
+                s.settimeout(3)
                 blocks = get_account_blocks(ctx, s, acc, no_of_blocks=counter)
                 block = blocks[0]
                 break
@@ -51,7 +52,7 @@ def get_representative_thread(ctx, acc, representatives, mutex, peers):
                 return
 
             # Socket sometimes times out or doesn't connect
-            except (socket.timeout, OSError) as e:
+            except (socket.error, OSError) as e:
                 continue
 
         finished = False
@@ -108,7 +109,7 @@ def main():
             thread = threading.Thread(target=get_representative_thread,
                                       args=(ctx, acc, representatives, mutex, peers,),
                                       daemon=True)
-            while len(threads) == 100:
+            while len(threads) == 30:
                 remove_finished_threads(threads)
             thread.start()
             threads.append(thread)
