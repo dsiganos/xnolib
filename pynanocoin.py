@@ -1662,9 +1662,11 @@ def read_block_from_socket(s):
     elif block_type[0] == block_type_enum.invalid:
         print('received block type invalid')
     elif block_type[0] == block_type_enum.not_a_block:
-        print('received block type not a block')
+        pass
+        # print('received block type not a block')
+
     else:
-        print('received unknown block type %s' % block_type_enum[0])
+        print('received unknown block type %s' % int.from_bytes(block_type, 'big'))
 
     return block
 
