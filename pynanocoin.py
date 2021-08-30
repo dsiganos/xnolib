@@ -1646,8 +1646,7 @@ def read_block_from_socket(s):
 
     block_type = s.recv(1)
     if len(block_type) == 0:
-        print('socket closed by peer')
-        return block
+        raise SocketClosedByPeer("Socket was closed by the peer")
 
     if block_type[0] == block_type_enum.send:
         block = read_block_send(s)
