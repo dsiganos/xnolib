@@ -19,6 +19,10 @@ class thread_manager:
     def __init__(self, ctx, peers, representatives):
         self.ctx = ctx
         self.peers = peers
+
+        # Temp veriable, remove after
+        self.times = []
+
         self.representatives = representatives
         self.peers_in_use = []
         self.threads = []
@@ -27,12 +31,13 @@ class thread_manager:
     def update_manager(self):
         for data in self.threads:
             peer = data[0]
-            result = data[1]
+            result = data[1][0]
             account = data[2]
             thread = data[3]
             if not thread.is_alive():
                 self.threads.remove(data)
                 self.peers_in_use.remove(peer)
+                self.times.append(data[1][1])
                 if result == enum_error_type.NoError:
                     continue
                 elif result == enum_error_type.AccountError:
@@ -40,20 +45,23 @@ class thread_manager:
                     continue
                 elif result == enum_error_type.SocketError:
                     self.get_account_reps(account)
+                else:
+                    print("Thread didn't set a result")
 
     def get_account_reps(self, account):
+        # Temp variable, remove
         while len(self.threads) == 30:
             self.update_manager()
         peer = random.choice(self.peers)
         while peer in self.peers_in_use:
             self.update_manager()
             peer = random.choice(self.peers)
-        result = None
+        results = [None, None]
 
         thread = threading.Thread(target=get_representative_thread,
-                                  args=(self.ctx, account, self.representatives, self.mutex, peer, result,),
+                                  args=(self.ctx, account, self.representatives, self.mutex, peer, results,),
                                   daemon=True)
-        self.threads.append((peer, result, account, thread))
+        self.threads.append((peer, results, account, thread))
         thread.start()
         self.peers_in_use.append(peer)
 
@@ -86,7 +94,14 @@ def remove_finished_threads(threads):
             threads.remove(t)
 
 
-def get_representative_thread(ctx, acc, representatives, mutex, peer, result):
+def find_rep_in_blocks(blocks):
+    for b in blocks:
+        if type(b) in [block_open, block_state, block_change]:
+            return b.representative
+
+
+def get_representative_thread(ctx, acc, representatives, mutex, peer, results):
+    starttime = time.time()
     counter = 1
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     with s:
@@ -96,32 +111,33 @@ def get_representative_thread(ctx, acc, representatives, mutex, peer, result):
             s.connect((str(peer.ip), peer.port))
             s.settimeout(3)
             blocks = get_account_blocks(ctx, s, acc, no_of_blocks=counter)
-            block = blocks[0]
+
+            # Keep pulling blocks from account if the block is not a block state, change, or open
+            while True:
+                rep = find_rep_in_blocks(blocks)
+                if rep is not None:
+                    results[0] = enum_error_type.NoError
+                    results[1] = time.time() - starttime
+                    with mutex:
+                        representatives.add(rep)
+                    return
+
+                counter += 1000
+                blocks = get_account_blocks(ctx, s, acc, no_of_blocks=counter)
 
         # Sometimes there are no blocks read from the socket
         except IndexError as e:
-            result = enum_error_type.AccountError
+            print(e)
+            results[0] = enum_error_type.AccountError
+            results[1] = time.time() - starttime
             return
 
         # Socket sometimes times out or doesn't connect
         except (socket.error, OSError) as e:
-            result = enum_error_type.SocketError
+            print(e)
+            results[0] = enum_error_type.SocketError
+            results[1] = time.time() - starttime
             return
-
-        finished = False
-
-        # Keep pulling blocks from account if the block is not a block state, change, or open
-        while not finished:
-
-            if type(block) in [block_open, block_state, block_change]:
-                with mutex:
-                    representatives.add(block.representative)
-                    result = enum_error_type.NoError
-                finished = True
-                continue
-
-            counter += 1
-            block = get_account_blocks(ctx, s, acc, no_of_blocks=counter)[counter - 1]
 
 
 def main():
@@ -132,7 +148,7 @@ def main():
     elif args.beta: ctx = betactx
 
     _, peers = get_peers_from_service(ctx)
-    peers = list(peers)
+    peers = list(filter(lambda p: p.score == 1000, peers))
     req = frontier_request(ctx, maxacc=1000)
     frontiers = []
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
