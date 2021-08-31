@@ -90,3 +90,7 @@ class BlacklistItemTypeError(PyNanoCoinException):
 
 class VerificationErrorNoAccount(PyNanoCoinException):
     pass
+
+
+class NoBlocksPulled(PyNanoCoinException):
+    pass
