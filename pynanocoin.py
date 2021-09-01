@@ -78,6 +78,11 @@ class ip_addr:
     def serialise(self):
         return self.ipv6.packed
 
+    def is_ipv4(self):
+        if self.ipv6.ipv4_mapped is not None:
+            return True
+        return False
+
     def __str__(self):
         if self.ipv6.ipv4_mapped:
             return '::ffff:' + str(self.ipv6.ipv4_mapped)
