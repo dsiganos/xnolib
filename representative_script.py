@@ -11,11 +11,12 @@ import random
 
 
 class thread_manager:
-    def __init__(self, ctx, peers):
+    def __init__(self, ctx, peers, thread_count):
         self.ctx = ctx
         self.peers = peers
         self.next_peer_index = 0
-        self.sem = threading.Semaphore(150)
+        self.thread_count = thread_count
+        self.sem = threading.Semaphore(thread_count)
         assert len(peers) > 0
 
         self.successful_times = []
@@ -119,6 +120,10 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
+    parser.add_argument('-c', '--thread_count', type=int, default=150,
+                        help='determines the number of threads that can run in parallel')
+    parser.add_argument('-a', '--account_count', type=int, default=10000,
+                        help='determines the number of accounts that will be pulled')
     return parser.parse_args()
 
 
@@ -152,14 +157,14 @@ def main():
                 continue
 
         starttime1 = time.time()
-        req = frontier_request(ctx, maxacc=10000)
+        req = frontier_request(ctx, maxacc=args.account_count)
         s.send(req.serialise())
         frontiers = []
         read_all_frontiers(s, store_frontiers_handler(frontiers))
         print('%s frontiers received' % len(frontiers))
 
         starttime2 = time.time()
-        threadman = thread_manager(ctx, peers)
+        threadman = thread_manager(ctx, peers, args.thread_count)
 
         # Go through each account
         for front in frontiers[9000:]:
