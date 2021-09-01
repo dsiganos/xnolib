@@ -10,87 +10,97 @@ import threading
 import random
 
 
-class enum_error_type:
-    NoError = 0
-    SocketError = 1
-    AccountError = 2
-
-
 class thread_manager:
-    def __init__(self, ctx, peers, representatives):
+    def __init__(self, ctx, peers):
         self.ctx = ctx
         self.peers = peers
+        self.next_peer_index = 0
+        self.sem = threading.Semaphore(150)
+        assert len(peers) > 0
 
-        # Temp veriable, remove after
         self.successful_times = []
         self.unsuccessful_times = []
 
-        self.representatives = representatives
-        self.peers_in_use = []
+        self.representatives = set()
         self.threads = []
         self.blocks_downloaded = []
         self.connection_times = []
-        self.successful_thread_count = 0
         self.mutex = threading.Lock()
 
-    def update_manager(self):
-        for data in self.threads:
-            peer = data[0]
-            results = data[1]
-            account = data[2]
-            thread = data[3]
+    def get_next_peer(self):
+        with self.mutex:
+            if self.next_peer_index >= len(self.peers):
+                self.next_peer_index = 0
+            peer = self.peers[self.next_peer_index]
+            self.next_peer_index += 1
+            return peer
 
-            if not thread.is_alive():
-                self.threads.remove(data)
-                self.peers_in_use.remove(peer)
-                if results['blocks_downloaded'] is not None:
-                    self.blocks_downloaded.append(results['blocks_downloaded'])
-                if results['connection_time'] is not None:
-                    self.connection_times.append(results['connection_time'])
+    def thread_func(self, peer, account):
+        try:
+            self.get_representative_for_account(account, peer, self.mutex)
+        finally:
+            self.sem.release()
+            print('Thread completed peer=%s account=%s' % (peer, hexlify(account)))
 
-                if results['error'] == enum_error_type.NoError:
-                    self.successful_thread_count += 1
-                    self.successful_times.append(results['completion_time'])
-                    continue
-
-                elif results['error'] == enum_error_type.AccountError:
-                    self.unsuccessful_times.append(results['completion_time'])
-                    # this may change depending on what we decide to do with accounts that yield no blocks
-                    continue
-
-                elif results['error'] == enum_error_type.SocketError:
-                    self.unsuccessful_times.append(results['completion_time'])
-                    continue
-
-                else:
-                    print("Thread (%s) didn't set a results" % thread.getName())
-
-
-    def get_account_reps(self, account):
-        # Temp variable, remove
-        while len(self.threads) == 177:
-            self.update_manager()
-        peer = random.choice(self.peers)
-        while peer in self.peers_in_use:
-            self.update_manager()
-            peer = random.choice(self.peers)
-        results = {
-            'error': None,
-            'completion_time': None,
-            'blocks_downloaded': None,
-            'connection_time': None
-        }
-
-        thread = threading.Thread(target=get_representative_thread,
-                                  args=(self.ctx, account, self.representatives, self.mutex, peer, results,),
+    def get_account_rep(self, account):
+        self.sem.acquire()
+        peer = self.get_next_peer()
+        thread = threading.Thread(target=self.thread_func,
+                                  args=(peer, account),
                                   daemon=True)
         thread.start()
-        self.threads.append((peer, results, account, thread))
-        self.peers_in_use.append(peer)
+        self.threads.append(thread)
 
-    def all_threads_finished(self):
-        self.update_manager()
-        return True if len(self.threads) == 0 else False
+    def join(self):
+        for t in self.threads:
+            t.join()
+        print('All threads are finished')
+
+    def get_representative_for_account(self, acc, peer, mutex):
+        starttime = time.time()
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            try:
+                s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+                s.settimeout(3)
+                conn_starttime = time.time()
+                s.connect((str(peer.ip), peer.port))
+                conn_time = time.time() - conn_starttime
+
+                # we ask for one block first in the hope it has everything we need (state block) 
+                s.settimeout(10)
+                starttime2 = time.time()
+                blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1)
+                timetaken2 = time.time() - starttime2
+
+                # Keep pulling blocks from account if the block is not a block state, change, or open
+                while True:
+                    if len(blocks) == 0:
+                        raise NoBlocksPulled("No blocks pulled from account: %s" % acctools.to_account_addr(acc))
+
+                    rep_block = find_rep_in_blocks(blocks)
+                    if rep_block is not None:
+                        with mutex:
+                            if rep_block.balance > 0:
+                                print('Found rep: %s' % hexlify(rep_block.representative))
+                                self.representatives.add(rep_block.representative)
+                                self.successful_times.append(time.time() - starttime)
+                            else:
+                                print('Balance is zero')
+                                self.unsuccessful_times.append(time.time() - starttime)
+                            self.connection_times.append(conn_time)
+                            self.blocks_downloaded.append(len(blocks))
+
+                        return
+
+                    starttime3 = time.time()
+                    blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1000)
+                    timetaken3 = time.time() - starttime3
+
+            # Socket sometimes times out, doesn't connect or there are no blocks read from the socket
+            except (socket.error, OSError, SocketClosedByPeer, NoBlocksPulled) as e:
+                print(str(e) + "(" + threading.currentThread().getName() + ")")
+                with mutex:
+                    self.unsuccessful_times.append(time.time() - starttime)
 
 
 def find_most_recent_block_type(blocks, block_type):
@@ -112,73 +122,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def remove_finished_threads(threads):
-    for t in threads:
-        if not t.is_alive():
-            threads.remove(t)
-
-
 def find_rep_in_blocks(blocks):
     for b in blocks:
         if type(b) in [block_open, block_state, block_change]:
-            return b.representative, b
-    return None, None
-
-
-def get_representative_thread(ctx, acc, representatives, mutex, peer, results):
-    socket_timeout_count = 0
-    blocks_downloaded = 0
-    starttime = time.time()
-    counter = 1
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    with s:
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-
-        try:
-            conn_starttime = time.time()
-            s.connect((str(peer.ip), peer.port))
-            conn_time = time.time() - conn_starttime
-            results['connection_time'] = conn_time
-
-            s.settimeout(20)
-
-            starttime2 = time.time()
-            blocks = get_account_blocks(ctx, s, acc, no_of_blocks=counter)
-            timetaken2 = time.time() - starttime2
-
-            # Keep pulling blocks from account if the block is not a block state, change, or open
-            while True:
-                if len(blocks) == 0:
-                    raise NoBlocksPulled("No blocks pulled from account: %s" % acctools.to_account_addr(acc))
-                blocks_downloaded += len(blocks)
-                rep, block = find_rep_in_blocks(blocks)
-
-                if rep is not None and block is not None:
-                    if block.balance == 0:
-                        results['error'] = enum_error_type.AccountError
-                        results['completion_time'] = time.time() - starttime
-                        results['blocks_downloaded'] = blocks_downloaded
-                        return
-
-                    results['error'] = enum_error_type.NoError
-                    results['completion_time'] = time.time() - starttime
-                    results['blocks_downloaded'] = blocks_downloaded
-                    with mutex:
-                        representatives.add(rep)
-                    return
-
-                counter += 1000
-                starttime3 = time.time()
-                blocks = get_account_blocks(ctx, s, acc, no_of_blocks=counter)
-                timetaken3 = time.time() - starttime3
-                pass
-
-        # Socket sometimes times out, doesn't connect or there are no blocks read from the socket
-        except (socket.error, OSError, SocketClosedByPeer, NoBlocksPulled) as e:
-            print(str(e) + "(" + threading.currentThread().getName() + ")")
-            results['error'] = enum_error_type.SocketError
-            results['completion_time'] = time.time() - starttime
-            return
+            return b
+    return None
 
 
 def main():
@@ -190,11 +138,10 @@ def main():
 
     _, peers = get_peers_from_service(ctx)
     peers = list(filter(lambda p: p.score == 1000, peers))
-    req = frontier_request(ctx, maxacc=10000)
-    frontiers = []
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    with s:
+
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
 
         while True:
             try:
@@ -204,22 +151,24 @@ def main():
             except socket.error:
                 continue
 
-        s.settimeout(180)
-        s.send(req.serialise())
         starttime1 = time.time()
+        req = frontier_request(ctx, maxacc=10000)
+        s.send(req.serialise())
+        frontiers = []
         read_all_frontiers(s, store_frontiers_handler(frontiers))
-        representatives = set()
+        print('%s frontiers received' % len(frontiers))
 
         starttime2 = time.time()
-        threadman = thread_manager(ctx, peers, representatives)
+        threadman = thread_manager(ctx, peers)
 
         # Go through each account
-        for front in frontiers:
+        for front in frontiers[9000:]:
             acc = front.account
-            threadman.get_account_reps(acc)
+            threadman.get_account_rep(acc)
+        print('all threads started')
 
-    while not threadman.all_threads_finished():
-        pass
+    # wait for all threads to finish
+    threadman.join()
 
     endtime = time.time()
     timetaken1 = endtime - starttime1
@@ -233,7 +182,7 @@ def main():
         if i == 1:
             one_block_downloads += 1
 
-    for rep in representatives:
+    for rep in threadman.representatives:
         print(hexlify(rep))
 
     print("time taken with reading frontiers: %f" % timetaken1)
@@ -241,7 +190,8 @@ def main():
     print("Average connection time: %f" % average_connection_time)
     print("Average blocks downloaded: %d" % average_blocks_downloaded)
     print("Number of one-block downloads: %d" % one_block_downloads)
-    print("Number of successful threads: %d" % threadman.successful_thread_count)
+    print("Number of successful threads: %d" % len(threadman.successful_times))
+    print("Number of reps: %d" % len(threadman.representatives))
 
 
 if __name__ == '__main__':
