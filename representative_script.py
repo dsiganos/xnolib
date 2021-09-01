@@ -124,6 +124,9 @@ def parse_args():
                         help='determines the number of threads that can run in parallel')
     parser.add_argument('-a', '--account_count', type=int, default=10000,
                         help='determines the number of accounts that will be pulled')
+    parser.add_argument('--ipv4', action='store_true', default=False,
+                        help='determies whether only ipv4 addresses should be used')
+
     return parser.parse_args()
 
 
@@ -143,6 +146,9 @@ def main():
 
     _, peers = get_peers_from_service(ctx)
     peers = list(filter(lambda p: p.score == 1000, peers))
+
+    if args.ipv4:
+        peers = list(filter(lambda p: p.ip.is_ipv4(), peers))
 
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
