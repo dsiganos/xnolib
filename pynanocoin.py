@@ -79,9 +79,7 @@ class ip_addr:
         return self.ipv6.packed
 
     def is_ipv4(self):
-        if self.ipv6.ipv4_mapped is not None:
-            return True
-        return False
+        return self.ipv6.ipv4_mapped is not None
 
     def __str__(self):
         if self.ipv6.ipv4_mapped:
