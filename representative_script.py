@@ -26,6 +26,7 @@ class thread_manager:
         self.threads = []
         self.blocks_downloaded = []
         self.connection_times = []
+        self.blocks_with_no_balance = []
         self.mutex = threading.Lock()
 
     def get_next_peer(self):
@@ -79,8 +80,13 @@ class thread_manager:
                     rep_block = find_rep_in_blocks(blocks)
                     if rep_block is not None:
                         with mutex:
+                            
+                            if rep_block.get_balance() is None:
+                                print("Block has no balance")
+                                self.blocks_with_no_balance.append(rep_block)
+                                self.unsuccessful_times.append(time.time() - starttime)
 
-                            if rep_block.balance > 0:
+                            elif rep_block.balance > 0:
                                 print('Found rep: %s' % hexlify(rep_block.representative))
                                 self.representatives.add(rep_block.representative)
                                 self.successful_times.append(time.time() - starttime)
