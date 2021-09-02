@@ -3,6 +3,7 @@
 import argparse
 from pynanocoin import *
 from msg_handshake import *
+from peercrawler import get_initial_connected_socket
 
 
 class telemetry_req:
