@@ -11,23 +11,39 @@ import random
 
 
 class thread_manager:
-    def __init__(self, ctx, peers, thread_count):
+    def __init__(self, ctx, peers, num_of_threads):
         self.ctx = ctx
         self.peers = peers
         self.next_peer_index = 0
-        self.thread_count = thread_count
-        self.sem = threading.Semaphore(thread_count)
-        assert len(peers) > 0
-
-        self.successful_times = []
-        self.unsuccessful_times = []
-
+        self.num_of_threads = num_of_threads
+        self.sem = threading.Semaphore(num_of_threads)
         self.representatives = set()
         self.threads = []
-        self.blocks_downloaded = []
-        self.connection_times = []
-        self.blocks_with_no_balance = []
         self.mutex = threading.Lock()
+        assert len(peers) > 0
+
+        # Analysis data
+        self.thread_count = 0
+
+        self.successful_count = 0
+        self.unsuccessful_count = 0
+        self.total_unsuccessful_times = 0
+        self.total_successful_times = 0
+        self.max_successful_time = 0.0
+        self.min_successful_time = 1000.0
+        self.max_unsuccessful_time = 0.0
+        self.min_unsuccessful_time = 1000.0
+
+        self.total_blocks_downloaded = 0
+        self.max_blocks_downloaded = 0
+        self.min_blocks_downloaded = 0
+        self.download_blocks_count = 0
+        self.one_block_downloads = 0
+        self.no_balance_block_count = 0
+
+        self.total_connection_times = 0.0
+        self.min_connection_time = 1000.0
+        self.max_connection_time = 0.0
 
     def get_next_peer(self):
         with self.mutex:
@@ -36,6 +52,75 @@ class thread_manager:
             peer = self.peers[self.next_peer_index]
             self.next_peer_index += 1
             return peer
+
+    def average_blocks_downloaded(self):
+        return self.total_blocks_downloaded / self.thread_count
+
+    def average_connection_time(self):
+        return self.total_connection_times / self.thread_count
+
+    def average_successful_time(self):
+        return self.total_successful_times / self.successful_count
+
+    def average_unsuccessful_time(self):
+        return self.total_unsuccessful_times / self.unsuccessful_count
+
+    def analyse_successful_time(self, t):
+        if t < self.min_successful_time:
+            self.min_successful_time = t
+        elif t > self.max_successful_time:
+            self.max_successful_time = t
+
+    def analyse_unsuccessful_time(self, t):
+        if t < self.min_successful_time:
+            self.min_unsuccessful_time = t
+        elif t > self.max_successful_time:
+            self.max_unsuccessful_time = t
+
+    def analyse_blocks_downloaded(self, n):
+        if n > self.max_blocks_downloaded:
+            self.max_blocks_downloaded = n
+        elif n < self.min_blocks_downloaded:
+            self.min_blocks_downloaded = n
+
+    def analyse_connection_time(self, t):
+        if t > self.max_connection_time:
+            self.max_connection_time = t
+        if t < self.min_connection_time:
+            self.min_connection_time = t
+
+    def str_stats(self):
+        string = 'Total threads ran: %d \n\n' % self.thread_count
+        string += 'Socket Connection Data:\n'
+        string += '    Average connection time: %f\n' % self.average_connection_time()
+        string += '    Max connection time: %f s\n' % self.max_connection_time
+        string += '    Min connection time: %f s\n' % self.min_connection_time
+        string += 'Successful Thread Data:\n'
+        string += '    Number of successful threads: %d\n' % self.successful_count
+        string += '    Average successful thread runtime: %f s\n' % self.average_successful_time()
+        string += '    Max successful thread runtime: %f s\n' % self.max_successful_time
+        string += '    Min successful thread runtime: %f s\n' % self.min_successful_time
+        string += 'Unsuccessful Thread Data: \n'
+        string += '    Number of unsuccessful threads: %d\n' % self.unsuccessful_count
+        string += '    Average unsuccessful thread runtime: %f s\n' % self.average_unsuccessful_time()
+        string += '    Max unsuccessful thread runtime: %f s\n' % self.max_unsuccessful_time
+        string += '    Min unsuccessful thread runtime: %f s\n' % self.min_unsuccessful_time
+        string += 'Block Download Data:\n'
+        string += '    Total blocks downloaded: %d\n' % self.total_blocks_downloaded
+        string += '    Average blocks downloaded: %d\n' % self.average_blocks_downloaded()
+        string += '    Max blocks downloaded: %d\n' % self.max_blocks_downloaded
+        string += '    Min blocks downloaded: %d\n' % self.min_blocks_downloaded
+        string += '    One block downloads: %d\n' % self.one_block_downloads
+        string += '    Blocks with no balance found: %d\n\n' % self.no_balance_block_count
+        string += 'Number of reps: %d\n' % len(self.representatives)
+        return string
+
+    def str_reps(self):
+        string = ''
+        for rep in self.representatives:
+            string += str(rep) + '\n'
+        return string
+
 
     def thread_func(self, peer, account):
         try:
@@ -51,12 +136,19 @@ class thread_manager:
                                   args=(peer, account),
                                   daemon=True)
         thread.start()
+        self.thread_count += 1
         self.threads.append(thread)
 
     def join(self):
         for t in self.threads:
             t.join()
         print('All threads are finished')
+
+    def get_rep_in_representatives(self, representative):
+        for rep in self.representatives:
+            if rep.representative == representative:
+                return rep
+        return None
 
     def get_representative_for_account(self, acc, peer, mutex):
         starttime = time.time()
@@ -67,10 +159,14 @@ class thread_manager:
                 conn_starttime = time.time()
                 s.connect((str(peer.ip), peer.port))
                 conn_time = time.time() - conn_starttime
+                with mutex:
+                    self.total_connection_times += conn_time
+                    self.analyse_connection_time(conn_time)
 
                 # we ask for one block first in the hope it has everything we need (state block) 
                 s.settimeout(10)
                 blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1)
+                blocks_downloaded = 0
 
                 # Keep pulling blocks from account if the block is not a block state, change, or open
                 while True:
@@ -79,23 +175,51 @@ class thread_manager:
 
                     rep_block = find_rep_in_blocks(blocks)
                     if rep_block is not None:
+                        if rep_block.get_balance() is None:
+                            print("Block has no balance")
+
+                            endtime = time.time() - starttime
+                            with mutex:
+                                self.no_balance_block_count += 1
+                                self.unsuccessful_count += 1
+                                self.total_unsuccessful_times += endtime
+                                self.analyse_unsuccessful_time(endtime)
+
+                        elif rep_block.get_balance() > 0:
+                            print('Found rep: %s' % hexlify(rep_block.representative))
+                            with mutex:
+                                rep = self.get_rep_in_representatives(rep_block.representative)
+
+                            if rep is None:
+                                rep = Rep(rep_block.representative)
+                                with mutex:
+                                    self.representatives.add(rep)
+
+                            rep.add_voting_power(rep_block.get_balance())
+
+                            endtime = time.time() - starttime
+                            with mutex:
+                                self.successful_count += 1
+                                self.total_successful_times += endtime
+                                self.analyse_successful_time(endtime)
+
+                        else:
+                            print('Balance is zero')
+                            endtime = time.time() - starttime
+                            with mutex:
+                                self.unsuccessful_count += 1
+                                self.total_unsuccessful_times += endtime
+                                self.analyse_unsuccessful_time(endtime)
+
+                        blocks_downloaded += len(blocks)
+
                         with mutex:
-                            
-                            if rep_block.get_balance() is None:
-                                print("Block has no balance")
-                                self.blocks_with_no_balance.append(rep_block)
-                                self.unsuccessful_times.append(time.time() - starttime)
+                            self.total_blocks_downloaded += blocks_downloaded
+                            self.analyse_blocks_downloaded(blocks_downloaded)
 
-                            elif rep_block.balance > 0:
-                                print('Found rep: %s' % hexlify(rep_block.representative))
-                                self.representatives.add(rep_block.representative)
-                                self.successful_times.append(time.time() - starttime)
-
-                            else:
-                                print('Balance is zero')
-                                self.unsuccessful_times.append(time.time() - starttime)
-                            self.connection_times.append(conn_time)
-                            self.blocks_downloaded.append(len(blocks))
+                        if blocks_downloaded == 1:
+                            with mutex:
+                                self.one_block_downloads += 1
 
                         return
 
@@ -104,8 +228,36 @@ class thread_manager:
             # Socket sometimes times out, doesn't connect or there are no blocks read from the socket
             except (socket.error, OSError, SocketClosedByPeer, NoBlocksPulled) as e:
                 print(str(e) + "(" + threading.currentThread().getName() + ")")
+                endtime = time.time() - starttime
                 with mutex:
-                    self.unsuccessful_times.append(time.time() - starttime)
+                    self.total_unsuccessful_times += endtime
+                    self.analyse_unsuccessful_time(endtime)
+
+
+class Rep:
+    def __init__(self, representative):
+        self.representative = representative
+        self.voting_power = 0
+
+    def add_voting_power(self, n):
+        self.voting_power += n
+
+    def __eq__(self, other):
+        if not isinstance(other, Rep):
+            return False
+        elif self.representative != other.representative:
+            return False
+        elif self.voting_power != other.voting_power:
+            return False
+        return True
+
+    def __hash__(self):
+        return hash((self.representative, self.voting_power))
+
+    def __str__(self):
+        string = "Rep: %s\n" % hexlify(self.representative)
+        string += "Voting Power: %d \n" % self.voting_power
+        return string
 
 
 def find_most_recent_block_type(blocks, block_type):
@@ -128,7 +280,7 @@ def parse_args():
                         help='determines the number of threads that can run in parallel')
     parser.add_argument('-a', '--account_count', type=int, default=10000,
                         help='determines the number of accounts that will be pulled')
-    parser.add_argument('--ipv4', action='store_true', default=False,
+    parser.add_argument('--ipv4', action='store_true', default=True,
                         help='determies whether only ipv4 addresses should be used')
 
     return parser.parse_args()
@@ -176,7 +328,7 @@ def main():
         threadman = thread_manager(ctx, peers, args.thread_count)
 
         # Go through each account
-        for front in frontiers[9000:]:
+        for front in frontiers:
             acc = front.account
             threadman.get_account_rep(acc)
         print('all threads started')
@@ -186,23 +338,11 @@ def main():
 
     timetaken = time.time() - starttime
 
-    average_blocks_downloaded = mean(threadman.blocks_downloaded)
-    average_connection_time = mean(threadman.connection_times)
-    one_block_downloads = 0
+    print("Total run time: %f" % timetaken)
+    print(threadman.str_reps())
+    print(threadman.str_stats())
 
-    for i in threadman.blocks_downloaded:
-        if i == 1:
-            one_block_downloads += 1
-
-    for rep in threadman.representatives:
-        print(hexlify(rep))
-
-    print("Time taken to gather reps from accounts: %f" % timetaken)
-    print("Average connection time: %f" % average_connection_time)
-    print("Average blocks downloaded: %d" % average_blocks_downloaded)
-    print("Number of one-block downloads: %d" % one_block_downloads)
-    print("Number of successful threads: %d" % len(threadman.successful_times))
-    print("Number of reps: %d" % len(threadman.representatives))
+    pass
 
 
 if __name__ == '__main__':
