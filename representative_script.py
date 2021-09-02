@@ -69,9 +69,7 @@ class thread_manager:
 
                 # we ask for one block first in the hope it has everything we need (state block) 
                 s.settimeout(10)
-                starttime2 = time.time()
                 blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1)
-                timetaken2 = time.time() - starttime2
 
                 # Keep pulling blocks from account if the block is not a block state, change, or open
                 while True:
@@ -81,10 +79,12 @@ class thread_manager:
                     rep_block = find_rep_in_blocks(blocks)
                     if rep_block is not None:
                         with mutex:
+
                             if rep_block.balance > 0:
                                 print('Found rep: %s' % hexlify(rep_block.representative))
                                 self.representatives.add(rep_block.representative)
                                 self.successful_times.append(time.time() - starttime)
+
                             else:
                                 print('Balance is zero')
                                 self.unsuccessful_times.append(time.time() - starttime)
@@ -93,9 +93,7 @@ class thread_manager:
 
                         return
 
-                    starttime3 = time.time()
                     blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1000)
-                    timetaken3 = time.time() - starttime3
 
             # Socket sometimes times out, doesn't connect or there are no blocks read from the socket
             except (socket.error, OSError, SocketClosedByPeer, NoBlocksPulled) as e:
@@ -162,14 +160,13 @@ def main():
             except socket.error:
                 continue
 
-        starttime1 = time.time()
         req = frontier_request(ctx, maxacc=args.account_count)
         s.send(req.serialise())
         frontiers = []
         read_all_frontiers(s, store_frontiers_handler(frontiers))
         print('%s frontiers received' % len(frontiers))
 
-        starttime2 = time.time()
+        starttime = time.time()
         threadman = thread_manager(ctx, peers, args.thread_count)
 
         # Go through each account
@@ -181,9 +178,7 @@ def main():
     # wait for all threads to finish
     threadman.join()
 
-    endtime = time.time()
-    timetaken1 = endtime - starttime1
-    timetaken2 = endtime - starttime2
+    timetaken = time.time() - starttime
 
     average_blocks_downloaded = mean(threadman.blocks_downloaded)
     average_connection_time = mean(threadman.connection_times)
@@ -196,8 +191,7 @@ def main():
     for rep in threadman.representatives:
         print(hexlify(rep))
 
-    print("time taken with reading frontiers: %f" % timetaken1)
-    print("Time taken just to gather reps from accounts: %f" % timetaken2)
+    print("Time taken to gather reps from accounts: %f" % timetaken)
     print("Average connection time: %f" % average_connection_time)
     print("Average blocks downloaded: %d" % average_blocks_downloaded)
     print("Number of one-block downloads: %d" % one_block_downloads)
