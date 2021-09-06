@@ -30,9 +30,9 @@ class thread_manager:
         self.total_unsuccessful_times = 0
         self.total_successful_times = 0
         self.max_successful_time = 0.0
-        self.min_successful_time = 1000.0
+        self.min_successful_time = 100000.0
         self.max_unsuccessful_time = 0.0
-        self.min_unsuccessful_time = 1000.0
+        self.min_unsuccessful_time = 100000.0
 
         self.total_blocks_downloaded = 0
         self.max_blocks_downloaded = 0
@@ -42,7 +42,7 @@ class thread_manager:
         self.no_balance_block_count = 0
 
         self.total_connection_times = 0.0
-        self.min_connection_time = 1000.0
+        self.min_connection_time = 100000.0
         self.max_connection_time = 0.0
 
     def get_next_peer(self):
@@ -54,16 +54,28 @@ class thread_manager:
             return peer
 
     def average_blocks_downloaded(self):
-        return self.total_blocks_downloaded / self.thread_count
+        try:
+            return self.total_blocks_downloaded / self.thread_count
+        except ZeroDivisionError:
+            return None
 
     def average_connection_time(self):
-        return self.total_connection_times / self.thread_count
+        try:
+            return self.total_connection_times / self.thread_count
+        except ZeroDivisionError:
+            return -1.0
 
     def average_successful_time(self):
-        return self.total_successful_times / self.successful_count
+        try:
+            return self.total_successful_times / self.successful_count
+        except ZeroDivisionError:
+            return -1.0
 
     def average_unsuccessful_time(self):
-        return self.total_unsuccessful_times / self.unsuccessful_count
+        try:
+            return self.total_unsuccessful_times / self.unsuccessful_count
+        except ZeroDivisionError:
+            return -1.0
 
     def analyse_successful_time(self, t):
         if t < self.min_successful_time:
@@ -120,7 +132,6 @@ class thread_manager:
         for rep in self.representatives:
             string += str(rep) + '\n'
         return string
-
 
     def thread_func(self, peer, account):
         try:
@@ -283,9 +294,9 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
-    parser.add_argument('-c', '--thread_count', type=int, default=150,
+    parser.add_argument('-c', '--thread_count', type=int, default=None,
                         help='determines the number of threads that can run in parallel')
-    parser.add_argument('-a', '--account_count', type=int, default=50000,
+    parser.add_argument('-a', '--account_count', type=int, default=1000000,
                         help='determines the number of accounts that will be pulled')
     parser.add_argument('--ipv4', action='store_true', default=True,
                         help='determies whether only ipv4 addresses should be used')
@@ -327,14 +338,20 @@ def main():
     if args.test: ctx = testctx
     elif args.beta: ctx = betactx
 
-    _, peers = get_peers_from_service(ctx)
+    hdr, peers = get_peers_from_service(ctx)
     peers = list(filter(lambda p: p.score == 1000, peers))
 
     if args.ipv4:
         peers = list(filter(lambda p: p.ip.is_ipv4(), peers))
 
+    if args.thread_count is None:
+        thread_count = len(peers)
+
+    else:
+        thread_count = args.thread_count
+
     starttime = time.time()
-    threadman = thread_manager(ctx, peers, args.thread_count)
+    threadman = thread_manager(ctx, peers, thread_count)
 
     front_iter = frontier_iter(ctx, peers, args.account_count)
 
