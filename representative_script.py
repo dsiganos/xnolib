@@ -150,6 +150,37 @@ class thread_manager:
                 return rep
         return None
 
+    # Remember to use mutex when using this function
+    def process_block_no_balance(self, block, endtime):
+        print("Block has no balance")
+
+        self.no_balance_block_count += 1
+        self.unsuccessful_count += 1
+        self.total_unsuccessful_times += endtime
+        self.analyse_unsuccessful_time(endtime)
+
+    # Remember to use mutex when using this function
+    def process_good_block(self, rep_block, endtime):
+        print('Found rep: %s' % hexlify(rep_block.representative))
+
+        rep = self.get_rep_in_representatives(rep_block.representative)
+
+        if rep is None:
+            rep = Rep(rep_block.representative)
+            self.representatives.add(rep)
+
+        rep.add_voting_power(rep_block.get_balance())
+
+        self.successful_count += 1
+        self.total_successful_times += endtime
+        self.analyse_successful_time(endtime)
+
+    def process_zero_balance_block(self, endtime):
+        print('Balance is zero')
+        self.unsuccessful_count += 1
+        self.total_unsuccessful_times += endtime
+        self.analyse_unsuccessful_time(endtime)
+
     def get_representative_for_account(self, acc, peer, mutex):
         starttime = time.time()
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -170,60 +201,35 @@ class thread_manager:
 
                 # Keep pulling blocks from account if the block is not a block state, change, or open
                 while True:
-                    if len(blocks) == 0:
-                        raise NoBlocksPulled("No blocks pulled from account: %s" % acctools.to_account_addr(acc))
+                    with mutex:
+                        if len(blocks) == 0:
+                            raise NoBlocksPulled("No blocks pulled from account: %s" % acctools.to_account_addr(acc))
 
-                    rep_block = find_rep_in_blocks(blocks)
-                    if rep_block is not None:
-                        if rep_block.get_balance() is None:
-                            print("Block has no balance")
+                        rep_block = find_rep_in_blocks(blocks)
+                        if rep_block is not None:
 
-                            endtime = time.time() - starttime
-                            with mutex:
-                                self.no_balance_block_count += 1
-                                self.unsuccessful_count += 1
-                                self.total_unsuccessful_times += endtime
-                                self.analyse_unsuccessful_time(endtime)
+                            if rep_block.get_balance() is None:
+                                endtime = time.time() - starttime
+                                self.process_block_no_balance(rep_block, endtime)
 
-                        elif rep_block.get_balance() > 0:
-                            print('Found rep: %s' % hexlify(rep_block.representative))
-                            with mutex:
-                                rep = self.get_rep_in_representatives(rep_block.representative)
+                            elif rep_block.get_balance() > 0:
+                                endtime = time.time() - starttime
+                                self.process_good_block(rep_block, endtime)
+                            else:
+                                endtime = time.time() - starttime
+                                self.process_zero_balance_block(endtime)
 
-                            if rep is None:
-                                rep = Rep(rep_block.representative)
-                                with mutex:
-                                    self.representatives.add(rep)
+                            blocks_downloaded += len(blocks)
 
-                            rep.add_voting_power(rep_block.get_balance())
-
-                            endtime = time.time() - starttime
-                            with mutex:
-                                self.successful_count += 1
-                                self.total_successful_times += endtime
-                                self.analyse_successful_time(endtime)
-
-                        else:
-                            print('Balance is zero')
-                            endtime = time.time() - starttime
-                            with mutex:
-                                self.unsuccessful_count += 1
-                                self.total_unsuccessful_times += endtime
-                                self.analyse_unsuccessful_time(endtime)
-
-                        blocks_downloaded += len(blocks)
-
-                        with mutex:
                             self.total_blocks_downloaded += blocks_downloaded
                             self.analyse_blocks_downloaded(blocks_downloaded)
 
-                        if blocks_downloaded == 1:
-                            with mutex:
+                            if blocks_downloaded == 1:
                                 self.one_block_downloads += 1
 
-                        return
+                            return
 
-                    blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1000)
+                        blocks = get_account_blocks(self.ctx, s, acc, no_of_blocks=1000)
 
             # Socket sometimes times out, doesn't connect or there are no blocks read from the socket
             except (socket.error, OSError, SocketClosedByPeer, NoBlocksPulled) as e:
