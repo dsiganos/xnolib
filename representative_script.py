@@ -237,6 +237,7 @@ class thread_manager:
                 endtime = time.time() - starttime
                 with mutex:
                     self.total_unsuccessful_times += endtime
+                    self.unsuccessful_count += 1
                     self.analyse_unsuccessful_time(endtime)
 
 
@@ -284,7 +285,7 @@ def parse_args():
 
     parser.add_argument('-c', '--thread_count', type=int, default=150,
                         help='determines the number of threads that can run in parallel')
-    parser.add_argument('-a', '--account_count', type=int, default=10000,
+    parser.add_argument('-a', '--account_count', type=int, default=50000,
                         help='determines the number of accounts that will be pulled')
     parser.add_argument('--ipv4', action='store_true', default=True,
                         help='determies whether only ipv4 addresses should be used')
@@ -297,6 +298,26 @@ def find_rep_in_blocks(blocks):
         if type(b) in [block_open, block_state, block_change]:
             return b
     return None
+
+
+def frontier_iter(ctx, peers, num):
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+
+        while True:
+            try:
+                peer = random.choice(peers)
+                s.connect((str(peer.ip), peer.port))
+                break
+            except socket.error:
+                continue
+
+        req = frontier_request(ctx, maxacc=num)
+        s.send(req.serialise())
+
+        for i in range(0, num):
+            yield read_frontier_response(s)
 
 
 def main():
@@ -312,31 +333,18 @@ def main():
     if args.ipv4:
         peers = list(filter(lambda p: p.ip.is_ipv4(), peers))
 
-    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(3)
+    starttime = time.time()
+    threadman = thread_manager(ctx, peers, args.thread_count)
 
+    front_iter = frontier_iter(ctx, peers, args.account_count)
+
+    # Go through each account
+    try:
         while True:
-            try:
-                peer = random.choice(peers)
-                s.connect((str(peer.ip), peer.port))
-                break
-            except socket.error:
-                continue
+            front = next(front_iter)
+            threadman.get_account_rep(front.account)
 
-        req = frontier_request(ctx, maxacc=args.account_count)
-        s.send(req.serialise())
-        frontiers = []
-        read_all_frontiers(s, store_frontiers_handler(frontiers))
-        print('%s frontiers received' % len(frontiers))
-
-        starttime = time.time()
-        threadman = thread_manager(ctx, peers, args.thread_count)
-
-        # Go through each account
-        for front in frontiers:
-            acc = front.account
-            threadman.get_account_rep(acc)
+    except StopIteration:
         print('all threads started')
 
     # wait for all threads to finish
