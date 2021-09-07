@@ -296,7 +296,7 @@ def parse_args():
 
     parser.add_argument('-c', '--thread_count', type=int, default=None,
                         help='determines the number of threads that can run in parallel')
-    parser.add_argument('-a', '--account_count', type=int, default=1000000,
+    parser.add_argument('-a', '--account_count', type=int, default=50000,
                         help='determines the number of accounts that will be pulled')
     parser.add_argument('--ipv4', action='store_true', default=True,
                         help='determies whether only ipv4 addresses should be used')
@@ -353,13 +353,19 @@ def main():
     starttime = time.time()
     threadman = thread_manager(ctx, peers, thread_count)
 
-    front_iter = frontier_iter(ctx, peers, args.account_count)
+    while True:
+        try:
+            front_iter = frontier_iter(ctx, peers, args.account_count)
+            front = next(front_iter)
+            break
+        except PyNanoCoinException:
+            continue
 
     # Go through each account
     try:
         while True:
-            front = next(front_iter)
             threadman.get_account_rep(front.account)
+            front = next(front_iter)
 
     except StopIteration:
         print('all threads started')
@@ -369,9 +375,9 @@ def main():
 
     timetaken = time.time() - starttime
 
-    print("Total run time: %f" % timetaken)
     print(threadman.str_reps())
     print(threadman.str_stats())
+    print("Total run time: %f" % timetaken)
 
     pass
 
