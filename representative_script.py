@@ -30,9 +30,9 @@ class thread_manager:
         self.unsuccessful_count = 0
         self.total_unsuccessful_times = 0
         self.total_successful_times = 0
-        self.max_successful_time = 0.0
+        self.max_successful_time = -1.0
         self.min_successful_time = 100000.0
-        self.max_unsuccessful_time = 0.0
+        self.max_unsuccessful_time = -1.0
         self.min_unsuccessful_time = 100000.0
 
         self.total_blocks_downloaded = 0
@@ -44,7 +44,7 @@ class thread_manager:
 
         self.total_connection_times = 0.0
         self.min_connection_time = 100000.0
-        self.max_connection_time = 0.0
+        self.max_connection_time = -1.0
 
     def update(self):
         for t in self.threads:
@@ -61,28 +61,24 @@ class thread_manager:
             return peer
 
     def average_blocks_downloaded(self):
-        try:
-            return self.total_blocks_downloaded / self.thread_count
-        except ZeroDivisionError:
-            return None
+        if self.thread_count == 0:
+            return -1
+        return self.total_blocks_downloaded / self.thread_count
 
     def average_connection_time(self):
-        try:
-            return self.total_connection_times / self.thread_count
-        except ZeroDivisionError:
+        if self.thread_count == 0:
             return -1.0
+        return self.total_connection_times / self.thread_count
 
     def average_successful_time(self):
-        try:
-            return self.total_successful_times / self.successful_count
-        except ZeroDivisionError:
+        if self.successful_count == 0:
             return -1.0
+        return self.total_successful_times / self.successful_count
 
     def average_unsuccessful_time(self):
-        try:
-            return self.total_unsuccessful_times / self.unsuccessful_count
-        except ZeroDivisionError:
+        if self.unsuccessful_count == 0:
             return -1.0
+        return self.total_unsuccessful_times / self.unsuccessful_count
 
     def analyse_successful_time(self, t):
         if t < self.min_successful_time:
@@ -91,9 +87,9 @@ class thread_manager:
             self.max_successful_time = t
 
     def analyse_unsuccessful_time(self, t):
-        if t < self.min_successful_time:
+        if t < self.min_unsuccessful_time:
             self.min_unsuccessful_time = t
-        elif t > self.max_successful_time:
+        elif t > self.max_unsuccessful_time:
             self.max_unsuccessful_time = t
 
     def analyse_blocks_downloaded(self, n):
@@ -352,24 +348,41 @@ def find_rep_in_blocks(blocks):
     return None
 
 
-def frontier_iter(ctx, peers, num):
+def frontier_iter(ctx, peers, num, start_acc = b'\x00' * 32):
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
 
+        failed_count = 0
+
+        accounts_read = 0
+        last_acc = start_acc
         while True:
             try:
                 peer = random.choice(peers)
                 s.connect((str(peer.ip), peer.port))
+                req = frontier_request(ctx, maxacc=num, start_account=start_acc)
+                s.send(req.serialise())
+
+                for i in range(0, num):
+                    accounts_read += 1
+                    front = read_frontier_response(s)
+                    last_acc = front.account
+                    yield front
+
                 break
-            except socket.error:
+
+            except (socket.error, OSError):
+                if failed_count >= 20:
+                    raise FrontierIteratorFail("20 socket errors in a row")
+
+                failed_count += 1
                 continue
 
-        req = frontier_request(ctx, maxacc=num)
-        s.send(req.serialise())
-
-        for i in range(0, num):
-            yield read_frontier_response(s)
+            except PyNanoCoinException:
+                num = num - accounts_read
+                start_acc = last_acc
+                continue
 
 
 def main():
@@ -399,27 +412,21 @@ def main():
     starttime = time.time()
     threadman = thread_manager(ctx, peers, thread_count)
 
-    while True:
-        try:
-            front_iter = frontier_iter(ctx, peers, args.account_count)
-            front = next(front_iter)
-            break
-        except PyNanoCoinException:
-            continue
+    front_iter = frontier_iter(ctx, peers, args.account_count)
 
     # Go through each account
-    try:
-        while True:
-            threadman.get_account_rep(front.account)
-            threadman.update()
-            front = next(front_iter)
+    for i in range(0, args.account_count):
+        front = next(front_iter)
+        threadman.get_account_rep(front.account)
+        threadman.update()
 
-    except StopIteration:
-        print('all threads started')
+    print('all threads started')
 
     # wait for all threads to finish
     threadman.join()
-    mem_tracker.stop()
+
+    if args.mem_track:
+        mem_tracker.stop()
 
     timetaken = time.time() - starttime
 
