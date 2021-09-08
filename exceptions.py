@@ -94,3 +94,7 @@ class VerificationErrorNoAccount(PyNanoCoinException):
 
 class NoBlocksPulled(PyNanoCoinException):
     pass
+
+
+class FrontierIteratorFail(PyNanoCoinException):
+    pass
