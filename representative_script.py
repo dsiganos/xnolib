@@ -8,6 +8,7 @@ from pull_n_accounts import store_frontiers_handler
 import time
 import threading
 import random
+import tracemalloc
 
 
 class thread_manager:
@@ -285,6 +286,37 @@ class Rep:
         return string
 
 
+class memory_tracker:
+    def __init__(self):
+
+        self._running = True
+        self.peak = -1
+        self.thread = None
+
+    def track(self):
+        assert tracemalloc.is_tracing()
+
+        while self._running:
+
+            current, peak = tracemalloc.get_traced_memory()
+
+            if peak > self.peak:
+                print("[Memory_Tracker] current: %d B, peak: %d B" % (current, peak))
+                self.peak = peak
+
+            time.sleep(60)
+
+    def start(self):
+        thread = threading.Thread(target=self.track,
+                                  daemon=True)
+        thread.start()
+        self.thread = thread
+
+    def stop(self):
+        self._running = False
+        self.thread.join()
+
+
 def find_most_recent_block_type(blocks, block_type):
     for i in range(0, len(blocks)):
         if isinstance(blocks[i], block_type):
@@ -307,6 +339,8 @@ def parse_args():
                         help='determines the number of accounts that will be pulled')
     parser.add_argument('--ipv4', action='store_true', default=False,
                         help='determies whether only ipv4 addresses should be used')
+    parser.add_argument('--mem_track', action='store_true', default=False,
+                        help='tells the script to track memory usage detecting upward trend')
 
     return parser.parse_args()
 
@@ -340,6 +374,11 @@ def frontier_iter(ctx, peers, num):
 
 def main():
     args = parse_args()
+
+    if args.mem_track:
+        tracemalloc.start()
+        mem_tracker = memory_tracker()
+        mem_tracker.start()
 
     ctx = livectx
     if args.test: ctx = testctx
@@ -380,6 +419,7 @@ def main():
 
     # wait for all threads to finish
     threadman.join()
+    mem_tracker.stop()
 
     timetaken = time.time() - starttime
 
