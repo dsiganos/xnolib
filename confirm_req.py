@@ -326,6 +326,16 @@ def confirm_block(ctx, block, s):
         return True
 
 
+def get_confirm_block_resp(ctx, block, s):
+    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
+    req = confirm_req_block(hdr, block)
+    s.send(req.serialise())
+
+    resp = search_for_response(s, req)
+
+    return resp
+
+
 def confirm_blocks_by_hash(ctx, pairs, s):
     assert(isinstance(pairs, list))
     hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
