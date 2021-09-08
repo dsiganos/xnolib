@@ -45,6 +45,12 @@ class thread_manager:
         self.min_connection_time = 100000.0
         self.max_connection_time = 0.0
 
+    def update(self):
+        for t in self.threads:
+            if not t.is_alive():
+                t.join()
+                self.threads.remove(t)
+
     def get_next_peer(self):
         with self.mutex:
             if self.next_peer_index >= len(self.peers):
@@ -153,6 +159,7 @@ class thread_manager:
     def join(self):
         for t in self.threads:
             t.join()
+            self.threads.remove(t)
         print('All threads are finished')
 
     def get_rep_in_representatives(self, representative):
@@ -298,7 +305,7 @@ def parse_args():
                         help='determines the number of threads that can run in parallel')
     parser.add_argument('-a', '--account_count', type=int, default=50000,
                         help='determines the number of accounts that will be pulled')
-    parser.add_argument('--ipv4', action='store_true', default=True,
+    parser.add_argument('--ipv4', action='store_true', default=False,
                         help='determies whether only ipv4 addresses should be used')
 
     return parser.parse_args()
@@ -365,6 +372,7 @@ def main():
     try:
         while True:
             threadman.get_account_rep(front.account)
+            threadman.update()
             front = next(front_iter)
 
     except StopIteration:
@@ -378,8 +386,6 @@ def main():
     print(threadman.str_reps())
     print(threadman.str_stats())
     print("Total run time: %f" % timetaken)
-
-    pass
 
 
 if __name__ == '__main__':
