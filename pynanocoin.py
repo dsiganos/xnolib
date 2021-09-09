@@ -63,7 +63,10 @@ def confirm_ack_size(block_type, i_count):
 
 class ip_addr:
     def __init__(self, ipv6 = ipaddress.IPv6Address(0)):
-        assert isinstance(ipv6, ipaddress.IPv6Address)
+        if not isinstance(ipv6, ipaddress.IPv6Address):
+            assert isinstance(ipv6, str)
+            ipv6 = ipaddress.IPv6Address(ipv6)
+
         self.ipv6 = ipv6
 
     @classmethod
@@ -1826,13 +1829,36 @@ def parse_endpoint(string):
         if len(details) == 1:
             # Without port
             ip_address = string
+
+            # Checking if it is a domain name or not
+            if not non_digits_in_ip(ip_address):
+                ip_address = '::FFFF:' + ip_address
+
             port = None
         else:
             # With port
             ip_address = details[0]
+
+            # If there are non digit characters in the ip address it is a domain (not including '.')
+            # Otherwise there are only digits and it is an IPv4
+            if not non_digits_in_ip(ip_address):
+                ip_address = '::FFFF:' + ip_address
+
             port = int(details[1])
 
     return ip_address, port
+
+
+def non_digits_in_ip(string):
+    for s in string:
+        if s == '.':
+            continue
+        elif not s.isdigit():
+            return True
+    return False
+
+def peer_from_endpoint(addr, port):
+    return Peer(ip_addr(addr), port)
 
 
 live_genesis_block = {
