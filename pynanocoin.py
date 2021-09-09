@@ -63,11 +63,11 @@ def confirm_ack_size(block_type, i_count):
 
 class ip_addr:
     def __init__(self, ipv6 = ipaddress.IPv6Address(0)):
-        if not isinstance(ipv6, ipaddress.IPv6Address):
-            assert isinstance(ipv6, str)
-            ipv6 = ipaddress.IPv6Address(ipv6)
-
-        self.ipv6 = ipv6
+        if isinstance(ipv6, str):
+            self.ipv6 = ipaddress.IPv6Address(ipv6)
+        else:
+            self.ipv6 = ipv6
+        assert isinstance(self.ipv6, ipaddress.IPv6Address)
 
     @classmethod
     def from_string(cls, ipstr):
