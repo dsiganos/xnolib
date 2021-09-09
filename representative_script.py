@@ -331,7 +331,7 @@ def parse_args():
 
     parser.add_argument('-c', '--thread_count', type=int, default=None,
                         help='determines the number of threads that can run in parallel')
-    parser.add_argument('-a', '--account_count', type=int, default=50000,
+    parser.add_argument('-a', '--account_count', type=int, default=0xffffffff,
                         help='determines the number of accounts that will be pulled')
     parser.add_argument('--ipv4', action='store_true', default=False,
                         help='determies whether only ipv4 addresses should be used')
@@ -368,11 +368,13 @@ def frontier_iter(ctx, peers, num, start_acc = b'\x00' * 32):
                     accounts_read += 1
                     front = read_frontier_response(s)
                     last_acc = front.account
+                    if front.is_end_marker():
+                        return
                     yield front
 
                 break
 
-            except (socket.error, OSError):
+            except (socket.error, OSError) as err:
                 if failed_count >= 20:
                     raise FrontierIteratorFail("20 socket errors in a row")
 
@@ -415,8 +417,7 @@ def main():
     front_iter = frontier_iter(ctx, peers, args.account_count)
 
     # Go through each account
-    for i in range(0, args.account_count):
-        front = next(front_iter)
+    for front in front_iter:
         threadman.get_account_rep(front.account)
         threadman.update()
 
