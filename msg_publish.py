@@ -14,22 +14,21 @@ class msg_publish:
 
     @classmethod
     def parse(cls, hdr, data):
-        assert data[0] in range(2, 7)
         block = None
-        if data[0] == 2:
+        blocktype = hdr.block_type()
+        if blocktype == 2:
             block = block_send.parse(data)
-        elif data[0] == 3:
+        elif blocktype == 3:
             block = block_receive.parse(data)
-        elif data[0] == 4:
+        elif blocktype == 4:
             block = block_open.parse(data)
-        elif data[0] == 5:
+        elif blocktype == 5:
             block = block_change.parse(data)
-        elif data[0] == 6:
+        elif blocktype == 6:
             block = block_state.parse(data)
         else:
             assert False
         return msg_publish(hdr, block)
-
 
 
 def main():
