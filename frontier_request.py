@@ -75,7 +75,7 @@ class frontier_entry:
 
     def __str__(self):
         string = "%s\n" % acctools.to_account_addr(self.account)
-        string += "%s\n" % binascii.hexlify(self.frontier_hash).decode("utf-8").upper()
+        string += "%s" % binascii.hexlify(self.frontier_hash).decode("utf-8").upper()
         return string
 
 
