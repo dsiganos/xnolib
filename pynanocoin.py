@@ -1810,7 +1810,7 @@ def node_id_handshake_size(is_query, is_response):
     return size
 
 
-def parse_endpoint(string):
+def parse_endpoint(string, default_port=None):
     # IPv6 with port
     if string[0] == '[':
         ip_end_index = string.index(']')
@@ -1820,7 +1820,7 @@ def parse_endpoint(string):
     # IPv6 without port
     elif string.count(':') > 1:
         ip_address = string
-        port = None
+        port = default_port
 
     #IPv4
     else:
@@ -1834,7 +1834,7 @@ def parse_endpoint(string):
             if not non_digits_in_ip(ip_address):
                 ip_address = '::FFFF:' + ip_address
 
-            port = None
+            port = default_port
         else:
             # With port
             ip_address = details[0]

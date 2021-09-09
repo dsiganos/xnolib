@@ -283,6 +283,17 @@ def get_initial_connected_socket(ctx, peers=None):
     return None, None
 
 
+def get_random_peer(ctx, filter_func=None):
+    ''' This fucntion connects to the peer service and get all the known peers
+        applies the filter function, if given
+        and return a random peer from the filtered set
+    '''
+    hdr, peers = get_peers_from_service(ctx)
+    if filter_func is not None:
+        peers = list(filter(filter_func, peers))
+    return random.choice(peers)
+
+
 def string_to_bytes(string, length):
     data = string.encode("utf-8")
     assert (len(data) <= length)
