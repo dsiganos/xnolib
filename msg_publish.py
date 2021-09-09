@@ -30,6 +30,8 @@ class msg_publish:
             assert False
         return msg_publish(hdr, block)
 
+    def __str__(self):
+        return str(self.hdr) + "\n" + str(self.block)
 
 def main():
     header = message_header(network_id(66), [18, 18, 18], message_type(3), 0)
