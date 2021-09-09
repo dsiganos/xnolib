@@ -351,13 +351,8 @@ def confirm_blocks_by_hash(ctx, pairs, s):
 def confirm_req_peer(ctx, block, pair, peeraddr=None, peerport=None):
     assert (pair is None if block is not None else pair is not None)
 
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-
+    s = get_connected_socket_endpoint(peeraddr, peerport)
     with s:
-
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.connect((peeraddr, peerport))
-        s.settimeout(3)
 
         perform_handshake_exchange(ctx, s)
         print('handshake done')
@@ -404,7 +399,7 @@ def main():
         peeraddr, peerport = parse_endpoint(args.peer)
         if peerport is None:
             peerport = ctx['peerport']
-            
+
     else:
         _, peers = get_peers_from_service(ctx)
         peers = list(filter(lambda p: p.score == 1000 and p.is_voting, peers))
