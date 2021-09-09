@@ -1821,15 +1821,18 @@ def peer_from_str(string):
 
     #IPv4
     else:
-        try:
-            # With port
-            details = string.split(':')
-            ip_address = details[0]
-            port = int(details[1])
-        except IndexError:
+
+        details = string.split(':')
+
+        if len(details) == 1:
             # Without port
             ip_address = string
             port = None
+        else:
+            # With port
+            ip_address = details[0]
+            port = int(details[1])
+
     return ip_address, port
 
 
