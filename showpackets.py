@@ -22,6 +22,9 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
+    parser.add_argument('--peer',
+                        help='peer to contact')
+
     parser.add_argument('-k', '--keepalive', action='store_true', default=False,
                         help='indicates the script to show keepalives')
     parser.add_argument('-c', '--confirm_req', action='store_true', default=False,
@@ -57,8 +60,16 @@ def main():
     if args.beta: ctx = betactx
     elif args.test: ctx = testctx
 
-    s, _ = get_initial_connected_socket(ctx)
+    if args.peer:
+        peeraddr, peerport = peer_from_str(args.peer)
+        if peerport is None:
+            peerport = ctx['peerport']
+        peers = [Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)]
+        s, _ = get_initial_connected_socket(ctx, peers)
+    else:
+        s, _ = get_initial_connected_socket(ctx)
     assert s
+
     with s:
         perform_handshake_exchange(ctx, s)
 
