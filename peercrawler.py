@@ -272,7 +272,7 @@ def get_initial_connected_socket(ctx, peers=None):
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
         try:
-            s.connect((peeraddr, ctx['peerport']))
+            s.connect((peeraddr, peer.port))
             print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
             return s, peeraddr
         except socket.error as e:
