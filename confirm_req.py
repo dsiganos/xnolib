@@ -350,17 +350,14 @@ def confirm_blocks_by_hash(ctx, pairs, s):
 
 def confirm_req_peer(ctx, block, pair, peeraddr=None, peerport=None):
     assert (pair is None if block is not None else pair is not None)
-    if peeraddr:
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
-    else:
-        s, _ = get_initial_connected_socket(ctx)
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
     with s:
-        if peeraddr:
-            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.connect((peeraddr, peerport))
-            s.settimeout(3)
+
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.connect((peeraddr, peerport))
+        s.settimeout(3)
 
         perform_handshake_exchange(ctx, s)
         print('handshake done')
@@ -402,10 +399,18 @@ def main():
         block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
                            ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
                            ctx["genesis_block"]["work"])
+
     if args.peer is not None:
         peeraddr, peerport = parse_endpoint(args.peer)
         if peerport is None:
             peerport = ctx['peerport']
+            
+    else:
+        _, peers = get_peers_from_service(ctx)
+        peers = list(filter(lambda p: p.score == 1000 and p.is_voting, peers))
+        peer = random.choice(peers)
+        peeraddr = str(peer.ip)
+        peerport = peer.port
 
     confirm_req_peer(ctx, block, pair, peeraddr=peeraddr, peerport=peerport)
 
