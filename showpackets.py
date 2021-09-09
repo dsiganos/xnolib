@@ -61,7 +61,7 @@ def main():
     elif args.test: ctx = testctx
 
     if args.peer:
-        peeraddr, peerport = peer_from_str(args.peer)
+        peeraddr, peerport = parse_endpoint(args.peer)
         if peerport is None:
             peerport = ctx['peerport']
         peers = [Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)]

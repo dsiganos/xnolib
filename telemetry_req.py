@@ -116,7 +116,7 @@ def main():
     assert s
     with s:
         if args.peer is not None:
-            peeraddr, peerport = peer_from_str(args.peer)
+            peeraddr, peerport = parse_endpoint(args.peer)
             if peerport is None:
                 peerport = ctx['peerport']
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)

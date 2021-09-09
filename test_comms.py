@@ -454,12 +454,12 @@ class TestComms(unittest.TestCase):
         string5 = '::1234:1234'
         string6 = '4444:CCCC:DDDD:EEEE:FFFF'
 
-        ip1, port1 = peer_from_str(string1)
-        ip2, port2 = peer_from_str(string2)
-        ip3, port3 = peer_from_str(string3)
-        ip4, port4 = peer_from_str(string4)
-        ip5, port5 = peer_from_str(string5)
-        ip6, port6 = peer_from_str(string6)
+        ip1, port1 = parse_endpoint(string1)
+        ip2, port2 = parse_endpoint(string2)
+        ip3, port3 = parse_endpoint(string3)
+        ip4, port4 = parse_endpoint(string4)
+        ip5, port5 = parse_endpoint(string5)
+        ip6, port6 = parse_endpoint(string6)
 
         self.assertEqual(ip1, '::1234:1234')
         self.assertEqual(port1, 12345)

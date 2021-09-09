@@ -184,7 +184,7 @@ def main():
         assert peers
     else:
         if args.peer is not None:
-            peeraddr, peerport = peer_from_str(args.peer)
+            peeraddr, peerport = parse_endpoint(args.peer)
             if peerport is None:
                 peerport = ctx['peerport']
             peers = [Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)]

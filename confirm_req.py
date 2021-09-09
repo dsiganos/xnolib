@@ -403,7 +403,7 @@ def main():
                            ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
                            ctx["genesis_block"]["work"])
     if args.peer is not None:
-        peeraddr, peerport = peer_from_str(args.peer)
+        peeraddr, peerport = parse_endpoint(args.peer)
         if peerport is None:
             peerport = ctx['peerport']
 
