@@ -276,7 +276,7 @@ def get_initial_connected_socket(ctx, peers=None):
             print('Connected to [%s]:%s' % (s.getpeername()[0], s.getpeername()[1]))
             return s, peeraddr
         except socket.error as e:
-            print('Failed to connect to %s' % peeraddr)
+            print('Failed to connect to %s' % peer)
             print(e)
 
     print('Failed to connect to any of the peering servers')
