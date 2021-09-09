@@ -428,7 +428,7 @@ class bulk_push:
     def __init__(self, hdr, blocks):
         self.hdr = hdr
         self.blocks = blocks
-    
+
     def serialise(self):
         data = b''
         data += self.hdr.serialise_header()
@@ -436,7 +436,7 @@ class bulk_push:
             data += b.serialise(True)
         data += (1).to_bytes(1, 'big')
         return data
-    
+
     @classmethod
     def parse(cls, hdr, data):
         blocks = []
