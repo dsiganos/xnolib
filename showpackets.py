@@ -30,7 +30,7 @@ def parse_args():
                         help='indicates the script to show confirm acks')
     parser.add_argument('-p', '--publish', action='store_true', default=False,
                         help='indicates to show msg_publish packets')
-    parser.add_argument('-b', '--bulk_pull', action='store_true', default=False,
+    parser.add_argument('-P', '--bulk_pull', action='store_true', default=False,
                         help='indicates to show bulk_pull packets')
     parser.add_argument('-B', '--bulk_push', action='store_true', default=False,
                         help='indicates to show bulk_push packets')
