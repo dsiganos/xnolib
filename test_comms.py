@@ -446,7 +446,7 @@ class TestComms(unittest.TestCase):
         self.assertTrue(valid_block(livectx, ev1))
         self.assertTrue(valid_block(livectx, ev2))
 
-    def test_peer_from_str(self):
+    def test_parse_endpoint(self):
         string1 = '[::1234:1234]:12345'
         string2 = '1.2.3.4:12345'
         string3 = 'server.google.com:12345'
@@ -464,13 +464,13 @@ class TestComms(unittest.TestCase):
         self.assertEqual(ip1, '::1234:1234')
         self.assertEqual(port1, 12345)
 
-        self.assertEqual(ip2, '1.2.3.4')
+        self.assertEqual(ip2, '::FFFF:1.2.3.4')
         self.assertEqual(port2, 12345)
 
         self.assertEqual(ip3, 'server.google.com')
         self.assertEqual(port3, 12345)
 
-        self.assertEqual(ip4, '192.168.1.1')
+        self.assertEqual(ip4, '::FFFF:192.168.1.1')
         self.assertEqual(port4, None)
 
         self.assertEqual(ip5, '::1234:1234')
@@ -478,6 +478,19 @@ class TestComms(unittest.TestCase):
 
         self.assertEqual(ip6, '4444:CCCC:DDDD:EEEE:FFFF')
         self.assertEqual(port6, None)
+
+    def test_peer_from_endpoint(self):
+        string1 = '[::1234:1234]:12345'
+        string2 = '1.2.3.4:12345'
+
+        ip1, port1 = parse_endpoint(string1)
+        ip2, port2 = parse_endpoint(string2)
+
+        peer1 = peer_from_endpoint(ip1, port1)
+        peer2 = peer_from_endpoint(ip2, port2)
+
+        self.assertEqual(peer1, Peer(ip_addr('::1234:1234'), 12345))
+        self.assertEqual(peer2, Peer(ip_addr('::FFFF:1.2.3.4'), 12345))
 
     def test_signing_verifying(self):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
