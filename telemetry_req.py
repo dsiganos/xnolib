@@ -3,7 +3,7 @@
 import argparse
 from pynanocoin import *
 from msg_handshake import *
-from peercrawler import get_initial_connected_socket
+from peercrawler import get_initial_connected_socket, get_peers_from_service
 
 
 class telemetry_req:
@@ -109,19 +109,32 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
+    # Peer provided in argparse args
     if args.peer is not None:
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        peeraddr, peerport = parse_endpoint(args.peer)
+
+        if peerport is None:
+            peerport = ctx['peerport']
+
+        s = get_connected_socket_endpoint(peeraddr, peerport)
+
+    # Peer selected from peer service
     else:
-        s, _ = get_initial_connected_socket(ctx)
+
+        hdr, peers = get_peers_from_service(ctx)
+        peers = list(filter(lambda p: p.score == 1000, peers))
+
+        for peer in peers:
+            try:
+                s = get_connected_socket_endpoint(str(peer.ip), peer.port)
+                break
+            except (socket.error, OSError) as err:
+                continue
+
     assert s
+
     with s:
-        if args.peer is not None:
-            peeraddr, peerport = parse_endpoint(args.peer)
-            if peerport is None:
-                peerport = ctx['peerport']
-            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.settimeout(3)
-            s.connect((peeraddr, peerport))
+
         perform_handshake_exchange(ctx, s)
 
         req = telemetry_req(ctx)
