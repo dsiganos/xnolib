@@ -84,6 +84,8 @@ def main():
 
         while True:
             hdr, payload = get_next_hdr_payload(s)
+            # TODO: this if statement should not be necessary, we just need a mapping
+            # from message type to handler function and this big if can disapper
             if hdr.msg_type == message_type(message_type_enum.keepalive):
                 if args.keepalive or args.all:
                     keepalive = message_keepalive.parse_payload(hdr, payload)
