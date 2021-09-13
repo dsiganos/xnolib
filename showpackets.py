@@ -153,13 +153,11 @@ def main():
 
     if args.peer:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
-        s = get_connected_socket_endpoint(peeraddr, peerport)
     else:
         peer = get_random_peer(ctx, lambda p: p.score >= 1000)
-        s = get_connected_socket_endpoint(str(peer.ip), peer.port)
-    assert s
+        peeraddr, peerport = str(peer.ip), peer.port
 
-    with s:
+    with get_connected_socket_endpoint(peeraddr, peerport) as s:
         perform_handshake_exchange(ctx, s)
 
         # send a keepalive, this is not necessary, just doing it as an example
