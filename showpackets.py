@@ -157,6 +157,7 @@ def main():
         peer = get_random_peer(ctx, lambda p: p.score >= 1000)
         peeraddr, peerport = str(peer.ip), peer.port
 
+    print('Conneting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
         perform_handshake_exchange(ctx, s)
 
