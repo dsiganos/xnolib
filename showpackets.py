@@ -53,81 +53,69 @@ def parse_args():
     return parser.parse_args()
 
 
-def keepalive_func(ctx, args, hdr, payload):
-    if args.keepalive or args.all:
-        keepalive = message_keepalive.parse_payload(hdr, payload)
-        print(keepalive)
+def keepalive_func(ctx, hdr, payload):
+    keepalive = message_keepalive.parse_payload(hdr, payload)
+    return keepalive
 
 
-def publish_func(ctx, args, hdr, payload):
-    if args.publish or args.all:
-        publish = msg_publish.parse(hdr, payload)
-        print(publish)
+def publish_func(ctx, hdr, payload):
+    publish = msg_publish.parse(hdr, payload)
+    return publish
 
 
-def confirm_req_func(ctx, args, hdr, payload):
-    if args.confirm_req or args.all:
-        if hdr.block_type() == block_type_enum.not_a_block:
-            req = confirm_req_hash.parse(hdr, payload)
-        else:
-            req = confirm_req_block.parse(hdr, payload)
-        print(req)
+def confirm_req_func(ctx, hdr, payload):
+    if hdr.block_type() == block_type_enum.not_a_block:
+        req = confirm_req_hash.parse(hdr, payload)
+    else:
+        req = confirm_req_block.parse(hdr, payload)
+    return req
 
 
-def confirm_ack_func(ctx, args, hdr, payload):
-    if args.confirm_ack or args.all:
-        if hdr.block_type() == block_type_enum.not_a_block:
-            ack = confirm_ack_hash.parse(hdr, payload)
-        else:
-            ack = confirm_ack_block.parse(hdr, payload)
-        print(ack)
+def confirm_ack_func(ctx, hdr, payload):
+    if hdr.block_type() == block_type_enum.not_a_block:
+        ack = confirm_ack_hash.parse(hdr, payload)
+    else:
+        ack = confirm_ack_block.parse(hdr, payload)
+    return ack
 
 
-def bulk_pull_func(ctx, args, hdr, payload):
-    if args.bulk_pull or args.all:
-        bp = message_bulk_pull.parse(hdr, payload)
-        print(bp)
+def bulk_pull_func(ctx, hdr, payload):
+    bp = message_bulk_pull.parse(hdr, payload)
+    return bp
 
 
-def bulk_push_func(ctx, args, hdr, payload):
-    if args.bulk_push or args.all:
-        bp = bulk_push.parse(hdr, payload)
-        print(bp)
+def bulk_push_func(ctx, hdr, payload):
+    bp = bulk_push.parse(hdr, payload)
+    return bp
 
 
-def frontier_req_func(ctx, args, hdr, payload):
-    if args.frontier_req or args.all:
-        fr = frontier_request.parse(ctx, payload, hdr=hdr)
-        print(fr)
+def frontier_req_func(ctx, hdr, payload):
+    fr = frontier_request.parse(ctx, payload, hdr=hdr)
+    return fr
 
 
-def node_handshake_id(ctx, args, hdr, payload):
-    if args.handshake or args.all:
-        if hdr.is_query() and hdr.is_response():
-            handshake = handshake_response_query.parse_query_response(hdr, payload)
-        elif hdr.is_query():
-            handshake = handshake_query.parse_query(hdr, payload)
-        elif hdr.is_response():
-            handshake = handshake_response.parse_response(hdr, payload)
-        print(handshake)
+def node_handshake_id(ctx, hdr, payload):
+    if hdr.is_query() and hdr.is_response():
+        handshake = handshake_response_query.parse_query_response(hdr, payload)
+    elif hdr.is_query():
+        handshake = handshake_query.parse_query(hdr, payload)
+    elif hdr.is_response():
+        handshake = handshake_response.parse_response(hdr, payload)
+    return handshake
 
 
-def bulk_pull_account_func(ctx, args, hdr, payload):
-    if args.bulk_pull_acc or args.all:
-        bpa = bulk_pull_account.parse(hdr, payload)
-        print(bpa)
+def bulk_pull_account_func(ctx, hdr, payload):
+    bpa = bulk_pull_account.parse(hdr, payload)
+    return bpa
 
 
-def telemetry_req_func(ctx, args, hdr, payload):
-    if args.telemetry_req or args.all:
-        print(hdr)
+def telemetry_req_func(ctx, hdr, payload):
+    return hdr
 
 
-def telemetry_ack_func(ctx, args, hdr, payload):
-    if args.telemetry_ack or args.all:
-        print(hdr)
-        ta = telemetry_ack.parse(payload)
-        print(ta)
+def telemetry_ack_func(ctx, hdr, payload):
+    ta = telemetry_ack.parse(payload)
+    return ta
 
 functions = {
     message_type_enum.keepalive: keepalive_func,
@@ -144,8 +132,52 @@ functions = {
     message_type_enum.not_a_block: lambda ctx, args, hdr, payload: print(hdr)
 }
 
+show = {
+    message_type_enum.keepalive: False,
+    message_type_enum.publish: False,
+    message_type_enum.confirm_req: False,
+    message_type_enum.confirm_ack: False,
+    message_type_enum.bulk_pull: False,
+    message_type_enum.bulk_push: False,
+    message_type_enum.frontier_req: False,
+    message_type_enum.node_id_handshake: False,
+    message_type_enum.bulk_pull_account: False,
+    message_type_enum.telemetry_req: False,
+    message_type_enum.telemetry_ack: False
+}
+
+
+def set_up_show(args, show):
+    if args.all:
+        for x in show:
+            show[x] = True
+    if args.keepalive:
+        show[message_type_enum.keepalive] = True
+    if args.publish:
+        show[message_type_enum.publish] = True
+    if args.confirm_req:
+        show[message_type_enum.confirm_req] = True
+    if args.confirm_ack:
+        show[message_type_enum.confirm_ack] = True
+    if args.bulk_pull:
+        show[message_type_enum.bulk_pull] = True
+    if args.bulk_push:
+        show[message_type_enum.bulk_push] = True
+    if args.frontier_req:
+        show[message_type_enum.frontier_req] = True
+    if args.handshake:
+        show[message_type_enum.node_id_handshake] = True
+    if args.bulk_pull_acc:
+        show[message_type_enum.bulk_pull_account] = True
+    if args.telemetry_req:
+        show[message_type_enum.telemetry_req] = True
+    if args.telemetry_ack:
+        show[message_type_enum.telemetry_ack] = True
+
+
 def main():
     args = parse_args()
+    set_up_show(args, show)
 
     ctx = livectx
     if args.beta: ctx = betactx
@@ -174,7 +206,8 @@ def main():
             hdr, payload = get_next_hdr_payload(s)
             # TODO: this if statement should not be necessary, we just need a mapping
             # from message type to handler function and this big if can disapper
-            functions[hdr.msg_type.type](ctx, args, hdr, payload)
+            if show[hdr.msg_type.type]:
+                print(functions[hdr.msg_type.type](ctx, hdr, payload))
 
 
 if __name__ == "__main__":
