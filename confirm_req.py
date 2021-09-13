@@ -397,13 +397,9 @@ def main():
 
     if args.peer is not None:
         peeraddr, peerport = parse_endpoint(args.peer)
-        if peerport is None:
-            peerport = ctx['peerport']
 
     else:
-        _, peers = get_peers_from_service(ctx)
-        peers = list(filter(lambda p: p.score == 1000 and p.is_voting, peers))
-        peer = random.choice(peers)
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000)
         peeraddr = str(peer.ip)
         peerport = peer.port
 
