@@ -396,7 +396,7 @@ def main():
                            ctx["genesis_block"]["work"])
 
     if args.peer is not None:
-        peeraddr, peerport = parse_endpoint(args.peer)
+        peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
 
     else:
         peer = get_random_peer(ctx, lambda p: p.score >= 1000)

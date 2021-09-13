@@ -110,7 +110,7 @@ def main():
     if args.test: ctx = testctx
 
     if args.peer:
-        peeraddr, peerport = parse_endpoint(args.peer, ctx['peerport'])
+        peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
     else:
         peer = peercrawler.get_random_peer(ctx, lambda p: p.score == 1000)
         peeraddr, peerport = str(peer.ip), peer.port
