@@ -407,6 +407,7 @@ class message_bulk_pull:
             data += self.generate_extended_params()
         return data
 
+    @classmethod
     def parse(self, hdr, data):
         public_key = data[0:32]
         finish = data[32:64]
