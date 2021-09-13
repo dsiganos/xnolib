@@ -53,11 +53,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def keepalive_func(ctx, hdr, payload):
-    keepalive = message_keepalive.parse_payload(hdr, payload)
-    return keepalive
-
-
 def publish_func(ctx, hdr, payload):
     publish = msg_publish.parse(hdr, payload)
     return publish
@@ -118,7 +113,7 @@ def telemetry_ack_func(ctx, hdr, payload):
     return ta
 
 functions = {
-    message_type_enum.keepalive: keepalive_func,
+    message_type_enum.keepalive: message_keepalive.parse_payload,
     message_type_enum.publish: publish_func,
     message_type_enum.confirm_req: confirm_req_func,
     message_type_enum.confirm_ack: confirm_ack_func,
