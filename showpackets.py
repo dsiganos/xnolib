@@ -84,11 +84,6 @@ def bulk_push_func(ctx, hdr, payload):
     return bp
 
 
-def frontier_req_func(ctx, hdr, payload):
-    fr = frontier_request.parse(ctx, payload, hdr=hdr)
-    return fr
-
-
 def node_handshake_id(ctx, hdr, payload):
     if hdr.is_query() and hdr.is_response():
         handshake = handshake_response_query.parse_query_response(hdr, payload)
@@ -119,7 +114,7 @@ functions = {
     message_type_enum.confirm_ack: confirm_ack_func,
     message_type_enum.bulk_pull: bulk_pull_func,
     message_type_enum.bulk_push: bulk_push_func,
-    message_type_enum.frontier_req: frontier_req_func,
+    message_type_enum.frontier_req: frontier_request.parse,
     message_type_enum.node_id_handshake: node_handshake_id,
     message_type_enum.bulk_pull_account: bulk_pull_account_func,
     message_type_enum.telemetry_req: telemetry_req_func,
