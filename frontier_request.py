@@ -185,16 +185,12 @@ def main():
     else:
         if args.peer is not None:
             peeraddr, peerport = parse_endpoint(args.peer)
-            if peerport is None:
-                peerport = ctx['peerport']
-            peers = [Peer(ip_addr(ipaddress.IPv6Address(peeraddr)), peerport, 1000)]
+            peers = [peer_from_endpoint(peeraddr, peerport)]
         else:
-            peer = random.choice(get_all_dns_addresses(ctx['peeraddr']))
-            peers = [Peer(ip_addr(ipaddress.IPv6Address(peer)), ctx['peerport'], 1000)]
+            hdr, peers = peercrawler.get_peers_from_service(ctx)
+            peers = list(filter(lambda p: p.score >= 1000, peers))
 
     for peer in peers:
-        if peer.score <= 0:
-            continue
 
         try:
             get_frontiers_from_peer(peer, frontier_req, args.db)
