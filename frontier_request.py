@@ -14,17 +14,14 @@ from pynanocoin import *
 
 
 class frontier_request:
-    def __init__(self, ctx, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff, confirmed=False,
-                 hdr = None):
-        if hdr is None:
-            self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
-        else:
-            self.header = hdr
-        assert(len(start_account) == 32)
+    def __init__(self, hdr, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff):
+        assert (len(start_account) == 32)
+        assert (isinstance(hdr, message_header))
+        self.header = hdr
         self.start_account = start_account
         self.maxage = maxage
         self.maxacc = maxacc
-        self.confirmed = confirmed
+        self.confirmed = True if self.header.ext == 2 else False
 
     def serialise(self):
         data = self.header.serialise_header()
@@ -34,14 +31,11 @@ class frontier_request:
         return data
 
     @classmethod
-    def parse(cls, ctx, data, hdr = None):
-        if hdr is None:
-            hdr = message_header.parse_header(data[0:8])
-            data = data[8:]
+    def parse(cls, hdr, data):
         start_account = data[0:32]
         maxage = int.from_bytes(data[32:36], 'big')
         maxacc = int.from_bytes(data[36:], 'big')
-        return frontier_request(ctx, start_account=start_account, maxage=maxage, maxacc=maxacc, hdr=hdr)
+        return frontier_request(hdr, start_account=start_account, maxage=maxage, maxacc=maxacc)
 
     def __str__(self):
         string = str(self.header) + "\n"
