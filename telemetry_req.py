@@ -15,11 +15,12 @@ class telemetry_req:
 
 
 class telemetry_ack:
-    def __init__(self, signature, node_id, block_count, cemented_count,
+    def __init__(self, hdr, signature, node_id, block_count, cemented_count,
                  unchecked_count, account_count, bandwidth_cap, uptime,
                  peer_count, protocol_ver, genesis_hash, major_ver,
                  minor_ver, patch_ver, pre_release_ver, maker_ver,
                  timestamp, active_difficulty):
+        self.hdr = hdr
         self.sig = signature
         self.node_id = node_id
         self.block_count = block_count
@@ -61,7 +62,7 @@ class telemetry_ack:
         return string
 
     @classmethod
-    def parse(self, data):
+    def parse(self, hdr, data):
         if len(data) != 202:
             raise BadTelemetryReply('message len not 202, data=%s', data)
         sig = data[0:64]
@@ -82,7 +83,7 @@ class telemetry_ack:
         maker_ver = data[185]
         timestamp = int.from_bytes(data[186:194], "big")
         active_difficulty = int.from_bytes(data[194:202], "big")
-        return telemetry_ack(sig, node_id, block_count, cemented_count, unchecked_count,
+        return telemetry_ack(hdr, sig, node_id, block_count, cemented_count, unchecked_count,
                              account_count, bandwidth_cap, uptime, peer_count, protocol_ver,
                              genesis_hash, major_ver, minor_ver, patch_ver, pre_release_ver, maker_ver,
                              timestamp, active_difficulty)
@@ -127,7 +128,7 @@ def main():
             hdr, data = get_next_hdr_payload(s)
         print(hdr)
 
-        resp = telemetry_ack.parse(data)
+        resp = telemetry_ack.parse(hdr, data)
         print(resp)
 
 
