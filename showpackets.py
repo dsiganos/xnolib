@@ -13,6 +13,7 @@ from frontier_request import *
 from bulk_pull_account import *
 from telemetry_req import *
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -53,12 +54,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def publish_func(ctx, hdr, payload):
-    publish = msg_publish.parse(hdr, payload)
-    return publish
-
-
-def confirm_req_func(ctx, hdr, payload):
+def confirm_req_func(hdr, payload):
     if hdr.block_type() == block_type_enum.not_a_block:
         req = confirm_req_hash.parse(hdr, payload)
     else:
@@ -66,7 +62,7 @@ def confirm_req_func(ctx, hdr, payload):
     return req
 
 
-def confirm_ack_func(ctx, hdr, payload):
+def confirm_ack_func(hdr, payload):
     if hdr.block_type() == block_type_enum.not_a_block:
         ack = confirm_ack_hash.parse(hdr, payload)
     else:
@@ -74,17 +70,7 @@ def confirm_ack_func(ctx, hdr, payload):
     return ack
 
 
-def bulk_pull_func(ctx, hdr, payload):
-    bp = message_bulk_pull.parse(hdr, payload)
-    return bp
-
-
-def bulk_push_func(ctx, hdr, payload):
-    bp = bulk_push.parse(hdr, payload)
-    return bp
-
-
-def node_handshake_id(ctx, hdr, payload):
+def node_handshake_id(hdr, payload):
     if hdr.is_query() and hdr.is_response():
         handshake = handshake_response_query.parse_query_response(hdr, payload)
     elif hdr.is_query():
@@ -94,32 +80,19 @@ def node_handshake_id(ctx, hdr, payload):
     return handshake
 
 
-def bulk_pull_account_func(ctx, hdr, payload):
-    bpa = bulk_pull_account.parse(hdr, payload)
-    return bpa
-
-
-def telemetry_req_func(ctx, hdr, payload):
-    return hdr
-
-
-def telemetry_ack_func(ctx, hdr, payload):
-    ta = telemetry_ack.parse(payload)
-    return ta
-
 functions = {
     message_type_enum.keepalive: message_keepalive.parse_payload,
-    message_type_enum.publish: publish_func,
+    message_type_enum.publish: msg_publish.parse,
     message_type_enum.confirm_req: confirm_req_func,
     message_type_enum.confirm_ack: confirm_ack_func,
-    message_type_enum.bulk_pull: bulk_pull_func,
-    message_type_enum.bulk_push: bulk_push_func,
+    message_type_enum.bulk_pull: message_bulk_pull.parse,
+    message_type_enum.bulk_push: bulk_push.parse,
     message_type_enum.frontier_req: frontier_request.parse,
     message_type_enum.node_id_handshake: node_handshake_id,
-    message_type_enum.bulk_pull_account: bulk_pull_account_func,
-    message_type_enum.telemetry_req: telemetry_req_func,
-    message_type_enum.telemetry_ack: telemetry_ack_func,
-    message_type_enum.not_a_block: lambda ctx, args, hdr, payload: print(hdr)
+    message_type_enum.bulk_pull_account: bulk_pull_account.parse,
+    message_type_enum.telemetry_req: lambda hdr, payload: hdr,
+    message_type_enum.telemetry_ack: telemetry_ack.parse,
+    message_type_enum.not_a_block: lambda hdr, payload: print(hdr)
 }
 
 show = {
@@ -197,7 +170,7 @@ def main():
             # TODO: this if statement should not be necessary, we just need a mapping
             # from message type to handler function and this big if can disapper
             if show[hdr.msg_type.type]:
-                print(functions[hdr.msg_type.type](ctx, hdr, payload))
+                print(functions[hdr.msg_type.type](hdr, payload))
 
 
 if __name__ == "__main__":
