@@ -373,7 +373,7 @@ class message_keepalive:
         return False
 
     @classmethod
-    def parse_payload(cls, ctx, hdr, rawdata):
+    def parse_payload(cls, hdr, rawdata):
         assert(len(rawdata) % 18 == 0)
         no_of_peers = int(len(rawdata) / 18)
         start_index = 0

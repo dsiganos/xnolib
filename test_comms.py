@@ -86,7 +86,7 @@ class TestComms(unittest.TestCase):
 
     def test_keepalive_full_loop1(self):
         h = message_header.parse_header(self.data[0:8])
-        keepalive = message_keepalive.parse_payload(testctx, h, self.data[8:])
+        keepalive = message_keepalive.parse_payload(h, self.data[8:])
         self.assertEqual(self.data, keepalive.serialise())
 
     def test_keepalive_full_loop2(self):
@@ -94,8 +94,9 @@ class TestComms(unittest.TestCase):
         keepalive = message_keepalive(h, self.peer_list)
         data = keepalive.serialise()
         h = message_header.parse_header(data[0:8])
-        keepalive2 = message_keepalive.parse_payload(testctx, h, data[8:])
+        keepalive2 = message_keepalive.parse_payload(h, data[8:])
         self.assertTrue(keepalive == keepalive2)
+
 
     def test_msg_bulk_pull_serialisation(self):
         header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)

@@ -74,7 +74,7 @@ class peer_manager:
                 while time.time() - starttime <= 10:
                     hdr, payload = get_next_hdr_payload(s)
                     if hdr.msg_type == message_type(message_type_enum.keepalive):
-                        keepalive = message_keepalive.parse_payload(self.ctx, hdr, payload)
+                        keepalive = message_keepalive.parse_payload(hdr, payload)
                         self.add_peers(keepalive.peers)
                         peer.score = 1000
                         peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
