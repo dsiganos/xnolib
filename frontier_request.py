@@ -37,6 +37,10 @@ class frontier_request:
         maxacc = int.from_bytes(data[36:], 'big')
         return frontier_request(hdr, start_account=start_account, maxage=maxage, maxacc=maxacc)
 
+    @classmethod
+    def generate_header(cls, ctx, confirmed = False):
+        return message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
+
     def __str__(self):
         string = str(self.header) + "\n"
         string += "Start account: %s\n" % hexlify(self.start_account)
