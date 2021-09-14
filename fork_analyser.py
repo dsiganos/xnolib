@@ -10,14 +10,16 @@ from exceptions import *
 
 
 def frontier_req(ctx, s, peer, acc_id):
-    frontier = frontier_request.frontier_request(ctx, acc_id, maxacc=1, confirmed=True)
+    hdr = frontier_request.frontier_request.generate_header(ctx, True)
+    frontier = frontier_request.frontier_request(hdr, start_account=acc_id, maxacc=1)
     s.send(frontier.serialise())
     frontier = frontier_request.read_frontier_response(s)
     endmark = frontier_request.read_frontier_response(s)
     assert endmark.is_end_marker()
     peer.aux['confirmed_frontier'] = frontier.frontier_hash
 
-    frontier = frontier_request.frontier_request(ctx, acc_id, maxacc=1, confirmed=False)
+    hdr = frontier_request.frontier_request.generate_header(ctx, False)
+    frontier = frontier_request.frontier_request(hdr, start_account=acc_id, maxacc=1)
     s.send(frontier.serialise())
     frontier = frontier_request.read_frontier_response(s)
     endmark = frontier_request.read_frontier_response(s)

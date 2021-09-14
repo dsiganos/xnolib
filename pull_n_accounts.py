@@ -30,7 +30,8 @@ def main():
     assert s
     frontiers = []
     with s:
-        s.send(frontier_request(ctx).serialise())
+        front_hdr = frontier_request.generate_header(ctx)
+        s.send(frontier_request(front_hdr).serialise())
         read_all_frontiers(s, store_frontiers_handler(frontiers))
 
         manager = block_manager(ctx, None, None)

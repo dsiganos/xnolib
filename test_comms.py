@@ -566,9 +566,11 @@ class TestComms(unittest.TestCase):
 
     def test_frontier_req_serialise_deserialise(self):
         ctx = livectx
-        fr = frontier_request(ctx)
+        fr_hdr = frontier_request.generate_header(ctx)
+        fr = frontier_request(fr_hdr)
         serialised = fr.serialise()
-        fr1 = frontier_request.parse(ctx, serialised)
+        hdr = message_header.parse_header(serialised[:8])
+        fr1 = frontier_request.parse(hdr, serialised[8:])
 
         self.assertEqual(fr, fr1)
 

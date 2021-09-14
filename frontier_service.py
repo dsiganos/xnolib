@@ -54,7 +54,8 @@ class frontier_service:
             s.connect((str(p.ip), p.port))
 
             # maxacc argument can be removed in final version
-            req = frontier_request.frontier_request(self.ctx, maxacc=1000)
+            hdr = frontier_request.frontier_request.generate_header(self.ctx)
+            req = frontier_request.frontier_request(hdr, maxacc=1000)
             s.send(req.serialise())
             frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
 

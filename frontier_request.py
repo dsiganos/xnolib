@@ -170,12 +170,11 @@ def main():
     if args.test: ctx = testctx
 
     confirmed = not args.notconfirmed
-
-    frontier_req = frontier_request(ctx = ctx,
+    hdr = frontier_request.generate_header(ctx, confirmed)
+    frontier_req = frontier_request(hdr,
                                     start_account = binascii.unhexlify(args.start_acc),
                                     maxage = args.maxage,
-                                    maxacc = args.count,
-                                    confirmed = confirmed)
+                                    maxacc = args.count)
 
     if args.all:
         hdr, peers = peercrawler.get_peers_from_service(ctx)

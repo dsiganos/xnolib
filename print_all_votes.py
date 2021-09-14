@@ -23,7 +23,8 @@ with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
     s.settimeout(10)
     s.connect((str(peer.ip), peer.port))
 
-    req = frontier_request(ctx)
+    front_hdr = frontier_request.generate_header(ctx)
+    req = frontier_request(front_hdr)
 
     s.send(req.serialise())
 

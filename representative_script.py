@@ -361,7 +361,8 @@ def frontier_iter(ctx, peers, num, start_acc = b'\x00' * 32):
             try:
                 peer = random.choice(peers)
                 s.connect((str(peer.ip), peer.port))
-                req = frontier_request(ctx, maxacc=num, start_account=start_acc)
+                front_hdr = frontier_request.generate_header(ctx)
+                req = frontier_request(front_hdr, maxacc=num, start_account=start_acc)
                 s.send(req.serialise())
 
                 for i in range(0, num):
