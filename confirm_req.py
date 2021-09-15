@@ -156,7 +156,8 @@ class vote_common:
         if self.seq == 0xffffffffffffffff:
             string += "Sequence: %s(%s) [final vote]\n" % (self.seq, hex(self.seq))
         else:
-            string += "Sequence: %s\n" % datetime.datetime.fromtimestamp(self.seq)
+
+            string += "Sequence: %s \n" % datetime.datetime.fromtimestamp(self.seq / 1000)
         return string
 
 
