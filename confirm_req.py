@@ -7,6 +7,7 @@ import argparse
 from pynanocoin import *
 from msg_handshake import perform_handshake_exchange
 from peercrawler import *
+import datetime
 
 
 class hash_pair:
@@ -155,7 +156,7 @@ class vote_common:
         if self.seq == 0xffffffffffffffff:
             string += "Sequence: %s(%s) [final vote]\n" % (self.seq, hex(self.seq))
         else:
-            string += "Sequence: %s ms (%s) [timestamp]\n" % (self.seq, hex(self.seq))
+            string += "Sequence: %s\n" % datetime.datetime.fromtimestamp(self.seq)
         return string
 
 
