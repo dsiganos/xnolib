@@ -87,52 +87,37 @@ functions = {
     message_type_enum.not_a_block: lambda hdr, payload: hdr
 }
 
-show = {
-    message_type_enum.keepalive: False,
-    message_type_enum.publish: False,
-    message_type_enum.confirm_req: False,
-    message_type_enum.confirm_ack: False,
-    message_type_enum.bulk_pull: False,
-    message_type_enum.bulk_push: False,
-    message_type_enum.frontier_req: False,
-    message_type_enum.node_id_handshake: False,
-    message_type_enum.bulk_pull_account: False,
-    message_type_enum.telemetry_req: False,
-    message_type_enum.telemetry_ack: False
-}
 
-
-def set_up_show(args, show):
+def set_functions(args):
     if args.all:
-        for x in show:
-            show[x] = True
-    if args.keepalive:
-        show[message_type_enum.keepalive] = True
-    if args.publish:
-        show[message_type_enum.publish] = True
-    if args.confirm_req:
-        show[message_type_enum.confirm_req] = True
-    if args.confirm_ack:
-        show[message_type_enum.confirm_ack] = True
-    if args.bulk_pull:
-        show[message_type_enum.bulk_pull] = True
-    if args.bulk_push:
-        show[message_type_enum.bulk_push] = True
-    if args.frontier_req:
-        show[message_type_enum.frontier_req] = True
-    if args.handshake:
-        show[message_type_enum.node_id_handshake] = True
-    if args.bulk_pull_acc:
-        show[message_type_enum.bulk_pull_account] = True
-    if args.telemetry_req:
-        show[message_type_enum.telemetry_req] = True
-    if args.telemetry_ack:
-        show[message_type_enum.telemetry_ack] = True
+        return
+    if not args.keepalive:
+        functions.pop(message_type_enum.keepalive)
+    if not args.publish:
+        functions.pop(message_type_enum.publish)
+    if not args.confirm_req:
+        functions.pop(message_type_enum.confirm_req)
+    if not args.confirm_ack:
+        functions.pop(message_type_enum.confirm_ack)
+    if not args.bulk_pull:
+        functions.pop(message_type_enum.bulk_pull)
+    if not args.bulk_push:
+        functions.pop(message_type_enum.bulk_push)
+    if not args.frontier_req:
+        functions.pop(message_type_enum.frontier_req)
+    if not args.handshake:
+        functions.pop(message_type_enum.node_id_handshake)
+    if not args.bulk_pull_acc:
+        functions.pop(message_type_enum.bulk_pull_account)
+    if not args.telemetry_req:
+        functions.pop(message_type_enum.telemetry_req)
+    if not args.telemetry_ack:
+        functions.pop(message_type_enum.telemetry_ack)
 
 
 def main():
     args = parse_args()
-    set_up_show(args, show)
+    set_functions(args)
 
     ctx = livectx
     if args.beta: ctx = betactx
@@ -161,7 +146,7 @@ def main():
             hdr, payload = get_next_hdr_payload(s)
             # TODO: this if statement should not be necessary, we just need a mapping
             # from message type to handler function and this big if can disapper
-            if show[hdr.msg_type.type]:
+            if hdr.msg_type.type in functions:
                 print(functions[hdr.msg_type.type](hdr, payload))
 
 
