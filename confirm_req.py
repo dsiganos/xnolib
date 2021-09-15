@@ -156,13 +156,6 @@ class vote_common:
 
 
 class confirm_ack:
-    def __init__(self, hdr, common, data):
-        assert (isinstance(hdr, message_header))
-        assert (isinstance(common, vote_common))
-        self.hdr = hdr
-        self.common = common
-        self.data = data
-
     @classmethod
     def parse(self, hdr, data):
         assert isinstance(hdr, message_header)
