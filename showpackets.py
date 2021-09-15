@@ -125,7 +125,7 @@ def main():
     if args.peer:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
     else:
-        peer = get_random_peer(ctx, lambda p: p.score >= 1000)
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.is_voting)
         peeraddr, peerport = str(peer.ip), peer.port
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
