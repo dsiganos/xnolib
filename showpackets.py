@@ -87,32 +87,46 @@ functions = {
     message_type_enum.not_a_block: lambda hdr, payload: hdr
 }
 
+show = {
+    message_type_enum.keepalive: False,
+    message_type_enum.publish: False,
+    message_type_enum.confirm_req: False,
+    message_type_enum.confirm_ack: False,
+    message_type_enum.bulk_pull: False,
+    message_type_enum.bulk_push: False,
+    message_type_enum.frontier_req: False,
+    message_type_enum.node_id_handshake: False,
+    message_type_enum.bulk_pull_account: False,
+    message_type_enum.telemetry_req: False,
+    message_type_enum.telemetry_ack: False
+}
+
 
 def set_functions(args):
     if args.all:
         return
     if not args.keepalive:
-        functions.pop(message_type_enum.keepalive)
+        functions[message_type_enum.keepalive] = None
     if not args.publish:
-        functions.pop(message_type_enum.publish)
+        functions[message_type_enum.publish] = None
     if not args.confirm_req:
-        functions.pop(message_type_enum.confirm_req)
+        functions[message_type_enum.confirm_req] = None
     if not args.confirm_ack:
-        functions.pop(message_type_enum.confirm_ack)
+        functions[message_type_enum.confirm_ack] = None
     if not args.bulk_pull:
-        functions.pop(message_type_enum.bulk_pull)
+        functions[message_type_enum.bulk_pull] = None
     if not args.bulk_push:
-        functions.pop(message_type_enum.bulk_push)
+        functions[message_type_enum.bulk_push] = None
     if not args.frontier_req:
-        functions.pop(message_type_enum.frontier_req)
+        functions[message_type_enum.frontier_req] = None
     if not args.handshake:
-        functions.pop(message_type_enum.node_id_handshake)
+        functions[message_type_enum.node_id_handshake] = None
     if not args.bulk_pull_acc:
-        functions.pop(message_type_enum.bulk_pull_account)
+        functions[message_type_enum.bulk_pull_account] = None
     if not args.telemetry_req:
-        functions.pop(message_type_enum.telemetry_req)
+        functions[message_type_enum.telemetry_req] = None
     if not args.telemetry_ack:
-        functions.pop(message_type_enum.telemetry_ack)
+        functions[message_type_enum.telemetry_ack] = None
 
 
 def main():
@@ -144,9 +158,8 @@ def main():
 
         while True:
             hdr, payload = get_next_hdr_payload(s)
-            # TODO: this if statement should not be necessary, we just need a mapping
-            # from message type to handler function and this big if can disapper
-            if hdr.msg_type.type in functions:
+
+            if functions[hdr.msg_type.type] is not None:
                 print(functions[hdr.msg_type.type](hdr, payload))
 
 
