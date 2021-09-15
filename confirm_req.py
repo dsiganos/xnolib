@@ -155,6 +155,23 @@ class vote_common:
         return string
 
 
+class confirm_ack:
+    def __init__(self, hdr, common, data):
+        assert (isinstance(hdr, message_header))
+        assert (isinstance(common, vote_common))
+        self.hdr = hdr
+        self.common = common
+        self.data = data
+
+    @classmethod
+    def parse(self, hdr, data):
+        assert isinstance(hdr, message_header)
+        if hdr.block_type() == block_type_enum.not_a_block:
+            return confirm_ack_hash.parse(hdr, data)
+        else:
+            return confirm_ack_block.parse(hdr, data)
+
+
 class confirm_ack_hash:
     def __init__(self, hdr, common, hashes):
         assert(isinstance(hdr, message_header))
@@ -202,6 +219,7 @@ class confirm_ack_hash:
             string += hexlify(h)
             string += "\n"
         return string
+
 
 # TODO: This confirm ack also has a vote_common field
 class confirm_ack_block:
