@@ -148,12 +148,14 @@ class vote_common:
     def __str__(self):
         # TODO: if sequence is not 0xffffffffffffffff then it is a timestamp
         #       print the timestamp in data format (timestamp is milliseconds since epoch)
-        final_str = ''
-        if self.seq == 0xffffffffffffffff:
-            final_str = ' [final vote]'
+
         string = "Account: %s\n" % hexlify(self.account)
         string += "Signature: %s\n" % hexlify(self.sig)
-        string += "Sequence: %s(%s)%s\n" % (self.seq, hex(self.seq), final_str)
+
+        if self.seq == 0xffffffffffffffff:
+            string += "Sequence: %s(%s) [final vote]\n" % (self.seq, hex(self.seq))
+        else:
+            string += "Sequence: %s ms (%s) [timestamp]\n" % (self.seq, hex(self.seq))
         return string
 
 
