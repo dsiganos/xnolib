@@ -87,21 +87,6 @@ functions = {
     message_type_enum.not_a_block: lambda hdr, payload: hdr
 }
 
-show = {
-    message_type_enum.keepalive: False,
-    message_type_enum.publish: False,
-    message_type_enum.confirm_req: False,
-    message_type_enum.confirm_ack: False,
-    message_type_enum.bulk_pull: False,
-    message_type_enum.bulk_push: False,
-    message_type_enum.frontier_req: False,
-    message_type_enum.node_id_handshake: False,
-    message_type_enum.bulk_pull_account: False,
-    message_type_enum.telemetry_req: False,
-    message_type_enum.telemetry_ack: False
-}
-
-
 def set_functions(args):
     if args.all:
         return
