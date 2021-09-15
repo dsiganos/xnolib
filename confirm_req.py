@@ -146,6 +146,8 @@ class vote_common:
         return vote_common(account, sig, seq)
 
     def __str__(self):
+        # TODO: if sequence is not 0xffffffffffffffff then it is a timestamp
+        #       print the timestamp in data format (timestamp is milliseconds since epoch)
         final_str = ''
         if self.seq == 0xffffffffffffffff:
             final_str = ' [final vote]'
