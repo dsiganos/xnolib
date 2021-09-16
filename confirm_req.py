@@ -41,7 +41,7 @@ class confirm_req:
         return req
 
 
-class confirm_req_hash:
+class confirm_req_hash(confirm_req):
     def __init__(self, hdr, hash_pairs):
         assert(isinstance(hdr, message_header))
         assert(len(hash_pairs) > 0)
@@ -91,7 +91,7 @@ class confirm_req_hash:
         return string
 
 
-class confirm_req_block:
+class confirm_req_block(confirm_req):
     def __init__(self, hdr, block):
         # TODO: Fill in the headers block_type and item count here
         # Block has to be an instance of a block class
@@ -180,7 +180,7 @@ class confirm_ack:
             return confirm_ack_block.parse(hdr, data)
 
 
-class confirm_ack_hash:
+class confirm_ack_hash(confirm_ack):
     def __init__(self, hdr, common, hashes):
         assert(isinstance(hdr, message_header))
         assert(isinstance(common, vote_common))
@@ -230,7 +230,7 @@ class confirm_ack_hash:
 
 
 # TODO: This confirm ack also has a vote_common field
-class confirm_ack_block:
+class confirm_ack_block(confirm_ack):
     def __init__(self, hdr, common, block):
         assert(isinstance(hdr, message_header))
         assert(isinstance(common, vote_common))
