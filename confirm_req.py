@@ -319,6 +319,7 @@ def search_for_response(s, req):
         hdr, data = get_next_confirm_ack(s)
         ack = confirm_ack.parse(hdr, data)
         assert ack
+
         if req.is_response(ack):
             print("Found response!")
             return ack
