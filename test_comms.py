@@ -2,7 +2,7 @@ import time
 import unittest
 import binascii
 
-from msg_handshake import perform_handshake_exchange, handshake_response, handshake_query, handshake_response_query, \
+from msg_handshake import handshake_response, handshake_query, handshake_response_query, \
     handshake_exchange_server
 from pynanocoin import *
 from ipaddress import IPv6Address
@@ -374,7 +374,7 @@ class TestComms(unittest.TestCase):
             s.settimeout(3)
             try:
                 s.connect((str(p.ip), 7075))
-                perform_handshake_exchange(ctx, s)
+                node_handshake_id.perform_handshake_exchange(ctx, s)
                 self.assertTrue(send_confirm_req_genesis(ctx, p, s))
                 s.close()
             except OSError:
@@ -518,7 +518,7 @@ class TestComms(unittest.TestCase):
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(1000)
             s.connect(('::1', 6060))
-            perform_handshake_exchange(livectx, s)
+            node_handshake_id.perform_handshake_exchange(livectx, s)
             print("done")
 
     def test_account_key(self):

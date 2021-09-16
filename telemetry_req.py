@@ -118,7 +118,7 @@ def main():
 
     print('connecting to %s:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        perform_handshake_exchange(ctx, s)
+        node_handshake_id.perform_handshake_exchange(ctx, s)
 
         req = telemetry_req(ctx)
         s.send(req.serialise())

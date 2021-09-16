@@ -46,7 +46,7 @@ with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
     s.settimeout(10)
     s.connect((str(peer.ip), peer.port))
 
-    perform_handshake_exchange(ctx, s)
+    node_handshake_id.perform_handshake_exchange(ctx, s)
     print('handshake done')
 
     count = 0

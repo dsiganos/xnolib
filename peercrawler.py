@@ -64,7 +64,7 @@ class peer_manager:
             # once we get the first keepalive and the confirm ack mtaching the req sent
             # then we have what we need and we move on
             try:
-                peer_id = perform_handshake_exchange(self.ctx, s)
+                peer_id = node_handshake_id.perform_handshake_exchange(self.ctx, s)
                 peer.peer_id = peer_id
 
                 if self.verbosity >= 2:
