@@ -1,6 +1,18 @@
 from pynanocoin import *
 
 
+class node_handshake_id:
+    @classmethod
+    def parse(cls, hdr, payload):
+        if hdr.is_query() and hdr.is_response():
+            handshake = handshake_response_query.parse_query_response(hdr, payload)
+        elif hdr.is_query():
+            handshake = handshake_query.parse_query(hdr, payload)
+        elif hdr.is_response():
+            handshake = handshake_response.parse_response(hdr, payload)
+        return handshake
+
+
 class handshake_query:
     def __init__(self, hdr, cookie=os.urandom(32)):
         assert isinstance(hdr, message_header)
