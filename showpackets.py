@@ -54,33 +54,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def confirm_req_func(hdr, payload):
-    if hdr.block_type() == block_type_enum.not_a_block:
-        req = confirm_req_hash.parse(hdr, payload)
-    else:
-        req = confirm_req_block.parse(hdr, payload)
-    return req
-
-
-def node_handshake_id(hdr, payload):
-    if hdr.is_query() and hdr.is_response():
-        handshake = handshake_response_query.parse_query_response(hdr, payload)
-    elif hdr.is_query():
-        handshake = handshake_query.parse_query(hdr, payload)
-    elif hdr.is_response():
-        handshake = handshake_response.parse_response(hdr, payload)
-    return handshake
-
-
 functions = {
     message_type_enum.keepalive: message_keepalive.parse_payload,
     message_type_enum.publish: msg_publish.parse,
-    message_type_enum.confirm_req: confirm_req_func,
+    message_type_enum.confirm_req: confirm_req.confirm_req.parse,
     message_type_enum.confirm_ack: confirm_ack.parse,
     message_type_enum.bulk_pull: message_bulk_pull.parse,
     message_type_enum.bulk_push: bulk_push.parse,
     message_type_enum.frontier_req: frontier_request.parse,
-    message_type_enum.node_id_handshake: node_handshake_id,
+    message_type_enum.node_id_handshake: node_handshake_id.parse,
     message_type_enum.bulk_pull_account: bulk_pull_account.parse,
     message_type_enum.telemetry_req: lambda hdr, payload: hdr,
     message_type_enum.telemetry_ack: telemetry_ack.parse,
