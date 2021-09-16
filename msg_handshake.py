@@ -13,7 +13,7 @@ class node_handshake_id:
         return handshake
 
 
-class handshake_query:
+class handshake_query(node_handshake_id):
     def __init__(self, hdr, cookie=os.urandom(32)):
         assert isinstance(hdr, message_header)
         assert hdr.is_query()
@@ -48,7 +48,7 @@ class handshake_query:
         return True
 
 
-class handshake_response:
+class handshake_response(node_handshake_id):
     def __init__(self, hdr, account, signature):
         assert isinstance(hdr, message_header)
         assert hdr.is_response()
@@ -102,7 +102,7 @@ class handshake_response:
         return True
 
 
-class handshake_response_query:
+class handshake_response_query(node_handshake_id):
     def __init__(self, hdr, cookie, account, signature):
         assert isinstance(hdr, message_header)
         assert hdr.is_query()
