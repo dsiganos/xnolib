@@ -12,6 +12,26 @@ class node_handshake_id:
             handshake = handshake_response.parse_response(hdr, payload)
         return handshake
 
+    @classmethod
+    def perform_handshake_exchange(cls, ctx, s):
+        hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
+        msg_handshake = handshake_query(hdr)
+        s.send(msg_handshake.serialise())
+        try:
+            data = read_socket(s, 136)
+            hdr = message_header.parse_header(data[0:8])
+            recvd_response = handshake_response_query.parse_query_response(hdr, data[8:])
+
+            response = handshake_response.create_response(ctx, recvd_response.cookie)
+            s.send(response.serialise())
+
+            vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
+            vk.verify(recvd_response.sig, msg_handshake.cookie)
+        except TypeError:
+            raise HandshakeExchangeFail()
+
+        return recvd_response.account
+
 
 class handshake_query(node_handshake_id):
     def __init__(self, hdr, cookie=os.urandom(32)):
@@ -162,26 +182,6 @@ class handshake_response_query(node_handshake_id):
         elif not self.sig == other.sig:
             return False
         return True
-
-
-def perform_handshake_exchange(ctx, s):
-    hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
-    msg_handshake = handshake_query(hdr)
-    s.send(msg_handshake.serialise())
-    try:
-        data = read_socket(s, 136)
-        hdr = message_header.parse_header(data[0:8])
-        recvd_response = handshake_response_query.parse_query_response(hdr, data[8:])
-
-        response = handshake_response.create_response(ctx, recvd_response.cookie)
-        s.send(response.serialise())
-
-        vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
-        vk.verify(recvd_response.sig, msg_handshake.cookie)
-    except TypeError:
-        raise HandshakeExchangeFail()
-
-    return recvd_response.account
 
 
 def handshake_exchange_server(ctx, s, query):
