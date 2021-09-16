@@ -29,6 +29,18 @@ class hash_pair:
         assert len(data) == 64
         return hash_pair(data[0:32], data[32:64])
 
+
+class confirm_req:
+
+    @classmethod
+    def parse(cls, hdr, payload):
+        if hdr.block_type() == block_type_enum.not_a_block:
+            req = confirm_req_hash.parse(hdr, payload)
+        else:
+            req = confirm_req_block.parse(hdr, payload)
+        return req
+
+
 class confirm_req_hash:
     def __init__(self, hdr, hash_pairs):
         assert(isinstance(hdr, message_header))
