@@ -5,7 +5,7 @@ import time
 import argparse
 
 from pynanocoin import *
-from msg_handshake import perform_handshake_exchange
+from msg_handshake import node_handshake_id
 from peercrawler import *
 import datetime
 
@@ -317,16 +317,11 @@ def search_for_response(s, req):
     starttime = time.time()
     while time.time() - starttime <= 10:
         hdr, data = get_next_confirm_ack(s)
-        if hdr.block_type() == 1:
-            ack = confirm_ack_hash.parse(hdr, data)
-            if req.is_response(ack):
-                print("Found response!")
-                return ack
-        else:
-            ack = confirm_ack_block.parse(hdr, data)
-            if req.is_response(ack):
-                print("Found response!")
-                return ack
+        ack = confirm_ack.parse(hdr, data)
+        assert ack
+        if req.is_response(ack):
+            print("Found response!")
+            return ack
 
     return None
 
@@ -380,7 +375,7 @@ def confirm_req_peer(ctx, block, pair, peeraddr=None, peerport=None):
     s = get_connected_socket_endpoint(peeraddr, peerport)
     with s:
 
-        perform_handshake_exchange(ctx, s)
+        node_handshake_id.perform_handshake_exchange(ctx, s)
         print('handshake done')
 
         s.settimeout(10)
@@ -425,7 +420,7 @@ def main():
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
 
     else:
-        peer = get_random_peer(ctx, lambda p: p.score >= 1000)
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.ip.is_ipv4() and p.is_voting)
         peeraddr = str(peer.ip)
         peerport = peer.port
 
