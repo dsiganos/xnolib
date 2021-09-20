@@ -96,6 +96,14 @@ class frontier_service:
                 self.peers.append(p)
 
 
+
+class frontier_database:
+
+    def add_frontier(self, frontier, peer):
+        assert False
+
+    def remove_frontier(self, frontier, peer):
+        assert False
 class blacklist_entry:
     def __init__(self, item, time_added):
         self.item = item
