@@ -163,6 +163,42 @@ class my_sql_db(frontier_database):
         self.db.commit()
 
 
+class store_in_ram_interface(frontier_database):
+    def __init__(self, ctx, verbosity):
+        super().__init__(ctx, verbosity)
+        self.ctx = ctx
+        self.verbosity = verbosity
+        self.frontiers = []
+
+    def add_frontier(self, frontier, peer):
+        existing_front = self.get_account_frontier(frontier.account)
+        if existing_front is not None:
+            existing_front.frontier_hash = frontier.frontier_hash
+
+            if self.verbosity > 0:
+                print("Updated %s accounts frontier to %s" %
+                      (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+        else:
+            self.frontiers.append(frontier)
+            if self.verbosity > 0:
+                print("Added %s accounts frontier %s " %
+                      (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+
+    def remove_frontier(self, frontier, peer):
+        existing_front = self.get_account_frontier(frontier.account)
+        if existing_front is not None:
+            self.frontiers.remove(existing_front)
+            print("Removed the following frontier from list %s" % str(existing_front))
+
+        print("Frontier wasn't in the list so wasn't removed")
+
+    def get_account_frontier(self, account):
+        for f in self.frontiers:
+            if f.account == account:
+                return f
+        return None
+
+
 class blacklist_entry:
     def __init__(self, item, time_added):
         self.item = item
