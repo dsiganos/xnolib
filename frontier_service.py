@@ -285,10 +285,10 @@ class peer_frontiers:
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-b', '--beta', action='store_true', default=False,
+    group1 = parser.add_mutually_exclusive_group()
+    group1.add_argument('-b', '--beta', action='store_true', default=False,
                        help='use beta network')
-    group.add_argument('-t', '--test', action='store_true', default=False,
+    group1.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
     group2 = parser.add_mutually_exclusive_group(required = True)
