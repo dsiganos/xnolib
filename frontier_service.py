@@ -97,9 +97,13 @@ class frontier_service:
 
 
 def frontier_read_iter(s):
-    front = frontier_request.read_frontier_response(s)
-    while not front.is_end_marker():
+
+    while True:
+        front = frontier_request.read_frontier_response(s)
+        if front.is_end_marker():
+            return
         yield front
+
     return
 
 
