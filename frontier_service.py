@@ -98,12 +98,62 @@ class frontier_service:
 
 
 class frontier_database:
+    def __init__(self, ctx, verbosity):
+        self.ctx = ctx
+        self.verbosity = verbosity
 
     def add_frontier(self, frontier, peer):
         assert False
 
     def remove_frontier(self, frontier, peer):
         assert False
+
+
+class my_sql_db(frontier_database):
+    def __init__(self, ctx, verbosity, cursor, db):
+        super().__init__(ctx, verbosity)
+        self.ctx = ctx
+        self.verbosity = verbosity
+        self.cursor = cursor
+        self.db = db
+        self.peers_stored = []
+
+    def add_frontier(self, frontier, peer):
+        if peer not in self.peers_stored:
+            self.add_peer_to_db(peer)
+            self.peers_stored.append(peer)
+
+        query = "INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) "
+        query += "VALUES ('%s', '%s', '%s') " % (hexlify(peer.serialise()), hexlify(frontier.account),
+                                                 hexlify(frontier.frontier_hash))
+        query += "ON DUPLICATE KEY UPDATE frontier_hash = '%s'" % hexlify(frontier.frontier_hash)
+
+        if self.verbosity > 1:
+            print(query)
+        self.cursor.execute(query)
+        self.db.commit()
+
+    def remove_frontier(self, frontier, peer):
+        self.remove_peer_data(peer)
+
+        self.cursor.execute("DELETE FROM Frontiers WHERE account  = '%s'")
+
+    def remove_peer_data(self, p):
+        self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
+        self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
+        self.db.commit()
+
+    def add_peer_to_db(self, peer):
+        query = "INSERT INTO Peers(peer_id, ip_address, port, score) "
+        query += "VALUES('%s', '%s', %d, %d) " % (hexlify(peer.serialise()), str(peer.ip), peer.port, peer.score)
+        query += "ON DUPLICATE KEY UPDATE port = port"
+        if self.verbosity > 0:
+            print(query)
+        self.cursor.execute(query)
+        self.db.commit()
+    # MySQL closure
+
+
 class blacklist_entry:
     def __init__(self, item, time_added):
         self.item = item
