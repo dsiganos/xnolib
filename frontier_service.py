@@ -198,6 +198,12 @@ class store_in_ram_interface(frontier_database):
                 return f
         return None
 
+    def __str__(self):
+        string = "--- Frontiers in RAM ---\n"
+        for f in self.frontiers:
+            string += "acc: %s   front: %s\n" % (hexlify(f.account), hexlify(f.frontier_hash))
+        return string
+
 
 class blacklist_entry:
     def __init__(self, item, time_added):
