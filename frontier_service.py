@@ -11,10 +11,10 @@ from pynanocoin import *
 
 
 class frontier_service:
-    def __init__(self, ctx, db, cursor, verbosity = 0):
+    def __init__(self, ctx, interface, verbosity = 0):
+        assert isinstance(interface, frontier_database)
         self.ctx = ctx
-        self.db = db
-        self.cursor = cursor
+        self.interface = interface
         self.verbosity = verbosity
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
@@ -25,19 +25,14 @@ class frontier_service:
 
     def single_pass(self):
         hdr, peers = peercrawler.get_peers_from_service(self.ctx)
+        peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
         assert peers
         self.merge_peers(peers)
 
         for p in self.peers:
-            if p.score <= 0:
-                self.remove_peer_data(p)
-                self.peers.remove(p)
-                self.blacklist.add_item(p)
-                continue
 
             try:
                 self.manage_peer_frontiers(p)
-                self.db.commit()
 
             except (ConnectionRefusedError, socket.timeout, PyNanoCoinException,
                     FrontierServiceSlowPeer) as ex:
@@ -55,38 +50,43 @@ class frontier_service:
 
             # maxacc argument can be removed in final version
             hdr = frontier_request.frontier_request.generate_header(self.ctx)
-            req = frontier_request.frontier_request(hdr, maxacc=1000)
+            req = frontier_request.frontier_request(hdr)
             s.send(req.serialise())
-            frontier_request.read_all_frontiers(s, mysql_handler(p, self.cursor, self.verbosity))
 
-    def remove_peer_data(self, p):
-        self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
-        self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
+            front_iter = frontier_read_iter(s)
+            self.add_fronts_from_iter(front_iter, p)
 
+    def add_fronts_from_iter(self, front_iter, peer):
+        while True:
+            try:
+                front = next(front_iter)
+                self.interface.add_frontier(front, peer)
+            except StopIteration:
+                return
     # Function which will query all accounts with different frontier hashes
-    def find_accounts_different_hashes(self):
-        fetched_records = []
-
-        query_accounts_different_hashes(self.cursor)
-
-        for record in self.cursor.fetchall():
-            fetched_records.append(record[0])
-
-        return fetched_records
-
-    def get_all_records(self):
-        records = []
-
-        self.cursor.execute("SELECT * FROM frontiers")
-        for rec in self.cursor.fetchall():
-            records.append(frontiers_record.from_tuple(rec))
-
-        return records
-
-    def count_frontiers(self):
-        self.cursor.execute("SELECT COUNT(*) FROM frontiers")
-        result = self.cursor.fetchall()
-        return result[0]
+    # def find_accounts_different_hashes(self):
+    #     fetched_records = []
+    #
+    #     query_accounts_different_hashes(self.cursor)
+    #
+    #     for record in self.cursor.fetchall():
+    #         fetched_records.append(record[0])
+    #
+    #     return fetched_records
+    #
+    # def get_all_records(self):
+    #     records = []
+    #
+    #     self.cursor.execute("SELECT * FROM frontiers")
+    #     for rec in self.cursor.fetchall():
+    #         records.append(frontiers_record.from_tuple(rec))
+    #
+    #     return records
+    #
+    # def count_frontiers(self):
+    #     self.cursor.execute("SELECT COUNT(*) FROM frontiers")
+    #     result = self.cursor.fetchall()
+    #     return result[0]
 
     def merge_peers(self, peers):
         for p in peers:
@@ -278,33 +278,6 @@ def parse_args():
     return parser.parse_args()
 
 
-# MySQL closure
-def mysql_handler(p, cursor, verbosity):
-    assert(isinstance(p, Peer))
-    times = []
-    query1 = "INSERT INTO Peers(peer_id, ip_address, port, score) "
-    query1 += "VALUES('%s', '%s', %d, %d) " % (hexlify(p.serialise()), str(p.ip), p.port, p.score)
-    query1 += "ON DUPLICATE KEY UPDATE port = port"
-    if verbosity > 0:
-        print(query1)
-    cursor.execute(query1)
-
-    def add_data(counter, frontier, readtime):
-        times.append(readtime)
-        if counter > 4:
-            if find_average_time(times) > 0.05:
-                raise FrontierServiceSlowPeer("peer: %s is too slow" % str(p))
-        query2 = "INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) "
-        query2 += "VALUES ('%s', '%s', '%s') " % (hexlify(p.serialise()), hexlify(frontier.account),
-                                                  hexlify(frontier.frontier_hash))
-        query2 += "ON DUPLICATE KEY UPDATE frontier_hash = '%s'" % hexlify(frontier.frontier_hash)
-
-        if verbosity > 1:
-            print(query2)
-        cursor.execute(query2)
-    return add_data
-
-
 def find_average_time(times):
     n = 0.0
     for t in times:
@@ -345,6 +318,7 @@ def main():
         try:
             db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
             cursor = db.cursor()
+            inter = my_sql_db(ctx, args.verbosity, cursor, db)
         except mysql.connector.errors.ProgrammingError as err:
             db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
             create_new_database(db.cursor(), name=args.db)
@@ -352,8 +326,9 @@ def main():
             db.close()
             db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
             cursor = db.cursor()
+            inter = my_sql_db(ctx, args.verbosity, cursor, db)
 
-    frontserv = frontier_service(ctx, db, cursor, args.verbosity)
+    frontserv = frontier_service(ctx, inter, args.verbosity)
 
     # This will run forever
     if args.service:
@@ -365,15 +340,15 @@ def main():
             frontserv.single_pass()
 
     # This is a piece of code which can find accounts with different frontier hashes
-    if args.differences:
-        records = frontserv.find_accounts_different_hashes()
-        for rec in records:
-            print(rec)
-
-    if args.dumpdb:
-        records = frontserv.get_all_records()
-        for rec in records:
-            print(rec)
+    # if args.differences:
+    #     records = frontserv.find_accounts_different_hashes()
+    #     for rec in records:
+    #         print(rec)
+    #
+    # if args.dumpdb:
+    #     records = frontserv.get_all_records()
+    #     for rec in records:
+    #         print(rec)
 
 
 if __name__ == "__main__":
