@@ -96,6 +96,12 @@ class frontier_service:
                 self.peers.append(p)
 
 
+def frontier_read_iter(s):
+    front = frontier_request.read_frontier_response(s)
+    while not front.is_end_marker():
+        yield front
+    return
+
 
 class frontier_database:
     def __init__(self, ctx, verbosity):
