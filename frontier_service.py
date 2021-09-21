@@ -157,7 +157,6 @@ class my_sql_db(frontier_database):
             print(query)
         self.cursor.execute(query)
         self.db.commit()
-    # MySQL closure
 
 
 class blacklist_entry:
