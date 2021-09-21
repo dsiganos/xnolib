@@ -12,6 +12,7 @@ def setup_db_connection(host="localhost", user="root",
 def create_new_database(cursor, name):
     cursor.execute("CREATE DATABASE %s" % name)
     cursor.execute("USE %s" % name)
+    cursor.execute("SET SQL_SAFE_UPDATES = 0")
 
 
 def create_db_structure_frontier_service(cursor):
