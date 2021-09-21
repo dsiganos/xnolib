@@ -291,6 +291,12 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
+    group2 = parser.add_mutually_exclusive_group(required = True)
+    group2.add_argument('--sql', action='store_true', default=False,
+                        help='Use this argument to use the SQL interface')
+    group2.add_argument('--ram', action='store_true', default=False,
+                        help='Use this argument to store frontiers in RAM')
+
     parser.add_argument('-f', '--forever', action="store_true", default=False,
                         help='"forever" argument for the peercrawler thread')
     parser.add_argument('-v', '--verbosity', type=int, default=1,
@@ -352,6 +358,8 @@ def main():
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
         db.cursor().execute("DROP DATABASE %s" % args.db)
         sys.exit(0)
+    if args.ram:
+        inter = store_in_ram_interface(ctx, args.verbosity)
 
     else:
         try:
