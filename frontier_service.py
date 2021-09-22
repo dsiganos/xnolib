@@ -3,6 +3,8 @@
 import argparse
 import sys
 import time
+import lmdb
+
 from sql_utils import *
 import frontier_request
 import peercrawler
