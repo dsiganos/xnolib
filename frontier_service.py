@@ -203,6 +203,30 @@ class store_in_ram_interface(frontier_database):
         return string
 
 
+class store_in_lmdb(frontier_database):
+    def __init__(self, ctx, verbosity):
+        super().__init__(ctx, verbosity)
+        self.ctx = ctx
+        self.verbosity = verbosity
+        name = 'live_net_db'
+        if ctx == testctx:
+            name = 'test_net_db'
+        elif ctx == betactx:
+            name = 'beta_net_db'
+
+        self.lmdb_env = self.get_lmdb_env(name)
+
+    def add_frontier(self, frontier, peer):
+        with self.lmdb_env.begin(write=True) as tx:
+            tx.put(peer.serialise(), frontier.account, frontier.frontier_hash)
+            tx.commit()
+
+    def get_lmdb_env(self, name):
+        os.makedirs('frontier_lmdb_databases', exist_ok=True)
+        return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000,
+                         map_size=10 * 1000 * 1000 * 1000)
+
+
 class blacklist_entry:
     def __init__(self, item, time_added):
         self.item = item
