@@ -4,11 +4,12 @@ import argparse
 import sys
 import time
 import lmdb
-
-from sql_utils import *
+import threading
 import frontier_request
 import peercrawler
 import mysql.connector
+
+from sql_utils import *
 from pynanocoin import *
 
 
@@ -21,7 +22,23 @@ class frontier_service:
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
 
-    def start_service(self):
+    def start_service(self, addr = '::0', port = 7080):
+        thread = threading.Thread(target=self.run, daemon=True)
+        thread.start()
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(3)
+            s.bind((addr, port))
+
+            s.listen()
+
+            while True:
+                s.accept()
+
+                # TODO: Wait for packet, send the data
+                s.close()
+
+    def run(self):
         while True:
             self.single_pass()
 
