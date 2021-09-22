@@ -104,8 +104,6 @@ def frontier_read_iter(s):
             return
         yield front
 
-    return
-
 
 class frontier_database:
     def __init__(self, ctx, verbosity):
