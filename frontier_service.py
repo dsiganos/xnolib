@@ -152,7 +152,42 @@ class client_packet:
         return data
 
 
+class server_packet:
+    def __init__(self, frontiers):
+        assert isinstance(frontiers, list)
+        self.frontiers = frontiers
+        self.no_of_frontiers = len(frontiers)
 
+    def serialise(self):
+        data = b''
+        data += ord('K')
+        data += self.no_of_frontiers.to_bytes(8, 'big')
+        for f in self.frontiers:
+            data += f.serialise()
+        return data
+
+    @classmethod
+    def parse(cls, data):
+        assert data[0] == ord('K')
+        no_of_frontiers = int.from_bytes(data[1:9], 'big')
+        assert len(data) == 1 + 9 + (64 * no_of_frontiers)
+        frontiers = []
+        start_index = 9
+        end_index = 72
+
+        for i in range(0, no_of_frontiers):
+            front = frontier_request.frontier_entry(data[start_index:end_index - 32], data[end_index - 32:end_index])
+            frontiers.append(front)
+            start_index += 64
+            end_index += 64
+
+        return server_packet(frontiers)
+
+    def __str__(self):
+        string = 'No of frontiers: %d\n' % self.no_of_frontiers
+        for f in self.frontiers:
+            string += str(f) + '\n'
+        return string
 
 
 class frontier_database:
