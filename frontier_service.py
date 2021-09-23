@@ -38,6 +38,21 @@ class frontier_service:
                 # TODO: Wait for packet, send the data
                 s.close()
 
+    def comm_thread(self, s):
+        while True:
+            s.settimeout(10)
+
+            try:
+                data = s.recv(33)
+                c_packet = client_packet.parse(data)
+                if c_packet.is_all_zero():
+                    pass
+            except socket.timeout:
+                continue
+            except (OSError, socket.error) as err:
+                s.close()
+                break
+
     def run(self):
         while True:
             self.single_pass()
