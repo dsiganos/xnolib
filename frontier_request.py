@@ -71,6 +71,12 @@ class frontier_entry:
     def is_end_marker(self):
         return self.account == (b'\x00' * 32) and self.frontier_hash == (b'\x00' * 32)
 
+    def serialise(self):
+        data = b''
+        data += self.account
+        data += self.frontier_hash
+        return data
+
     def __str__(self):
         string = "%s\n" % acctools.to_account_addr(self.account)
         string += "%s" % binascii.hexlify(self.frontier_hash).decode("utf-8").upper()
