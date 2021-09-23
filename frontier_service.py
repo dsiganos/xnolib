@@ -166,6 +166,9 @@ class frontier_database:
     def remove_frontier(self, frontier, peer):
         assert False
 
+    def get_frontier(self, account):
+        assert False
+
 
 class my_sql_db(frontier_database):
     def __init__(self, ctx, verbosity, cursor, db):
@@ -190,6 +193,11 @@ class my_sql_db(frontier_database):
             print(query)
         self.cursor.execute(query)
         self.db.commit()
+
+    def get_frontier(self, account):
+        query = 'SELECT (account_hash, frontier_hash) FROM Frontiers WHERE account_hash = "%s"' % hexlify(account)
+        self.cursor.execute(query)
+        return self.cursor.fetchone()
 
     def remove_frontier(self, frontier, peer):
         self.remove_peer_data(peer)
