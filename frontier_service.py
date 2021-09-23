@@ -264,7 +264,7 @@ class store_in_ram_interface(frontier_database):
         self.frontiers = []
 
     def add_frontier(self, frontier, peer):
-        existing_front = self.get_account_frontier(frontier.account)
+        existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             existing_front.frontier_hash = frontier.frontier_hash
 
@@ -278,18 +278,21 @@ class store_in_ram_interface(frontier_database):
                       (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
     def remove_frontier(self, frontier, peer):
-        existing_front = self.get_account_frontier(frontier.account)
+        existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             self.frontiers.remove(existing_front)
             print("Removed the following frontier from list %s" % str(existing_front))
 
         print("Frontier wasn't in the list so wasn't removed")
 
-    def get_account_frontier(self, account):
+    def get_frontier(self, account):
         for f in self.frontiers:
             if f.account == account:
                 return f
         return None
+
+    def get_all(self):
+        return self.frontiers
 
     def __str__(self):
         string = "--- Frontiers in RAM ---\n"
