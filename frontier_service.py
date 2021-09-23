@@ -33,7 +33,9 @@ class frontier_service:
             s.listen()
 
             while True:
-                s.accept()
+                conn, addr = s.accept()
+                thread2 = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
+                thread2.start()
 
                 # TODO: Wait for packet, send the data
                 s.close()
