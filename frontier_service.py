@@ -115,7 +115,6 @@ class frontier_service:
                 self.peers.append(p)
 
 
-def frontier_read_iter(s):
 class client_packet:
     def __init__(self, account):
         self.account = account
@@ -139,11 +138,6 @@ class client_packet:
 
 
 
-    while True:
-        front = frontier_request.read_frontier_response(s)
-        if front.is_end_marker():
-            return
-        yield front
 
 
 class frontier_database:
@@ -390,6 +384,15 @@ def parse_args():
                         help='option to dump all the data in the database')
 
     return parser.parse_args()
+
+
+def frontier_read_iter(s):
+
+    while True:
+        front = frontier_request.read_frontier_response(s)
+        if front.is_end_marker():
+            return
+        yield front
 
 
 def find_average_time(times):
