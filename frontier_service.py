@@ -116,6 +116,28 @@ class frontier_service:
 
 
 def frontier_read_iter(s):
+class client_packet:
+    def __init__(self, account):
+        self.account = account
+        self.magic = ord('K')
+
+    @classmethod
+    def parse(cls, data):
+        assert len(data) == 33
+        assert data[0] == ord('K')
+        account = data[1:]
+        return client_packet(account)
+
+    def is_all_zero(self):
+        return self.account == b'\x00' * 32
+
+    def serialise(self):
+        data = b''
+        data += ord('K')
+        data += self.account
+        return data
+
+
 
     while True:
         front = frontier_request.read_frontier_response(s)
