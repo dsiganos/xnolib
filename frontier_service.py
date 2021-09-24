@@ -295,7 +295,7 @@ class store_in_ram_interface(frontier_database):
         return None
 
     def get_all(self):
-        return self.frontiers
+        return copy.copy(self.frontiers)
 
     def __str__(self):
         string = "--- Frontiers in RAM ---\n"
