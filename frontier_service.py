@@ -1,6 +1,7 @@
 #!/bin/env python3
 
 import argparse
+import copy
 import sys
 import time
 import lmdb
