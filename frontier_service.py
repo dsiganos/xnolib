@@ -150,7 +150,7 @@ class client_packet:
 
     def serialise(self):
         data = b''
-        data += ord('K')
+        data += ord('K').to_bytes(1, 'big')
         data += self.account
         return data
 
