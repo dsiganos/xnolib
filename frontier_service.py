@@ -206,6 +206,9 @@ class frontier_database:
     def get_frontier(self, account):
         assert False
 
+    def get_all(self):
+        assert False
+
 
 class my_sql_db(frontier_database):
     def __init__(self, ctx, verbosity, cursor, db):
