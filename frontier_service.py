@@ -68,6 +68,7 @@ class frontier_service:
         for t in self.threads:
             if not t.is_alive():
                 t.join()
+                self.threads.remove(t)
 
     def run(self):
         while True:
