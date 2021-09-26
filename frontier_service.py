@@ -28,13 +28,13 @@ class frontier_service:
         thread.start()
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.settimeout(3)
             s.bind((addr, port))
 
             s.listen()
 
             while True:
                 conn, addr = s.accept()
+                conn.settimeout(10)
                 thread2 = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
                 thread2.start()
 
@@ -49,7 +49,14 @@ class frontier_service:
                 data = s.recv(33)
                 c_packet = client_packet.parse(data)
                 if c_packet.is_all_zero():
-                    pass
+                    frontiers = self.interface.get_all()
+                    s_packet = server_packet(frontiers)
+                    s.send(s_packet.serialise())
+                    break
+                else:
+                    frontier = self.interface.get_frontier(c_packet.account)
+                    s_packet = server_packet([frontier])
+                    s.send(s_packet.serialise())
             except socket.timeout:
                 continue
             except (OSError, socket.error) as err:
