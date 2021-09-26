@@ -494,6 +494,23 @@ def find_average_time(times):
     return n / len(times)
 
 
+def get_all_frontiers_packet_from_service(addr = '::1', port = 7080):
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+        s.connect((addr, port))
+
+        c_packet1 = client_packet(b'\x00' * 32)
+
+        s.send((c_packet1.serialise()))
+
+        data = readall(s)
+        s_hdr = server_packet_header.parse(data[0:9])
+        s_packet = server_packet.parse(s_hdr, data[9:])
+        return s_packet
+
+
+
 def main():
     # Defaults:
     # - MySQL IP: 127.0.0.1
