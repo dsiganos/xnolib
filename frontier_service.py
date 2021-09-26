@@ -205,10 +205,10 @@ class server_packet:
 
     @classmethod
     def parse(cls, hdr, data):
-        assert len(data) == 64 * hdr.no_of_frontiers
+        assert len(data) == 64 * hdr.no_of_frontiers + 64
         frontiers = []
-        start_index = 9
-        end_index = 72
+        start_index = 0
+        end_index = 64
 
         for i in range(0, hdr.no_of_frontiers):
             front = frontier_request.frontier_entry(data[start_index:end_index - 32], data[end_index - 32:end_index])
@@ -221,7 +221,7 @@ class server_packet:
     def __str__(self):
         string = 'No of frontiers: %s\n' % str(self.header)
         for f in self.frontiers:
-            string += str(f) + '\n'
+            string += str(f) + '\n\n'
         return string
 
 

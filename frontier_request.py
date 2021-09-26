@@ -65,6 +65,7 @@ class frontier_request:
 
 class frontier_entry:
     def __init__(self, account, frontier_hash):
+        assert len(account) == 32
         self.account = account
         self.frontier_hash = frontier_hash
 
