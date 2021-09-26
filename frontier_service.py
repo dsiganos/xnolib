@@ -42,26 +42,24 @@ class frontier_service:
 
     def comm_thread(self, s):
         with s:
-            while True:
-                s.settimeout(10)
+            s.settimeout(10)
 
-                try:
-                    data = s.recv(33)
-                    c_packet = client_packet.parse(data)
-                    if c_packet.is_all_zero():
-                        frontiers = self.interface.get_all()
-                        s_packet = server_packet(frontiers)
-                        s.send(s_packet.serialise())
-                        break
-                    else:
-                        frontier = self.interface.get_frontier(c_packet.account)
-                        s_packet = server_packet([frontier])
-                        s.send(s_packet.serialise())
-                except socket.timeout:
-                    continue
-                except (OSError, socket.error) as err:
-                    s.close()
-                    break
+            try:
+                data = s.recv(33)
+                c_packet = client_packet.parse(data)
+                if c_packet.is_all_zero():
+                    frontiers = self.interface.get_all()
+                    s_packet = server_packet(frontiers)
+                    s.send(s_packet.serialise())
+                    return
+
+                else:
+                    frontier = self.interface.get_frontier(c_packet.account)
+                    s_packet = server_packet([frontier])
+                    s.send(s_packet.serialise())
+
+            except (OSError, socket.error, socket.timeout) as err:
+                return
 
     def run(self):
         while True:
@@ -203,7 +201,7 @@ class server_packet:
         start_index = 9
         end_index = 72
 
-        for i in range(0, no_of_frontiers):
+        for i in range(0, hdr.no_of_frontiers):
             front = frontier_request.frontier_entry(data[start_index:end_index - 32], data[end_index - 32:end_index])
             frontiers.append(front)
             start_index += 64
