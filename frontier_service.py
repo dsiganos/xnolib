@@ -58,12 +58,15 @@ class frontier_service:
                 s_packet = server_packet([frontier])
                 s.send(s_packet.serialise())
 
-
     def join_finished_threads(self):
+        remove_threads = []
         for t in self.threads:
             if not t.is_alive():
                 t.join()
-                self.threads.remove(t)
+                remove_threads.append(t)
+
+        for t in remove_threads:
+            self.threads.remove(t)
 
     def run(self):
         while True:

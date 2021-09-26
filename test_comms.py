@@ -630,6 +630,12 @@ class TestComms(unittest.TestCase):
         s_packet = get_all_frontiers_packet_from_service()
         print(s_packet)
 
+    def test_deleteme(self):
+        ts = [True, False, True, False, True]
+        ts2 = itertools.filterfalse(lambda t: t, ts)
+        pass
+
+
 
 if __name__ == '__main__':
     unittest.main()
