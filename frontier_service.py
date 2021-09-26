@@ -477,7 +477,7 @@ def parse_args():
 
     parser.add_argument('-f', '--forever', action="store_true", default=False,
                         help='"forever" argument for the peercrawler thread')
-    parser.add_argument('-v', '--verbosity', type=int, default=1,
+    parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help='verbosity for the peercrawler')
 
     parser.add_argument('--rmdb', action='store_true', default=False,
