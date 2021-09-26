@@ -23,7 +23,7 @@ class frontier_service:
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
 
-    def start_service(self, addr = '::0', port = 7080):
+    def start_service(self, addr = '::1', port = 7080):
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
