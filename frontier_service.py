@@ -38,6 +38,8 @@ class frontier_service:
                 conn.settimeout(600)
                 thread2 = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
                 thread2.start()
+                self.threads.append(thread2)
+                self.join_finished_threads()
 
                 # TODO: Wait for packet, send the data
 
