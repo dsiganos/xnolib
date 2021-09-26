@@ -472,6 +472,8 @@ def parse_args():
                         help='Use this argument to use the SQL interface')
     group2.add_argument('--ram', action='store_true', default=False,
                         help='Use this argument to store frontiers in RAM')
+    group2.add_argument('--lmdb', action='store_true', default=False,
+                        help='Use this argument to store frontiers in LMDB database')
 
     parser.add_argument('-f', '--forever', action="store_true", default=False,
                         help='"forever" argument for the peercrawler thread')
@@ -581,6 +583,8 @@ def main():
         sys.exit(0)
     if args.ram:
         inter = store_in_ram_interface(ctx, args.verbosity)
+    if args.lmdb:
+        inter = store_in_lmdb(ctx, args.verbosity)
 
     else:
         try:
