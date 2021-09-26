@@ -168,6 +168,7 @@ class server_packet_header:
         data = b''
         data += ord('K').to_bytes(1, 'big')
         data += self.no_of_frontiers.to_bytes(8, 'big')
+        return data
 
     @classmethod
     def parse(cls, data):
