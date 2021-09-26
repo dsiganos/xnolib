@@ -41,26 +41,27 @@ class frontier_service:
                 # TODO: Wait for packet, send the data
 
     def comm_thread(self, s):
-        while True:
-            s.settimeout(10)
+        with s:
+            while True:
+                s.settimeout(10)
 
-            try:
-                data = s.recv(33)
-                c_packet = client_packet.parse(data)
-                if c_packet.is_all_zero():
-                    frontiers = self.interface.get_all()
-                    s_packet = server_packet(frontiers)
-                    s.send(s_packet.serialise())
+                try:
+                    data = s.recv(33)
+                    c_packet = client_packet.parse(data)
+                    if c_packet.is_all_zero():
+                        frontiers = self.interface.get_all()
+                        s_packet = server_packet(frontiers)
+                        s.send(s_packet.serialise())
+                        break
+                    else:
+                        frontier = self.interface.get_frontier(c_packet.account)
+                        s_packet = server_packet([frontier])
+                        s.send(s_packet.serialise())
+                except socket.timeout:
+                    continue
+                except (OSError, socket.error) as err:
+                    s.close()
                     break
-                else:
-                    frontier = self.interface.get_frontier(c_packet.account)
-                    s_packet = server_packet([frontier])
-                    s.send(s_packet.serialise())
-            except socket.timeout:
-                continue
-            except (OSError, socket.error) as err:
-                s.close()
-                break
 
     def run(self):
         while True:
