@@ -607,7 +607,6 @@ def main():
         else:
             frontserv.single_pass()
 
-    print(inter)
     # This is a piece of code which can find accounts with different frontier hashes
     # if args.differences:
     #     records = frontserv.find_accounts_different_hashes()
