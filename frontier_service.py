@@ -527,9 +527,11 @@ def get_all_frontiers_packet_from_service(addr = '::1', port = 7080):
 
         s.send((c_packet1.serialise()))
 
-        data = readall(s)
-        s_hdr = server_packet_header.parse(data[0:9])
-        s_packet = server_packet.parse(s_hdr, data[9:])
+        hdr_data = read_socket(s, 9)
+        s_hdr = server_packet_header.parse(hdr_data)
+
+        front_data = read_socket(s, 64 * s_hdr.no_of_frontiers + 64)
+        s_packet = server_packet.parse(s_hdr, front_data)
         return s_packet
 
 
