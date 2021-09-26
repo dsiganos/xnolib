@@ -155,25 +155,43 @@ class client_packet:
         return data
 
 
-class server_packet:
-    def __init__(self, frontiers):
-        assert isinstance(frontiers, list)
-        self.frontiers = frontiers
-        self.no_of_frontiers = len(frontiers)
+class server_packet_header:
+    def __init__(self, no_of_frontiers):
+        self.no_of_frontiers = no_of_frontiers
 
     def serialise(self):
         data = b''
-        data += ord('K')
+        data += ord('K').to_bytes(1, 'big')
         data += self.no_of_frontiers.to_bytes(8, 'big')
-        for f in self.frontiers:
-            data += f.serialise()
-        return data
 
     @classmethod
     def parse(cls, data):
         assert data[0] == ord('K')
         no_of_frontiers = int.from_bytes(data[1:9], 'big')
-        assert len(data) == 1 + 9 + (64 * no_of_frontiers)
+        return server_packet_header(no_of_frontiers)
+
+    def __str__(self):
+        return str(self.no_of_frontiers)
+
+
+class server_packet:
+    def __init__(self, frontiers):
+        # TODO: make this a header followed by frontier_response (nano protocol)
+        assert isinstance(frontiers, list)
+        self.frontiers = frontiers
+        self.header = server_packet_header(len(frontiers))
+
+    def serialise(self):
+        data = b''
+        data += self.header.serialise()
+        for f in self.frontiers:
+            data += f.serialise()
+        data += b'\x00' * 64
+        return data
+
+    @classmethod
+    def parse(cls, hdr, data):
+        assert len(data) == 64 * hdr.no_of_frontiers
         frontiers = []
         start_index = 9
         end_index = 72
