@@ -41,8 +41,6 @@ class frontier_service:
                 self.threads.append(thread2)
                 self.join_finished_threads()
 
-                # TODO: Wait for packet, send the data
-
     def comm_thread(self, s):
         with s:
             s.settimeout(10)
