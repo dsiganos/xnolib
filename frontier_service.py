@@ -39,7 +39,6 @@ class frontier_service:
                 thread2.start()
 
                 # TODO: Wait for packet, send the data
-                s.close()
 
     def comm_thread(self, s):
         while True:
