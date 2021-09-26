@@ -351,13 +351,28 @@ class store_in_lmdb(frontier_database):
 
     def add_frontier(self, frontier, peer):
         with self.lmdb_env.begin(write=True) as tx:
-            tx.put(peer.serialise(), frontier.account, frontier.frontier_hash)
-            tx.commit()
+            tx.put(frontier.account, frontier.frontier_hash)
+            if self.verbosity > 0:
+                print("Added values %s, %s to lmdb" % (hexlify(frontier.account),
+                                                       hexlify(frontier.frontier_hash)))
 
     def get_lmdb_env(self, name):
         os.makedirs('frontier_lmdb_databases', exist_ok=True)
         return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000,
                          map_size=10 * 1000 * 1000 * 1000)
+
+    def get_frontier(self, account):
+        with self.lmdb_env.begin(write=False) as tx:
+            front_hash = tx.get(account)
+            return frontier_request.frontier_entry(account, front_hash)
+
+    def get_all(self):
+        with self.lmdb_env.begin(write=False) as tx:
+            frontiers = []
+            for key, value in tx.cursor():
+                front = frontier_request.frontier_entry(key, value)
+                frontiers.append(front)
+        return frontiers
 
 
 class blacklist_entry:
