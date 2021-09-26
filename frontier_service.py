@@ -22,6 +22,7 @@ class frontier_service:
         self.verbosity = verbosity
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
+        self.threads = []
 
     def start_service(self, addr = '::1', port = 7080):
         thread = threading.Thread(target=self.run, daemon=True)
@@ -60,6 +61,11 @@ class frontier_service:
 
             except (OSError, socket.error, socket.timeout) as err:
                 return
+
+    def join_finished_threads(self):
+        for t in self.threads:
+            if not t.is_alive():
+                t.join()
 
     def run(self):
         while True:
