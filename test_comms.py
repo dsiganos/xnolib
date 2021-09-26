@@ -6,7 +6,7 @@ from msg_handshake import handshake_response, handshake_query, handshake_respons
     handshake_exchange_server
 from pynanocoin import *
 from ipaddress import IPv6Address
-from frontier_service import blacklist_manager, blacklist_entry
+from frontier_service import *
 from peercrawler import send_confirm_req_genesis, get_peers_from_service
 from frontier_request import *
 from bulk_pull_account import *
@@ -625,6 +625,10 @@ class TestComms(unittest.TestCase):
 
         self.assertEqual(hs1, hs2)
         self.assertEqual(hs1, hs3)
+
+    def test_frontier_service_client(self):
+        s_packet = get_all_frontiers_packet_from_service()
+        print(s_packet)
 
 
 if __name__ == '__main__':
