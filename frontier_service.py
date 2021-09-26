@@ -45,22 +45,19 @@ class frontier_service:
         with s:
             s.settimeout(10)
 
-            try:
-                data = s.recv(33)
-                c_packet = client_packet.parse(data)
-                if c_packet.is_all_zero():
-                    frontiers = self.interface.get_all()
-                    s_packet = server_packet(frontiers)
-                    s.send(s_packet.serialise())
-                    return
-
-                else:
-                    frontier = self.interface.get_frontier(c_packet.account)
-                    s_packet = server_packet([frontier])
-                    s.send(s_packet.serialise())
-
-            except (OSError, socket.error, socket.timeout) as err:
+            data = s.recv(33)
+            c_packet = client_packet.parse(data)
+            if c_packet.is_all_zero():
+                frontiers = self.interface.get_all()
+                s_packet = server_packet(frontiers)
+                s.send(s_packet.serialise())
                 return
+
+            else:
+                frontier = self.interface.get_frontier(c_packet.account)
+                s_packet = server_packet([frontier])
+                s.send(s_packet.serialise())
+
 
     def join_finished_threads(self):
         for t in self.threads:
