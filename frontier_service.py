@@ -531,6 +531,25 @@ def get_all_frontiers_packet_from_service(addr = '::1', port = 7080):
         return s_packet
 
 
+def get_accounts_frontier_packet_from_service(account, addr = '::1', port = 7080):
+    assert len(account) == 32
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.settimeout(3)
+        s.connect((addr, port))
+
+        c_packet = client_packet(account)
+
+        s.send(c_packet.serialise())
+
+        hdr_data = read_socket(s, 9)
+        s_hdr = server_packet_header.parse(hdr_data)
+
+        front_data = read_socket(s, 128)
+        s_packet = server_packet.parse(s_hdr, front_data)
+
+        return s_packet
+
 
 def main():
     # Defaults:
