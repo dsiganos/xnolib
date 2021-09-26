@@ -212,7 +212,7 @@ class server_packet:
         return server_packet(frontiers)
 
     def __str__(self):
-        string = 'No of frontiers: %d\n' % self.no_of_frontiers
+        string = 'No of frontiers: %s\n' % str(self.header)
         for f in self.frontiers:
             string += str(f) + '\n'
         return string
