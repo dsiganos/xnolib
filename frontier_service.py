@@ -34,7 +34,7 @@ class frontier_service:
 
             while True:
                 conn, addr = s.accept()
-                conn.settimeout(10)
+                conn.settimeout(600)
                 thread2 = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
                 thread2.start()
 
