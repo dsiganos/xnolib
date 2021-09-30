@@ -321,7 +321,6 @@ def search_for_response(s, req):
         assert ack
 
         if req.is_response(ack):
-            print("Found response!")
             return ack
 
     return None
