@@ -38,7 +38,7 @@ class frontier_request:
         return frontier_request(hdr, start_account=start_account, maxage=maxage, maxacc=maxacc)
 
     @classmethod
-    def generate_header(cls, ctx, confirmed = False):
+    def generate_header(cls, ctx, confirmed = True):
         return message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
 
     def __str__(self):
