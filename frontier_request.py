@@ -65,11 +65,18 @@ class frontier_request:
 
 class frontier_entry:
     def __init__(self, account, frontier_hash):
+        assert len(account) == 32
         self.account = account
         self.frontier_hash = frontier_hash
 
     def is_end_marker(self):
         return self.account == (b'\x00' * 32) and self.frontier_hash == (b'\x00' * 32)
+
+    def serialise(self):
+        data = b''
+        data += self.account
+        data += self.frontier_hash
+        return data
 
     def __str__(self):
         string = "%s\n" % acctools.to_account_addr(self.account)
