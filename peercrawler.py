@@ -19,7 +19,7 @@ from msg_handshake import *
 
 def get_telemetry(ctx, s):
     req = telemetry_req.telemetry_req(ctx)
-    s.send(req.serialise())
+    s.sendall(req.serialise())
     hdr, data = get_next_hdr_payload(s)
     while hdr.msg_type != message_type(message_type_enum.telemetry_ack):
         hdr, data = get_next_hdr_payload(s)
@@ -249,13 +249,13 @@ def run_peer_service_forever(peerman, addr='', port=7070):
 
         while True:
             conn, addr = s.accept()
-            conn.settimeout(10)
-            hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
-            data = hdr.serialise()
-            json_list = jsonpickle.encode(peerman.get_peers_copy())
-            data += json_list.encode()
-            conn.send(data)
-            conn.close()
+            with conn:
+                conn.settimeout(10)
+                hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
+                data = hdr.serialise()
+                json_list = jsonpickle.encode(peerman.get_peers_copy())
+                data += json_list.encode()
+                conn.sendall(data)
 
 
 def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
@@ -271,7 +271,6 @@ def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
                 raise PeerServiceUnavailable("Peer service for the given network is unavailable")
         except (PyNanoCoinException, OSError, TypeError) as e:
             print("Error getting peers: %s" % str(e))
-            s.close()
             raise PeerServiceUnavailable("Peer service is unavailable")
 
         json_peers = response[peer_service_header.size:]
