@@ -160,7 +160,8 @@ def get_frontiers_from_peer(peer, frontier_req, use_db, print_handler):
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(3)
-        print('connecting to %s' % peer)
+        if print_handler is not binary_print_handler:
+            print('connecting to %s' % peer)
         s.connect((str(peer.ip), peer.port))
 
         #peer = ip_addr.from_string(peerstr)
