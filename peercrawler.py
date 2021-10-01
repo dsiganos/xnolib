@@ -142,7 +142,7 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
-    parser.add_argument('-c', '--connect',
+    parser.add_argument('-c', '--connect', nargs='?', const='::ffff:46.101.61.203',
                         help='connect to peercrawler service given by arg and get list of peers')
 
     parser.add_argument('-v', '--verbosity', type=int,
