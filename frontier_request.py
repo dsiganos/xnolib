@@ -14,6 +14,15 @@ from exceptions import *
 from pynanocoin import *
 
 
+def iterate_frontiers_from_stdin():
+    while True:
+        data = sys.stdin.buffer.read(64)
+        if data is None or len(data) < 64:
+            #raise PyNanoCoinException('failed to read frontier response, data=%s', data)
+            return
+        return frontier_entry(data[0:32], data[32:])
+
+
 class frontier_request:
     def __init__(self, hdr, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff):
         assert (len(start_account) == 32)
