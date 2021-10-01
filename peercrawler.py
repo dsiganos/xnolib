@@ -63,6 +63,7 @@ class peer_manager:
             # try to connect to peer
             try:
                 s.connect((str(peer.ip), peer.port))
+                s.settimeout(10)
             except OSError as error:
                 peer.score = 0
                 if self.verbosity >= 3:
