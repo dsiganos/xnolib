@@ -20,7 +20,7 @@ def iterate_frontiers_from_stdin():
         if data is None or len(data) < 64:
             #raise PyNanoCoinException('failed to read frontier response, data=%s', data)
             return
-        return frontier_entry(data[0:32], data[32:])
+        yield frontier_entry(data[0:32], data[32:])
 
 
 class frontier_request:

@@ -47,13 +47,8 @@ def main():
         s.settimeout(10)
         s.connect((peeraddr, peerport))
 
-        front_hdr = frontier_request.generate_header(ctx)
-        req = frontier_request(front_hdr)
-
-        s.send(req.serialise())
-
         count = 0
-        for f in frontier_request.iterate_frontiers_from_stdin():
+        for f in iterate_frontiers_from_stdin():
             blocks = get_account_blocks(ctx, s, f.account)
             print('ACCOUNT: %s %s' % (hexlify(f.account), acctools.to_account_addr(f.account)))
 
