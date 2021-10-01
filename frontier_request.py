@@ -1,5 +1,6 @@
 #!/bin/env python3
 
+import sys
 import binascii
 import random
 import socket
@@ -107,6 +108,9 @@ def parse_args():
     parser.add_argument('-a', '--all', action='store_true', default=False,
                         help='Download frontiers from all peers')
 
+    parser.add_argument('--binary', action='store_true', default=False,
+                        help='Print frontiers in binary form (if printing)')
+
     parser.add_argument('-c', '--count', type=int, default=0xffffffff,
                         help='number of frontiers to download, if not set, all frontiers are downloaded')
     parser.add_argument('-m', '--maxage', type=int, default=0xffffffff,
@@ -137,7 +141,11 @@ def read_all_frontiers(s, frontier_handler):
         counter += 1
 
 
-def print_handler(counter, frontier, readtime):
+def binary_print_handler(counter, frontier, readtime):
+    sys.stdout.buffer.write(frontier.serialise())
+
+
+def text_print_handler(counter, frontier, readtime):
     print(counter, hexlify(frontier.frontier_hash),
           hexlify(frontier.account), acctools.to_account_addr(frontier.account))
 
@@ -146,7 +154,7 @@ def frontier_to_db(tx, counter, frontier):
     tx.put(frontier.account, frontier.frontier_hash)
 
 
-def get_frontiers_from_peer(peer, frontier_req, use_db):
+def get_frontiers_from_peer(peer, frontier_req, use_db, print_handler):
     assert isinstance(frontier_req, frontier_request)
 
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -195,15 +203,12 @@ def main():
             peers = list(filter(lambda p: p.score >= 1000, peers))
             peers = [random.choice(peers)]
 
-    for peer in peers:
+    print_handler = binary_print_handler if args.binary else text_print_handler
 
+    for peer in peers:
         try:
-            get_frontiers_from_peer(peer, frontier_req, args.db)
-        except OSError as e:
-            # peer was connectable but some other error happpened, score it with 1
-            peer.deduct_score(200)
-            print('Exception %s: %s' % (type(e), e))
-        except PyNanoCoinException as e:
+            get_frontiers_from_peer(peer, frontier_req, args.db, print_handler)
+        except (OSError, PyNanoCoinException) as e:
             # peer was connectable but some other error happpened, score it with 1
             peer.deduct_score(200)
             print('Exception %s: %s' % (type(e), e))
