@@ -248,7 +248,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
 
         while True:
             conn, addr = s.accept()
-            conn.settimeout(5)
+            conn.settimeout(10)
             hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
             data = hdr.serialise()
             json_list = jsonpickle.encode(peerman.get_peers_copy())
@@ -260,7 +260,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
 def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(5)
+        s.settimeout(10)
         try:
             s.connect((addr, ctx['peercrawlerport']))
             response = readall(s)

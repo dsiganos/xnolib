@@ -1694,15 +1694,10 @@ def read_bulk_pull_response(s):
 def readall(s):
     data = b''
     while True:
-        try:
-            recvd = s.recv(1)
-            if recvd == b'': raise SocketClosedByPeer
-            data += recvd
-        except (socket.timeout, SocketClosedByPeer):
-            if len(data) > 0:
-                return data
-            else:
-                return None
+        recvd = s.recv(10000)
+        if recvd == b'':
+            return data
+        data += recvd
 
 
 def pow_validate(work, prev):
