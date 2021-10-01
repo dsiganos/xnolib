@@ -61,6 +61,9 @@ class telemetry_ack:
         string += "Active Difficulty: %s (%s)" % (self.active_difficulty, hex(self.active_difficulty))
         return string
 
+    def get_sw_version(self):
+        return "%s.%s.%s" % (self.major_ver, self.minor_ver, self.patch_ver)
+
     @classmethod
     def parse(self, hdr, data):
         if len(data) != 202:

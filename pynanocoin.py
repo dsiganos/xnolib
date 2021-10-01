@@ -301,6 +301,7 @@ class Peer:
         self.port = port
         self.peer_id = None
         self.is_voting = is_voting
+        self.telemetry = None
         self.aux = {}
 
         # sideband info, not used for equality and hashing
@@ -335,7 +336,10 @@ class Peer:
         return Peer(ip_addr(ip), port)
 
     def __str__(self):
-        return '%s:%s (score:%s, is_voting: %s)' % (str(self.ip), self.port, self.score, self.is_voting)
+        sw_ver = ''
+        if self.telemetry:
+            sw_ver = ' v' + self.telemetry.get_sw_version()
+        return '%s:%s (score:%s, is_voting: %s%s)' % (str(self.ip), self.port, self.score, self.is_voting, sw_ver)
 
     def __eq__(self, other):
         return self.ip == other.ip and self.port == other.port

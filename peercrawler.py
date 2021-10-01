@@ -12,8 +12,18 @@ from functools import reduce
 
 import confirm_req
 import acctools
+import telemetry_req
 from pynanocoin import *
 from msg_handshake import *
+
+
+def get_telemetry(ctx, s):
+    req = telemetry_req.telemetry_req(ctx)
+    s.send(req.serialise())
+    hdr, data = get_next_hdr_payload(s)
+    while hdr.msg_type != message_type(message_type_enum.telemetry_ack):
+        hdr, data = get_next_hdr_payload(s)
+    return telemetry_req.telemetry_ack.parse(hdr, data)
 
 
 class peer_manager:
@@ -77,6 +87,7 @@ class peer_manager:
                         keepalive = message_keepalive.parse_payload(hdr, payload)
                         self.add_peers(keepalive.peers)
                         peer.score = 1000
+                        peer.telemetry = get_telemetry(self.ctx, s)
                         peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
                         return
                 # timeout whilst waiting for keepalive, score it with 2
@@ -126,7 +137,8 @@ class peer_manager:
             s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(self.peers), good)
             for p in self.peers:
                 voting_str = ' (voting)' if p.is_voting else ''
-                s += '%41s:%5s (score:%4s)%s\n' % ('[%s]' % p.ip, p.port, p.score, voting_str)
+                sw_ver = ' v' + p.telemetry.get_sw_version() if p.telemetry else ''
+                s += '%41s:%5s (score:%4s)%s%s\n' % ('[%s]' % p.ip, p.port, p.score, voting_str, sw_ver)
                 #if p.score >= 1000:
                 #    s += 'ID: %s, voting:%s\n' % (acctools.to_account_addr(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
@@ -161,7 +173,7 @@ def parse_args():
 class peer_service_header:
     size = 124
 
-    def __init__(self, net_id, good_peers, total_peers, software_ver = "devel", protocol_ver = 2):
+    def __init__(self, net_id, good_peers, total_peers, software_ver = "devel", protocol_ver = 3):
         self.magic = b'PEER'
         assert(isinstance(net_id, network_id))
         assert(isinstance(software_ver, str))
@@ -248,7 +260,7 @@ def get_peers_from_service(ctx, addr = '::ffff:46.101.61.203'):
             s.connect((addr, ctx['peercrawlerport']))
             response = readall(s)
             hdr = peer_service_header.parse(response[0:peer_service_header.size])
-            assert(hdr.protocol_ver == 2)
+            assert(hdr.protocol_ver == 3)
             if hdr.net_id != ctx['net_id']:
                 raise PeerServiceUnavailable("Peer service for the given network is unavailable")
         except (PyNanoCoinException, OSError, TypeError) as e:
