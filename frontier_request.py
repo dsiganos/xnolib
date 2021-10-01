@@ -193,6 +193,7 @@ def main():
         else:
             hdr, peers = peercrawler.get_peers_from_service(ctx)
             peers = list(filter(lambda p: p.score >= 1000, peers))
+            peers = [random.choice(peers)]
 
     for peer in peers:
 
