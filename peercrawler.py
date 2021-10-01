@@ -137,8 +137,13 @@ class peer_manager:
             s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(self.peers), good)
             for p in self.peers:
                 voting_str = ' (voting)' if p.is_voting else ''
-                sw_ver = ' v' + p.telemetry.get_sw_version() if p.telemetry else ''
-                s += '%41s:%5s (score:%4s)%s%s\n' % ('[%s]' % p.ip, p.port, p.score, voting_str, sw_ver)
+                sw_ver = ''
+                cemented_count = ''
+                if p.telemetry:
+                    sw_ver = ' v' + p.telemetry.get_sw_version()
+                    cemented_count = ' cc=%s' % p.telemetry.cemented_count
+                s += '%41s:%5s (score:%4s)%s%s%s\n' % \
+                    ('[%s]' % p.ip, p.port, p.score, voting_str, sw_ver, cemented_count)
                 #if p.score >= 1000:
                 #    s += 'ID: %s, voting:%s\n' % (acctools.to_account_addr(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
