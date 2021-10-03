@@ -1,6 +1,11 @@
+#!/bin/env python3
+
 from hashlib import blake2b
 import binascii
+from binascii import unhexlify
 import base64
+import json
+import unittest
 
 import acctools
 from net import *
@@ -32,8 +37,20 @@ def block_length_by_type(blktype):
 class Block:
 
     @classmethod
-    def parse_from_json_string(cls, json_string):
-        pass
+    def parse_from_json_string(cls, json_str):
+        json_obj = json.loads(json_str)
+        type_str = json_obj['type']
+        if type_str == 'send':
+            return block_send.parse_from_json(json_obj)
+        if type_str == 'receive':
+            return block_receive.parse_from_json(json_obj)
+        if type_str == 'open':
+            return block_open.parse_from_json(json_obj)
+        if type_str == 'change':
+            return block_change.parse_from_json(json_obj)
+        if type_str == 'state':
+            return block_state.parse_from_json(json_obj)
+        raise ParseErrorInvalidTypeInJson(json_str)
 
     @classmethod
     def read_block_from_socket(cls, s):
@@ -129,6 +146,16 @@ class block_send:
         data += self.signature
         data += self.work[::-1]
         return data
+
+    @classmethod
+    def parse_from_json(cls, json_obj):
+        assert(json_obj['type'] == 'send')
+        prev = binascii.unhexlify(json_obj['previous'])
+        dest = acctools.account_key(json_obj['destination'])
+        bal = int(json_obj['balance'], 16)
+        sig = binascii.unhexlify(json_obj['signature'])
+        work = binascii.unhexlify(json_obj['work'])
+        return block_send(prev, dest, bal, sig, work)
 
     @classmethod
     def parse(cls, data):
@@ -256,6 +283,15 @@ class block_receive:
         return data
 
     @classmethod
+    def parse_from_json(cls, json_obj):
+        assert(json_obj['type'] == 'receive')
+        prev = binascii.unhexlify(json_obj['previous'])
+        source = binascii.unhexlify(json_obj['source'])
+        sig = binascii.unhexlify(json_obj['signature'])
+        work = binascii.unhexlify(json_obj['work'])
+        return block_receive(prev, source, sig, work)
+
+    @classmethod
     def parse(cls, data):
         assert(len(data) == block_length_by_type(3))
         prev = data[0:32]
@@ -376,6 +412,17 @@ class block_open:
         return data
 
     @classmethod
+    def parse_from_json(cls, json_obj):
+        assert(json_obj['type'] == 'open')
+        source = binascii.unhexlify(json_obj['source'])
+        rep = acctools.account_key(json_obj['representative'])
+        acc = acctools.account_key(json_obj['account'])
+        sig = binascii.unhexlify(json_obj['signature'])
+        work = binascii.unhexlify(json_obj['work'])
+        return block_open(source, rep, acc, sig, work)
+
+
+    @classmethod
     def parse(cls, data):
         assert(len(data) == block_length_by_type(4))
         source = data[0:32]
@@ -494,6 +541,15 @@ class block_change:
         data += self.signature
         data += self.work[::-1]
         return data
+
+    @classmethod
+    def parse_from_json(cls, json_obj):
+        assert(json_obj['type'] == 'change')
+        prev = binascii.unhexlify(json_obj['previous'])
+        rep = acctools.account_key(json_obj['representative'])
+        sig = binascii.unhexlify(json_obj['signature'])
+        work = binascii.unhexlify(json_obj['work'])
+        return block_change(prev, rep, sig, work)
 
     @classmethod
     def parse(cls, data):
@@ -625,6 +681,18 @@ class block_state:
         work = data[208:]
         return block_state(account, prev, rep, bal, link, sig, work)
 
+    @classmethod
+    def parse_from_json(cls, json_obj):
+        assert(json_obj['type'] == 'state')
+        account = acctools.account_key(json_obj['account'])
+        prev = binascii.unhexlify(json_obj['previous'])
+        rep = acctools.account_key(json_obj['representative'])
+        bal = int(json_obj['balance'])
+        link = binascii.unhexlify(json_obj['link'])
+        sig = binascii.unhexlify(json_obj['signature'])
+        work = binascii.unhexlify(json_obj['work'])
+        return block_state(account, prev, rep, bal, link, sig, work)
+
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block State -------------\n"
@@ -704,3 +772,94 @@ def read_block_state(s):
     data = read_socket(s, 216)
     block = block_state.parse(data)
     return block
+
+class TestBlock(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_parse_block_state_from_json_string(self):
+        json_str = '''{
+            "type": "state",
+            "account": "nano_31fr1qtbrfnujcspx5xq61uxgjf9j6rzckdj1kdn61y3h53nxr7911dzetk3",
+            "previous": "C2BC9E7EA387E73E9EF7AF805386B3188EC71567BA3F58031E8CA04BF0B56317",
+            "representative": "nano_3testing333before333adoption333333333333333333333333y71t3kt9",
+            "balance": "999999999999998367700000",
+            "link": "DD573D46AD23730FF0557F59247C92CEE695D5DA347D2AA592DC08716B580DA8",
+            "link_as_account": "nano_3qcq9o5ctaum3zr7czts6jyb7mq8kqcxnf5x7cks7q1ag7ooi5farai51dpi",
+            "signature": "073C1A87469F79A55A94EC94F587D463DB617BB235EC00796EEACCFAD6C19E4D7524B0D236E46A2766E68FD813E29F0CB1B76656B94A3ED646CE2AE30F904905",
+            "work": "27f60f8a95403ae1"
+        }'''
+        block = Block.parse_from_json_string(json_str)
+        assert block.account == unhexlify('81B805F49C369B8AB36E8FB72037D745A78931F5497104974203C178C34EE0A7')
+        assert block.previous == unhexlify('C2BC9E7EA387E73E9EF7AF805386B3188EC71567BA3F58031E8CA04BF0B56317')
+        assert block.representative == unhexlify('E999D428E08429636B86042142EB6D42B4084210842108421084210842108421')
+        assert block.balance == 999999999999998367700000
+        assert block.link == unhexlify('DD573D46AD23730FF0557F59247C92CEE695D5DA347D2AA592DC08716B580DA8')
+        assert block.signature == unhexlify('073C1A87469F79A55A94EC94F587D463DB617BB235EC00796EEACCFAD6C19E4D7524B0D236E46A2766E68FD813E29F0CB1B76656B94A3ED646CE2AE30F904905')
+        assert block.work == unhexlify('27f60f8a95403ae1')
+
+    def test_parse_block_open_from_json_string(self):
+        json_str = '''{
+            "type": "open",
+            "source": "BAB41488D29BC00DBA3A00988CC6B9F57AE416F2C9EE140AC703EBE26403CE3F",
+            "representative": "nano_16k5pimotz9zehjk795wa4qcx54mtusk8hc5mdsjgy57gnhbj3hj6zaib4ic",
+            "account": "nano_191hygw18kqyg5hpbgb3r8i5gt9gfbcjf5pp73rt9ry9ugtm96jihpkkq1pd",
+            "work": "42d4cb97af728160",
+            "signature": "13BFC64C86388B9494CDDCCAF6727A0399C1B73EDD22509F01D3BBD2800C23F346BA71B050F5F28B52B43077663F23E48EAE883E82038686BFC3FBA72C77E00E"
+        }'''
+        block = Block.parse_from_json_string(json_str)
+        assert block.account == unhexlify('1c0ff3b8034afe70df64b921c1a03768ee6a55168ed62871a3e3c7dbb5339230')
+        assert block.source == unhexlify('BAB41488D29BC00DBA3A00988CC6B9F57AE416F2C9EE140AC703EBE26403CE3F')
+        assert block.representative == unhexlify('1243b4275d7cff63e3229c7c40aeae8c53d6f3233d439af3177865751e9885f1')
+        assert block.signature == unhexlify('13BFC64C86388B9494CDDCCAF6727A0399C1B73EDD22509F01D3BBD2800C23F346BA71B050F5F28B52B43077663F23E48EAE883E82038686BFC3FBA72C77E00E')
+        assert block.work == unhexlify('42d4cb97af728160')
+
+    def test_parse_block_send_from_json_string(self):
+        json_str = '''{
+            "type": "send",
+            "previous": "887F40C7A6C089C5CE02A6074C37C602D7CBA1DFB0E972BCC88DA6DA82E62B22",
+            "destination": "nano_31a51k53fdzam7bhrgi4b67py9o7wp33rec1hi7k6z1wsgh8oagqs7bui9p1",
+            "balance": "00000000033B2E3C9FD0803CE7FFFFFD",
+            "work": "5c4ec550bde046ad",
+            "signature": "9C8380DF84EFA599E4BBD989862C20EEA40B2E7DE5327C41A38B7869EAB598FB5786658F45176FC1973E7D0DE40AEF10FB6961D54D0DD7CDBE9A6122266C1907"
+        }'''
+        block = Block.parse_from_json_string(json_str)
+        assert block.previous == unhexlify('887F40C7A6C089C5CE02A6074C37C602D7CBA1DFB0E972BCC88DA6DA82E62B22')
+        assert block.destination == unhexlify('8103048616afe89952fc3a02490b6f1ea5e5821c31407c0b227c1ccb9e6aa1d7')
+        assert block.balance == 0x33B2E3C9FD0803CE7FFFFFD
+        assert block.signature == unhexlify('9C8380DF84EFA599E4BBD989862C20EEA40B2E7DE5327C41A38B7869EAB598FB5786658F45176FC1973E7D0DE40AEF10FB6961D54D0DD7CDBE9A6122266C1907')
+        assert block.work == unhexlify('5c4ec550bde046ad')
+
+    def test_parse_block_receive_from_json_string(self):
+        json_str = '''{
+            "type": "receive",
+            "previous": "B758785AD694E5EF4F379FB07EB12F709970D7082F5860340FC9D925C7BA490F",
+            "source": "EA58282857C97856AE0A05396C0AA4708520304546A032E57C79D3A5B4BD0B47",
+            "work": "8994d174f087691b",
+            "signature": "A0D84921B7843C2C74103B5637EB7D3AB669F6143183626413CDD9F219B66C1542401B89E34F2F5A68FD6C1ADEA753F8FCF76071711C8B1944F7ECBBCE2B0501"
+        }'''
+        block = Block.parse_from_json_string(json_str)
+        assert block.previous == unhexlify('B758785AD694E5EF4F379FB07EB12F709970D7082F5860340FC9D925C7BA490F')
+        assert block.source == unhexlify('EA58282857C97856AE0A05396C0AA4708520304546A032E57C79D3A5B4BD0B47')
+        assert block.signature == unhexlify('A0D84921B7843C2C74103B5637EB7D3AB669F6143183626413CDD9F219B66C1542401B89E34F2F5A68FD6C1ADEA753F8FCF76071711C8B1944F7ECBBCE2B0501')
+        assert block.work == unhexlify('8994d174f087691b')
+        assert block.hash() == unhexlify('00000197D6E981AB3EC5469BFBFFDF20F43CC6E955C0A38F295501AD64B86B0D')
+
+    def test_parse_block_change_from_json_string(self):
+        json_str = '''{
+            "type": "change",
+            "previous": "E0FCC51E9DCED5631E52CEA35FF47B88FC4A741C43B9B739030E1C594F06F17C",
+            "representative": "nano_16k5pimotz9zehjk795wa4qcx54mtusk8hc5mdsjgy57gnhbj3hj6zaib4ic",
+            "work": "c751c45e591dd7a7",
+            "signature": "60A88EAECB32EDC1B5120F1B0A4C4342B661761C379404FF24D6F43998D080E0214BCBC60434A1A7DC353FF44D16D9942912123F9FA7EC99FE1467E8F854ED0D"
+        }'''
+        block = Block.parse_from_json_string(json_str)
+        assert block.previous == unhexlify('E0FCC51E9DCED5631E52CEA35FF47B88FC4A741C43B9B739030E1C594F06F17C')
+        assert block.representative == unhexlify('1243b4275d7cff63e3229c7c40aeae8c53d6f3233d439af3177865751e9885f1')
+        assert block.signature == unhexlify('60A88EAECB32EDC1B5120F1B0A4C4342B661761C379404FF24D6F43998D080E0214BCBC60434A1A7DC353FF44D16D9942912123F9FA7EC99FE1467E8F854ED0D')
+        assert block.work == unhexlify('c751c45e591dd7a7')
+        assert block.hash() == unhexlify('000255E568174DBBEAFF997BF31E0344F4EEA52FC22197825C5574E13296CA00')
+
+
+if __name__ == '__main__':
+    unittest.main()

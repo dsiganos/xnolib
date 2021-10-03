@@ -52,6 +52,10 @@ class ParseErrorBadBulkPullResponse(PyNanoCoinException):
     pass
 
 
+class ParseErrorInvalidTypeInJson(PyNanoCoinException):
+    pass
+
+
 class BadBlockHash(PyNanoCoinException):
     pass
 
