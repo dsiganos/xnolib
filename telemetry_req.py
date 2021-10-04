@@ -43,6 +43,7 @@ class telemetry_ack:
     def __str__(self):
         string =  "Signature: %s\n" % hexlify(self.sig)
         string += "Node ID: %s\n" % hexlify(self.node_id)
+        string += "         %s\n" % acctools.to_account_addr(self.node_id, 'node_')
         string += "Block Count: %d\n" % self.block_count
         string += "Cemented Count: %d\n" % self.cemented_count
         string += "Unchecked Count: %d\n" % self.unchecked_count
