@@ -63,7 +63,7 @@ class telemetry_ack:
         return string
 
     def get_sw_version(self):
-        return "%s.%s.%s" % (self.major_ver, self.minor_ver, self.patch_ver)
+        return "%s.%s.%s.%s" % (self.major_ver, self.minor_ver, self.patch_ver, self.pre_release_ver)
 
     @classmethod
     def parse(self, hdr, data):
