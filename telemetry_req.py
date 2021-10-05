@@ -1,6 +1,8 @@
 #!/bin/env python3
 
+import struct
 import argparse
+
 from pynanocoin import *
 from msg_handshake import *
 import peercrawler
@@ -69,24 +71,25 @@ class telemetry_ack:
     def parse(self, hdr, data):
         if len(data) != 202:
             raise BadTelemetryReply('message len not 202, data=%s', data)
-        sig = data[0:64]
-        node_id = data[64:96]
-        block_count = int.from_bytes(data[96:104], "big")
-        cemented_count = int.from_bytes(data[104:112], "big")
-        unchecked_count = int.from_bytes(data[112:120], "big")
-        account_count = int.from_bytes(data[120:128], "big")
-        bandwidth_cap = int.from_bytes(data[128:136], "big")
-        uptime = int.from_bytes(data[136:144], "big")
-        peer_count = int.from_bytes(data[144:148], "big")
-        protocol_ver = data[148]
-        genesis_hash = data[149:181]
-        major_ver = data[181]
-        minor_ver = data[182]
-        patch_ver = data[183]
-        pre_release_ver = data[184]
-        maker_ver = data[185]
-        timestamp = int.from_bytes(data[186:194], "big")
-        active_difficulty = int.from_bytes(data[194:202], "big")
+        unpacked = struct.unpack('>64s32sQQQQQQIB32sBBBBBQQ', data)
+        sig                 = unpacked[0]
+        node_id             = unpacked[1]
+        block_count         = unpacked[2]
+        cemented_count      = unpacked[3]
+        unchecked_count     = unpacked[4]
+        account_count       = unpacked[5]
+        bandwidth_cap       = unpacked[6]
+        uptime              = unpacked[7]
+        peer_count          = unpacked[8]
+        protocol_ver        = unpacked[9]
+        genesis_hash        = unpacked[10]
+        major_ver           = unpacked[11]
+        minor_ver           = unpacked[12]
+        patch_ver           = unpacked[13]
+        pre_release_ver     = unpacked[14]
+        maker_ver           = unpacked[15]
+        timestamp           = unpacked[16]
+        active_difficulty   = unpacked[17]
         return telemetry_ack(hdr, sig, node_id, block_count, cemented_count, unchecked_count,
                              account_count, bandwidth_cap, uptime, peer_count, protocol_ver,
                              genesis_hash, major_ver, minor_ver, patch_ver, pre_release_ver, maker_ver,
