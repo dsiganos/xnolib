@@ -71,7 +71,7 @@ class telemetry_ack:
     def parse(self, hdr, data):
         if len(data) != 202:
             raise BadTelemetryReply('message len not 202, data=%s', data)
-        unpacked = struct.unpack('>64s32sQQQQQQIB32sBBBBBQQ', data)
+        unpacked = struct.unpack('>64s32sQQQQQIBQ32sBBBBBQQ', data)
         sig                 = unpacked[0]
         node_id             = unpacked[1]
         block_count         = unpacked[2]
@@ -79,9 +79,9 @@ class telemetry_ack:
         unchecked_count     = unpacked[4]
         account_count       = unpacked[5]
         bandwidth_cap       = unpacked[6]
-        uptime              = unpacked[7]
-        peer_count          = unpacked[8]
-        protocol_ver        = unpacked[9]
+        peer_count          = unpacked[7]
+        protocol_ver        = unpacked[8]
+        uptime              = unpacked[9]
         genesis_hash        = unpacked[10]
         major_ver           = unpacked[11]
         minor_ver           = unpacked[12]
