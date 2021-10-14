@@ -1,5 +1,6 @@
 import ipaddress
 import socket
+from common import *
 
 def read_socket(socket, numbytes):
     try:
