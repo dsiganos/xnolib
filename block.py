@@ -701,6 +701,7 @@ class block_state:
         string += "       %s\n" % acctools.to_account_addr(self.account)
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Repr : %s\n" % hexlify(self.representative)
+        string += "       %s\n" % acctools.to_account_addr(self.representative)
         string += "Bal  : %f\n" % (self.balance / (10**30))
         string += "Link : %s\n" % hexlify(self.link)
         string += "Sign : %s\n" % hexlify(self.signature)
