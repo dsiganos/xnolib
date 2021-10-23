@@ -1,57 +1,126 @@
 #!/bin/env python3
 
+import acctools
 from pynanocoin import *
 from confirm_req import *
-from peercrawler import get_initial_connected_socket
 from frontier_request import *
 from pull_n_accounts import store_frontiers_handler
 
 
-ctx = testctx
+def frontier_iter_with_retries(ctx, peeraddr, peerport, start_acc = b'\x00' * 32):
+    while True:
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(10)
 
-hdr, peers = get_peers_from_service(ctx)
+            failed_count = 0
+            last_acc = start_acc
 
-peers = list(filter(lambda p: p.score == 1000, peers))
-peers = list(filter(lambda p: p.is_voting, peers))
-peer = random.choice(peers)
+            try:
+                s.connect((peeraddr, peerport))
+                front_hdr = frontier_request.generate_header(ctx, confirmed=True)
+                print('Sending frontier request starting from account %s' % hexlify(last_acc))
+                req = frontier_request(front_hdr, maxacc=num, start_account=last_acc)
+                s.send(req.serialise())
 
-print('Using peer %s' % peer)
+                while True:
+                    frontier = read_frontier_response(s)
+                    last_acc = frontier.account
+                    if frontier.is_end_marker():
+                        failed_count = 0
+                        return
+                    yield frontier
 
-with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-    s.settimeout(10)
-    s.connect((str(peer.ip), peer.port))
+                break
 
-    front_hdr = frontier_request.generate_header(ctx)
-    req = frontier_request(front_hdr)
+            except (OSError, PyNanoCoinException) as err:
+                print(err)
+                if failed_count >= 20:
+                    raise FrontierIteratorFail("exiting due to 20 errors in a row")
+                failed_count += 1
 
-    s.send(req.serialise())
 
-    frontiers = []
+# reads a sequence of blocks from stdin, each block is prefixed by its hash
+# Example input:
+# 00000003E4DC06FA2F314E10E59E23C30241CD42D9FF6B4AEE0F4EB52F71D9B1
+# {
+#     "type": "state",
+#     "account": "nano_31fr1qtbrfnujcspx5xq61uxgjf9j6rzckdj1kdn61y3h53nxr7911dzetk3",
+#     "previous": "C2BC9E7EA387E73E9EF7AF805386B3188EC71567BA3F58031E8CA04BF0B56317",
+#     "representative": "nano_3testing333before333adoption333333333333333333333333y71t3kt9",
+#     "balance": "999999999999998367700000",
+#     "link": "DD573D46AD23730FF0557F59247C92CEE695D5DA347D2AA592DC08716B580DA8",
+#     "link_as_account": "nano_3qcq9o5ctaum3zr7czts6jyb7mq8kqcxnf5x7cks7q1ag7ooi5farai51dpi",
+#     "signature": "073C1A87469F79A55A94EC94F587D463DB617BB235EC00796EEACCFAD6C19E4D7524B0D236E46A2766E68FD813E29F0CB1B76656B94A3ED646CE2AE30F904905",
+#     "work": "27f60f8a95403ae1"
+# }
+def blocks_stdin_iterator():
+    reading_json = False
+    for line in sys.stdin:
+        line = line.rstrip()
+        if reading_json:
+            json_str += line
+            if line == '}':
+                reading_json = False
+                yield json_str
+        else:
+            # line contains the hash
+            reading_json = True;
+            json_str = ''
+    return
 
-    read_all_frontiers(s, store_frontiers_handler(frontiers))
-    print('%d frontiers read' % len(frontiers))
+def parse_args():
+    parser = argparse.ArgumentParser()
 
-    blocks = []
+    group2 = parser.add_mutually_exclusive_group()
+    group2.add_argument('-b', '--beta', action='store_true', default=False,
+                        help='use beta network')
+    group2.add_argument('-t', '--test', action='store_true', default=False,
+                        help='use test network')
 
-    for f in frontiers:
-        blocks += get_account_blocks(ctx, s, f.account)
-        print('.', end='', flush=True)
-    print('\nblocks received')
+    parser.add_argument('-p', '--peer',
+                        help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
 
-with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-    s.settimeout(10)
-    s.connect((str(peer.ip), peer.port))
+    return parser.parse_args()
 
-    node_handshake_id.perform_handshake_exchange(ctx, s)
-    print('handshake done')
 
-    count = 0
-    for b in blocks:
-        count += 1
-        resp = get_confirm_block_resp(ctx, b, s)
-        print('%s: %s' % (count, resp))
-print('all blocks printed')
+def main():
+    args = parse_args()
+
+    ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
+
+    if args.peer is not None:
+        peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
+        print('Connecting to [%s]:%s' % (peeraddr, peerport))
+    else:
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.ip.is_ipv4() and p.is_voting)
+        print('Using peer %s' % peer)
+        peeraddr = str(peer.ip)
+        peerport = peer.port
+
+    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+        s.settimeout(3)
+        s.connect((peeraddr, peerport))
+        s.settimeout(20)
+
+        node_handshake_id.perform_handshake_exchange(ctx, s)
+        print('handshake done')
+
+        # read hashes from stdin one by one
+        count = 0
+        for block_json_str in blocks_stdin_iterator():
+            print(block_json_str)
+            block = Block.parse_from_json_string(block_json_str)
+            count += 1
+            resp = get_confirm_block_resp(ctx, block, s)
+            print('%s: %s' % (count, resp))
+
+    print('all blocks printed')
+
+
+if __name__ == "__main__":
+    main()

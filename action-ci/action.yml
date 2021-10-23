@@ -1,0 +1,7 @@
+name: "pynanocoin ci action"
+description: "pynanocoin ci action"
+author: "dimitris@siganos.org"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"

@@ -47,7 +47,7 @@ def pull_blocks(ctx, blockman, peer, acc):
         # pull blocks from peer
         blocks_pulled = 0
         while True:
-            block = read_block_from_socket(s)
+            block = Block.read_block_from_socket(s)
             if block is None:
                 break
             peerinfo = (peer.ip, peer.port, hexlify(peer.aux['confirmed_frontier']), hexlify(peer.aux['unconfirmed_frontier']))

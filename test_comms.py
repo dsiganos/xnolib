@@ -523,7 +523,7 @@ class TestComms(unittest.TestCase):
 
     def test_account_key(self):
         acc_id = acctools.to_account_addr(binascii.unhexlify(livectx["genesis_pub"]))
-        key = acctools.account_key(acc_id)
+        key = acctools.account_key(acc_id).hex()
         self.assertEqual(key, livectx["genesis_pub"].lower())
 
     def test_bulk_push_serialise_deserialise(self):

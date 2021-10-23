@@ -45,7 +45,7 @@ def main():
         if len(args.account) == 64:
             account = args.account
         else:
-            account = acctools.account_key(args.account)
+            account = acctools.account_key(args.account).hex()
 
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)

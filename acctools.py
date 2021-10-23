@@ -60,9 +60,9 @@ def to_account_addr(account, prefix='nano_'):
 
 def account_key(account):
     """Get the public key for account
-    :param str account: account number
-    :return: 64 hex-char public key
-    :rtype: str
+    :param str account: account name e.g. nano_31fr1qtbrfnujcspx5xq61uxgjf9j6rzckdj1kdn61y3h53nxr7911dzetk3
+    :return: 32 byte public key
+    :rtype: bytes
     :raise AssertionError: for invalid account
     """
     account_prefix = "nano_"
@@ -81,7 +81,7 @@ def account_key(account):
 
     assert hashlib.blake2b(key, digest_size=5).digest() == checksum
 
-    return key.hex()
+    return key
 
 
 def to_friendly_name(acc):
