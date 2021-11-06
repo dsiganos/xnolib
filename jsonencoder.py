@@ -3,6 +3,7 @@ import json
 from pynanocoin import *
 import telemetry_req
 
+
 class NanoJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, bytes):
@@ -22,7 +23,6 @@ class NanoJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def print_peers(peers):
+def to_json(peers):
     assert isinstance(peers, list)
-    print(json.dumps(peers, cls=NanoJSONEncoder, indent=4))
-
+    return json.dumps(peers, cls=NanoJSONEncoder, indent=4)

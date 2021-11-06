@@ -5,3 +5,4 @@ GitPython
 lmdb
 jsonpickle
 mysql-connector-python
+flask
