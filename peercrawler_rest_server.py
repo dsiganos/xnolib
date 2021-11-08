@@ -22,17 +22,20 @@ def main_route():
     return flask.Response(js, status=200, mimetype='application/json')
 
 
-def rest_thread_func():
-    global app
-    app.run(host='0.0.0.0', port=5000)
+def bg_thread_func():
+    global peerman
+    # look for peers forever
+    peerman.crawl(forever=True, delay=300)
 
 
 def main():
-    # start the REST server in the background
-    threading.Thread(target=rest_thread_func).start()
+    # start the peer crawler in the background
+    threading.Thread(target=bg_thread_func).start()
 
-    # look for peers forever
-    peerman.crawl(forever=True, delay=300)
+    # start flash server in the foreground or debug=True cannot be used otherwise
+    # flask expects to be in the foreground
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 if __name__ == "__main__":
     main()
