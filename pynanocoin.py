@@ -1026,6 +1026,8 @@ def valid_block(ctx, block):
             sig_valid = verify(block.hash(), block.signature, binascii.unhexlify(ctx["epoch_v2_signing_account"]))
         elif block.is_epoch_v1_block():
             sig_valid = verify(block.hash(), block.signature, binascii.unhexlify(ctx["genesis_pub"]))
+        else:
+            sig_valid = verify(block.hash(), block.signature, block.account)
     else:
         if block.get_account() is None:
             raise VerificationErrorNoAccount()
