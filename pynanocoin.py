@@ -1034,8 +1034,6 @@ def valid_block(ctx, block):
         sig_valid = verify(block.hash(), block.signature, block.get_account())
 
     work_valid = verify_pow(block)
-    print(sig_valid)
-    print(work_valid)
     return work_valid and sig_valid
 
 
