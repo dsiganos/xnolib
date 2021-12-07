@@ -142,8 +142,13 @@ def parse_args():
                         help='use beta network')
     group1.add_argument('-t', '--test', action='store_true', default=False,
                         help='use test network')
+
+    parser.add_argument('--peer',
+                        help='peer to contact')
+
     parser.add_argument('-a', '--account', type=str,
                         help='Account from which we pull')
+
     parser.add_argument('-f', '--flag', type=int, default=0,
                         help='Flag for the bulk_pull_account:\n  0: hash and amount\n  1: address only\n  '+
                              '2: hash, amount and address')
@@ -157,8 +162,14 @@ def main():
     if args.beta: ctx = betactx
     elif args.test: ctx = testctx
 
-    s, _ = get_initial_connected_socket(ctx)
-    with s:
+    if args.peer:
+        peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
+    else:
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000)
+        peeraddr, peerport = str(peer.ip), peer.port
+
+    print('Connecting to [%s]:%s' % (peeraddr, peerport))
+    with get_connected_socket_endpoint(peeraddr, peerport) as s:
         if args.account is None:
             account = binascii.unhexlify(ctx['genesis_pub'])
         else:
