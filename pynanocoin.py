@@ -1144,12 +1144,10 @@ def peer_from_endpoint(addr, port):
 
 
 def get_connected_socket_endpoint(addr, port):
-    # Remember to handle exceptions outside
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(3)
     s.connect((addr, port))
-
     return s
 
 
