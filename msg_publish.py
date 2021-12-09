@@ -1,5 +1,26 @@
+#!/bin/env python3
+#
+# Example usage:
+#
+# echo '{
+#         "type": "state",
+#         "account": "nano_3pi8p16b19qfcgdsycshyzm71jzpdscnb8g44fnp5h67fe1xc8iztphutest",
+#         "previous": "F3FCADE2F8BF6D4D71E4FCC699C78A93CDE660637F779F2295F28B5AA7A6E849",
+#         "representative": "nano_3pi8p16b19qfcgdsycshyzm71jzpdscnb8g44fnp5h67fe1xc8iztphutest",
+#         "balance": "99",
+#         "link": "DA06B008901EED53979F2B2FF7E65047F65E554499C2136961BC856B01D51A1F",
+#         "link_as_account": "nano_3pi8p16b19qfcgdsycshyzm71jzpdscnb8g44fnp5h67fe1xc8iztphutest",
+#         "signature": "B3C49A72C5923B8312805FF184CFE18790B77A185E3683EBB0C0652DDB436B2611C3134D71B3D028A51BF021BDFD82DB39EE040A3FB04509A72CE0CA5EF81400",
+#         "work": "f1e9abd3c54a5075"
+# }' | ./msg_publish.py -t --peer 144.76.30.190
+
+import argparse
+import sys
+
 from pynanocoin import *
-from peercrawler import *
+from peercrawler import get_random_peer
+from msg_handshake import node_handshake_id
+import block
 
 class msg_publish:
     def __init__(self, hdr, block):
@@ -33,24 +54,52 @@ class msg_publish:
     def __str__(self):
         return str(self.hdr) + "\n" + str(self.block)
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-b', '--beta', action='store_true', default=False,
+                       help='use beta network')
+    group.add_argument('-t', '--test', action='store_true', default=False,
+                       help='use test network')
+
+    parser.add_argument('--peer',
+                        help='peer to contact')
+
+    return parser.parse_args()
+
+
+def read_json_block_from_stdin():
+    json_block = sys.stdin.read()
+    blk = block.Block.parse_from_json_string(json_block)
+    return blk
+
+
 def main():
-    header = message_header(network_id(66), [18, 18, 18], message_type(3), 0)
+    args = parse_args()
 
-    example_block_send = {
-        "prev" : binascii.unhexlify('4A039AD482C917C266A3D4A2C97849CE69173B6BC775AFC779B9EA5CE446426F'),
-        "dest" : binascii.unhexlify('42DD308BA91AA225B9DD0EF15A68A8DD49E2940C6277A4BFAC363E1C8BF14279'),
-        "bal" : 100,
-        "sig" : binascii.unhexlify('30A5850305AA61185008D4A732AA8527682D239D85457368B6A581F517D5F8C0078DB99B5741B79CC29880387292B64F668C964BE1B50790D3EC7D948396D007'),
-        "work" : binascii.unhexlify('EDFD7157025EA461')
-    }
-    block = block_send(example_block_send["prev"], example_block_send["dest"], example_block_send["bal"],
-                       example_block_send["sig"], example_block_send["work"])
-    msg = msg_publish(header, block)
+    ctx = livectx
+    if args.beta: ctx = betactx
+    elif args.test: ctx = testctx
 
-    s, _ = get_initial_connected_socket(betactx)
-    with s:
+    if args.peer:
+        peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
+    else:
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.is_voting)
+        peeraddr, peerport = str(peer.ip), peer.port
+
+    print('Connecting to [%s]:%s' % (peeraddr, peerport))
+    with get_connected_socket_endpoint(peeraddr, peerport) as s:
+        node_handshake_id.perform_handshake_exchange(ctx, s)
+        blk = read_json_block_from_stdin()
+        # only state blocks for now
+        assert(isinstance(blk, block_state))
+        msgtype = message_type_enum.publish
+        hdr = message_header(network_id(66), [18, 18, 18], message_type(msgtype), 0)
+        hdr.set_block_type(block_type_enum.state)
+        msg = msg_publish(hdr, blk)
+        print(msg)
         s.send(msg.serialise())
-        print(s.recv(1000))
 
 
 if __name__ == '__main__':
