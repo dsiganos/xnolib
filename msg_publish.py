@@ -30,7 +30,7 @@ class msg_publish:
 
     def serialise(self):
         data = self.hdr.serialise_header()
-        data += self.block.serialise(True)
+        data += self.block.serialise(False)
         return data
 
     @classmethod
