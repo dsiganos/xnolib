@@ -29,7 +29,7 @@ class PeersTable:
                 for key, value in tx.cursor(db=peers_db):
                     peers.append(key)
                 for peer in peers:
-                    print('Deleting peer %s' % PeersTable.parse_entry(key))
+                    print('Deleting peer %s' % PeersTable.parse_entry(peer))
                     tx.delete(peer, db=peers_db)
 
 
