@@ -86,7 +86,7 @@ def parse_args():
     parser.add_argument('-p', '--peer',
                         help='peer to add or delete')
     parser.add_argument('command',
-            help='command: print or delete')
+            help='print, add, delete or delall')
     return parser.parse_args()
 
 
