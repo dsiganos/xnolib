@@ -3,7 +3,7 @@ import random
 import socket
 import argparse
 
-import peercrawler
+from peercrawler import get_random_peer
 from pynanocoin import *
 
 def parse_args():
