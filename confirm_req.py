@@ -210,7 +210,7 @@ class confirm_ack_hash(confirm_ack):
 
     def is_valid(self):
         hasher = blake2b(digest_size=32)
-        hasher.update('vote '.encode('utf-8'))
+        hasher.update('vote '.encode('ascii'))
 
         for h in self.hashes:
             hasher.update(h)
@@ -263,7 +263,7 @@ class confirm_ack_block(confirm_ack):
 
     def is_valid(self):
         hasher = blake2b(digest_size=32)
-        hasher.update('vote '.encode('utf-8'))
+        hasher.update('vote '.encode('ascii'))
 
         hasher.update(self.block.hash())
 
