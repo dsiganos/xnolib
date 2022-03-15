@@ -693,6 +693,12 @@ class block_state:
         work = binascii.unhexlify(json_obj['work'])
         return block_state(account, prev, rep, bal, link, sig, work)
 
+    def link_to_string(self):
+        if self.link.startswith(b'epoch'):
+            return self.link.decode('ascii').replace('\x00', '')
+        else:
+            hexlify(self.link)
+
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
         string = "------------- Block State -------------\n"
@@ -703,7 +709,7 @@ class block_state:
         string += "Repr : %s\n" % hexlify(self.representative)
         string += "       %s\n" % acctools.to_account_addr(self.representative)
         string += "Bal  : %s\n" % (self.balance / (10**30))
-        string += "Link : %s\n" % hexlify(self.link)
+        string += "Link : %s\n" % self.link_to_string()
         string += "Sign : %s\n" % hexlify(self.signature)
         string += "Work : %s\n" % hexlify(self.work)
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
