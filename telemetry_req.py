@@ -105,25 +105,17 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
-    parser.add_argument('-p', '--peer',
+
+    group1 = parser.add_mutually_exclusive_group(required=False)
+    group1.add_argument('-a', '--allpeers', action="store_true", default=False,
+                        help='contact all known peers for telemetry')
+    group1.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
+
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
-
-    ctx = livectx
-    if args.beta: ctx = betactx
-    if args.test: ctx = testctx
-
-    if args.peer:
-        peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
-    else:
-        peer = peercrawler.get_random_peer(ctx, lambda p: p.score == 1000)
-        peeraddr, peerport = str(peer.ip), peer.port
-
-    print('connecting to %s:%s' % (peeraddr, peerport))
+def do_telemetry_req(ctx, peeraddr, peerport):
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
         node_handshake_id.perform_handshake_exchange(ctx, s)
 
@@ -137,6 +129,35 @@ def main():
 
         resp = telemetry_ack.parse(hdr, data)
         print(resp)
+
+
+def main():
+    args = parse_args()
+
+    ctx = livectx
+    if args.beta: ctx = betactx
+    if args.test: ctx = testctx
+
+    peer_tuples = []
+
+    if args.peer:
+        peer_tuples.append(parse_endpoint(args.peer, default_port=ctx['peerport']))
+    if args.allpeers:
+        _, peers = peercrawler.get_peers_from_service(ctx)
+        for peer in peers:
+            peer_tuples.append((str(peer.ip), peer.port))
+    else:
+        peer = peercrawler.get_random_peer(ctx, lambda p: p.score == 1000)
+        peer_tuples.append((str(peer.ip), peer.port))
+
+    for peeraddr, peerport in peer_tuples:
+        print('connecting to %s:%s' % (peeraddr, peerport))
+        try:
+            do_telemetry_req(ctx, peeraddr, peerport)
+        except (OSError, PyNanoCoinException) as e:
+            print('Exception %s: %s' % (type(e), e))
+            if (not args.allpeers):
+                raise
 
 
 if __name__ == "__main__":
