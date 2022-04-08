@@ -7,6 +7,7 @@ import base64
 import json
 import unittest
 
+import pow
 import acctools
 from net import *
 from common import *
@@ -667,6 +668,14 @@ class block_state:
         if self.link[0:14] == b'epoch v1 block':
             return True
         return False
+
+    def sign(self, signing_key):
+        self.signature = signing_key.sign(self.hash())
+
+    def generate_work(self, min_difficulty):
+        root_int = int.from_bytes(self.root(), byteorder='big')
+        pow_int = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
+        self.work = pow_int.to_bytes(8, byteorder='big')
 
     @classmethod
     def parse(cls, data):
