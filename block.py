@@ -697,7 +697,7 @@ class block_state:
         if self.link.startswith(b'epoch'):
             return self.link.decode('ascii').replace('\x00', '')
         else:
-            hexlify(self.link)
+            return hexlify(self.link)
 
     def __str__(self):
         hexacc = binascii.hexlify(self.account).decode("utf-8").upper()
