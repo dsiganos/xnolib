@@ -95,7 +95,7 @@ def main():
         # only state blocks for now
         assert(isinstance(blk, block_state))
         msgtype = message_type_enum.publish
-        hdr = message_header(network_id(66), [18, 18, 18], message_type(msgtype), 0)
+        hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(msgtype), 0)
         hdr.set_block_type(block_type_enum.state)
         msg = msg_publish(hdr, blk)
         print(msg)
