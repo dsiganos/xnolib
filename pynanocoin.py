@@ -1017,7 +1017,7 @@ def verify_pow(block):
     if isinstance(block, block_open):
         return pow_validate(block.work, block.account)
     else:
-        return pow_validate(block.work, block.previous)
+        return pow_validate(block.work, block.root())
 
 
 def valid_block(ctx, block):
