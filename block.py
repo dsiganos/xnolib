@@ -702,6 +702,20 @@ class block_state:
         work = binascii.unhexlify(json_obj['work'])
         return block_state(account, prev, rep, bal, link, sig, work)
 
+    def to_json(self):
+        jsonblk = {
+            'type'            : 'state',
+            'account'         : acctools.to_account_addr(self.account),
+            'previous'        : hexlify(self.previous),
+            'representative'  : acctools.to_account_addr(self.representative),
+            'balance'         : str(self.balance),
+            'link'            : hexlify(self.link),
+            'link_as_account' : acctools.to_account_addr(self.link),
+            'signature'       : hexlify(self.signature),
+            'work'            : hexlify(self.work)
+        }
+        return json.dumps(jsonblk, indent=4)
+
     def link_to_string(self):
         if self.link.startswith(b'epoch'):
             return self.link.decode('ascii').replace('\x00', '')
