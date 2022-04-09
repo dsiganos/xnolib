@@ -10,6 +10,20 @@ live_threshold = 0xfffffff800000000
 beta_threshold = 0xfffff00000000000
 min_threshold = live_threshold
 
+
+def create_state_block(signing_key, min_threshold, account, previous, representative, balance, link):
+    # create the block without signature and pow
+    blk = block.block_state(account, previous, representative, balance, link, None, None)
+
+    # sign the block
+    blk.sign(signing_key)
+
+    # generate pow for block
+    blk.generate_work(min_threshold)
+
+    return blk
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -48,17 +62,15 @@ representative = binascii.unhexlify(args.representative)
 balance = int(args.balance)
 link = binascii.unhexlify(args.link)
 
-# create the block without generate and pow
-blk = block.block_state(account, previous, representative, balance, link, None, None)
-
-# sign the block
+# construct the signing object
 privkey = binascii.unhexlify(args.privkey)
 signing_key = ed25519_blake2b.SigningKey(privkey)
-blk.sign(signing_key)
 
-# generate pow for block
+# choose the difficulty threshold
 if args.beta:
     min_threshold = beta_threshold
-blk.generate_work(min_threshold)
+
+# create the block
+blk = create_state_block(signing_key, min_threshold, account, previous, representative, balance, link)
 
 print(blk.to_json())
