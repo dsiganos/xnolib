@@ -344,7 +344,6 @@ def confirm_block(ctx, block, s):
 
     resp = search_for_response(s, req)
     print(resp)
-    print('Response is valid:', resp.is_valid())
 
     if resp is None:
         return False
