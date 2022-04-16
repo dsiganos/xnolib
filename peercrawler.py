@@ -144,7 +144,7 @@ class peer_manager:
                     sw_ver = ' v' + p.telemetry.get_sw_version()
                     cemented_count = ' cc=%s' % p.telemetry.cemented_count
                 s += '%41s:%5s (score:%4s)%s%s%s\n' % \
-                    ('[%s]' % p.ip, p.port, p.score, voting_str, sw_ver, cemented_count)
+                    ('[%s]' % p.ip, p.port, p.score, sw_ver, cemented_count, voting_str)
                 #if p.score >= 1000:
                 #    s += 'ID: %s, voting:%s\n' % (acctools.to_account_addr(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
