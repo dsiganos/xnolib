@@ -117,7 +117,8 @@ def parse_args():
 
 def do_telemetry_req(ctx, peeraddr, peerport):
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        node_handshake_id.perform_handshake_exchange(ctx, s)
+        peer_id = node_handshake_id.perform_handshake_exchange(ctx, s)
+        print('Handshake done with %s' % acctools.to_account_addr(peer_id, prefix='node_'))
 
         req = telemetry_req(ctx)
         s.send(req.serialise())
@@ -151,7 +152,7 @@ def main():
         peer_tuples.append((str(peer.ip), peer.port))
 
     for peeraddr, peerport in peer_tuples:
-        print('connecting to %s:%s' % (peeraddr, peerport))
+        print('Connecting to %s:%s' % (peeraddr, peerport))
         try:
             do_telemetry_req(ctx, peeraddr, peerport)
         except (OSError, PyNanoCoinException) as e:

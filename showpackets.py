@@ -12,6 +12,7 @@ from msg_publish import *
 from frontier_request import *
 from bulk_pull_account import *
 from telemetry_req import *
+import acctools
 
 
 def parse_args():
@@ -112,7 +113,8 @@ def main():
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        node_handshake_id.perform_handshake_exchange(ctx, s)
+        peer_id = node_handshake_id.perform_handshake_exchange(ctx, s)
+        print('Handshake done with %s' % acctools.to_account_addr(peer_id, prefix='node_'))
 
         # send a keepalive, this is not necessary, just doing it as an example
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.keepalive), 0)
