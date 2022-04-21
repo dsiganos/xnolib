@@ -67,6 +67,28 @@ class telemetry_ack:
     def get_sw_version(self):
         return "%s.%s.%s.%s" % (self.major_ver, self.minor_ver, self.patch_ver, self.pre_release_ver)
 
+    def serialize_without_signature(self):
+        data = struct.pack('>32sQQQQQIBQ32sBBBBBQQ', \
+            self.node_id, \
+            self.block_count, \
+            self.cemented_count, \
+            self.unchecked_count, \
+            self.account_count, \
+            self.bandwidth_cap, \
+            self.peer_count, \
+            self.protocol_ver, \
+            self.uptime, \
+            self.genesis_hash, \
+            self.major_ver, \
+            self.minor_ver, \
+            self.patch_ver, \
+            self.pre_release_ver, \
+            self.maker_ver, \
+            self.timestamp, \
+            self.active_difficulty)
+        return data
+
+
     @classmethod
     def parse(self, hdr, data):
         if len(data) != 202:
