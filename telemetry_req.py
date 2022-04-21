@@ -142,12 +142,12 @@ def main():
 
     if args.peer:
         peer_tuples.append(parse_endpoint(args.peer, default_port=ctx['peerport']))
-    if args.allpeers:
+    elif args.allpeers:
         _, peers = peercrawler.get_peers_from_service(ctx)
         for peer in peers:
             peer_tuples.append((str(peer.ip), peer.port))
     else:
-        peer = peercrawler.get_random_peer(ctx, lambda p: p.score == 1000)
+        peer = peercrawler.get_random_peer(ctx, lambda p: p.score >= 1000)
         peer_tuples.append((str(peer.ip), peer.port))
 
     for peeraddr, peerport in peer_tuples:
