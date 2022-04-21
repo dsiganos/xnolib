@@ -18,8 +18,8 @@ class telemetry_req:
 
 class telemetry_ack:
     def __init__(self, hdr, signature, node_id, block_count, cemented_count,
-                 unchecked_count, account_count, bandwidth_cap, uptime,
-                 peer_count, protocol_ver, genesis_hash, major_ver,
+                 unchecked_count, account_count, bandwidth_cap,
+                 peer_count, protocol_ver, uptime, genesis_hash, major_ver,
                  minor_ver, patch_ver, pre_release_ver, maker_ver,
                  timestamp, active_difficulty):
         self.hdr = hdr
@@ -30,9 +30,9 @@ class telemetry_ack:
         self.unchecked_count = unchecked_count
         self.account_count = account_count
         self.bandwidth_cap = bandwidth_cap
-        self.uptime = uptime
         self.peer_count = peer_count
         self.protocol_ver = protocol_ver
+        self.uptime = uptime
         self.genesis_hash = genesis_hash
         self.major_ver = major_ver
         self.minor_ver = minor_ver
@@ -51,9 +51,9 @@ class telemetry_ack:
         string += "Unchecked Count: %d\n" % self.unchecked_count
         string += "Account Count: %d\n" % self.account_count
         string += "Bandwidth Cap: %d\n" % self.bandwidth_cap
-        string += "Uptime: %d s\n" % self.uptime
         string += "Peer Count: %d\n" % self.peer_count
         string += "Protocol Version: %d\n" % self.protocol_ver
+        string += "Uptime: %d s\n" % self.uptime
         string += "Genesis Hash: %s\n" % hexlify(self.genesis_hash)
         string += "Major Version: %d\n" % self.major_ver
         string += "Minor Version: %d\n" % self.minor_ver
