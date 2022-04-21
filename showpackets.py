@@ -120,6 +120,9 @@ def main():
         req = keepalive.serialise()
         s.send(req)
 
+        # do a telemetry request
+        s.send(telemetry_req(ctx).serialise())
+
         # now we are waiting for keepalives, so set a long timeout (60 minutes)
         s.settimeout(60 * 60)
 
