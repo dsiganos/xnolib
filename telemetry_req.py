@@ -139,8 +139,10 @@ def parse_args():
 
 def do_telemetry_req(ctx, peeraddr, peerport):
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        peer_id = node_handshake_id.perform_handshake_exchange(ctx, s)
-        print('Handshake done with %s' % acctools.to_account_addr(peer_id, prefix='node_'))
+        signing_key, verifying_key = node_handshake_id.keypair()
+        peer_id = node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
+        print('Local Node ID: %s' % acctools.to_account_addr(verifying_key.to_bytes(), prefix='node_'))
+        print('Peer  Node ID: %s' % acctools.to_account_addr(peer_id, prefix='node_'))
 
         req = telemetry_req(ctx)
         s.send(req.serialise())

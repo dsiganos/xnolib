@@ -90,7 +90,7 @@ def main():
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        node_handshake_id.perform_handshake_exchange(ctx, s)
+        node_handshake_id.perform_handshake_exchange(ctx, s, node_handshake_id.keypair())
         blk = read_json_block_from_stdin()
         # only state blocks for now
         assert(isinstance(blk, block_state))

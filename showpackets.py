@@ -113,8 +113,10 @@ def main():
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        peer_id = node_handshake_id.perform_handshake_exchange(ctx, s)
-        print('Handshake done with %s' % acctools.to_account_addr(peer_id, prefix='node_'))
+        signing_key, verifying_key = node_handshake_id.keypair()
+        peer_id = node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
+        print('Local Node ID: %s' % acctools.to_account_addr(verifying_key.to_bytes(), prefix='node_'))
+        print('Peer  Node ID: %s' % acctools.to_account_addr(peer_id, prefix='node_'))
 
         # send a keepalive, this is not necessary, just doing it as an example
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.keepalive), 0)
