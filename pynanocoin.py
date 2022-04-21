@@ -1005,9 +1005,9 @@ def pow_validate(work, prev):
     return final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
 
 
-def verify(hash, signature, public_key):
+def verify(data, signature, public_key):
     try:
-        ed25519_blake2.checkvalid(signature, hash, public_key)
+        ed25519_blake2.checkvalid(signature, data, public_key)
     except ed25519_blake2.SignatureMismatch:
         return False
     return True
