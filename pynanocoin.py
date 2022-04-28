@@ -1143,10 +1143,13 @@ def peer_from_endpoint(addr, port):
     return Peer(ip_addr(addr), port)
 
 
-def get_connected_socket_endpoint(addr, port):
+def get_connected_socket_endpoint(addr, port, bind_endpoint=None):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(3)
+    if bind_endpoint:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(bind_endpoint)
     s.connect((addr, port))
     return s
 
