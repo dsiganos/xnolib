@@ -96,6 +96,32 @@ def set_functions(args):
     if not args.telemetry_ack:
         functions[message_type_enum.telemetry_ack] = None
 
+def make_telemetry_ack(ctx, signing_key, verifying_key):
+    tel_ack_hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_ack), 202)
+    telem_ack = telemetry_ack(
+        hdr=tel_ack_hdr,
+        signature=None,
+        node_id=verifying_key.to_bytes(),
+        block_count=10,
+        cemented_count=5,
+        unchecked_count=7,
+        account_count=500,
+        bandwidth_cap=10485760,
+        peer_count=22,
+        protocol_ver=18,
+        uptime=3,
+        genesis_hash=ctx['genesis_block']['hash'],
+        major_ver=77,
+        minor_ver=77,
+        patch_ver=77,
+        pre_release_ver=77,
+        maker_ver=77,
+        timestamp=4,
+        active_difficulty=0xfffffff800000000
+    )
+    telem_ack.sign(signing_key)
+    return telem_ack
+
 
 def main():
     args = parse_args()
@@ -113,6 +139,7 @@ def main():
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
+        s.settimeout(10)
         signing_key, verifying_key = node_handshake_id.keypair()
         peer_id = node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
         print('Local Node ID: %s' % acctools.to_account_addr(verifying_key.to_bytes(), prefix='node_'))
@@ -130,11 +157,18 @@ def main():
         # now we are waiting for keepalives, so set a long timeout (60 minutes)
         s.settimeout(60 * 60)
 
+        # create a telemetry response message to send, this helps to keep the connection open long term
+        # if the peer does not receive telemetry responses, it eventually closes the socket
+        telem_ack = make_telemetry_ack(ctx, signing_key, verifying_key)
+
         while True:
             hdr, payload = get_next_hdr_payload(s)
 
             if functions[hdr.msg_type.type] is not None:
                 print(functions[hdr.msg_type.type](hdr, payload))
+
+            if hdr.msg_type.type == message_type_enum.telemetry_req:
+                s.send(telem_ack.serialize())
 
 
 if __name__ == "__main__":
