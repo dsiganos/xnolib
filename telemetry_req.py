@@ -88,6 +88,12 @@ class telemetry_ack:
             self.active_difficulty)
         return data
 
+    def serialize(self):
+        data = self.hdr.serialise_header()
+        data += struct.pack('64s', self.sig)
+        data += self.serialize_without_signature()
+        return data
+
 
     @classmethod
     def parse(self, hdr, data):
