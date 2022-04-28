@@ -23,6 +23,7 @@ class telemetry_ack:
                  minor_ver, patch_ver, pre_release_ver, maker_ver,
                  timestamp, active_difficulty):
         self.hdr = hdr
+        self.sig_verified = False
         self.sig = signature
         self.node_id = node_id
         self.block_count = block_count
@@ -94,6 +95,8 @@ class telemetry_ack:
         data += self.serialize_without_signature()
         return data
 
+    def sign(self, signing_key):
+        self.sig = signing_key.sign(self.serialize_without_signature())
 
     @classmethod
     def parse(self, hdr, data):
@@ -118,10 +121,12 @@ class telemetry_ack:
         maker_ver           = unpacked[15]
         timestamp           = unpacked[16]
         active_difficulty   = unpacked[17]
-        return telemetry_ack(hdr, sig, node_id, block_count, cemented_count, unchecked_count,
-                             account_count, bandwidth_cap, uptime, peer_count, protocol_ver,
+        tack = telemetry_ack(hdr, sig, node_id, block_count, cemented_count, unchecked_count,
+                             account_count, bandwidth_cap, peer_count, protocol_ver, uptime,
                              genesis_hash, major_ver, minor_ver, patch_ver, pre_release_ver, maker_ver,
                              timestamp, active_difficulty)
+        tack.sig_verified = verify(data[64:], data[0:64], node_id)
+        return tack
 
 
 def parse_args():
