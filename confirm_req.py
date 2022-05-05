@@ -380,7 +380,8 @@ def confirm_req_peer(ctx, block, pair, peeraddr=None, peerport=None):
     s = get_connected_socket_endpoint(peeraddr, peerport)
     with s:
 
-        node_handshake_id.perform_handshake_exchange(ctx, s, node_handshake_id.keypair())
+        signing_key, verifying_key = node_handshake_id.keypair()
+        node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
         print('handshake done')
 
         s.settimeout(10)

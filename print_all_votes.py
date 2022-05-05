@@ -107,7 +107,8 @@ def main():
         s.connect((peeraddr, peerport))
         s.settimeout(20)
 
-        node_handshake_id.perform_handshake_exchange(ctx, s, node_handshake_id.keypair())
+        signing_key, verifying_key = node_handshake_id.keypair()
+        node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
         print('handshake done')
 
         # read hashes from stdin one by one
