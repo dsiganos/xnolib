@@ -697,7 +697,10 @@ class block_state:
         prev = binascii.unhexlify(json_obj['previous'])
         rep = acctools.account_key(json_obj['representative'])
         bal = int(json_obj['balance'])
-        link = binascii.unhexlify(json_obj['link'])
+        if len(json_obj['link']) == 64:
+            link = binascii.unhexlify(json_obj['link'])
+        else:
+            link = acctools.account_key(json_obj['link'])
         sig = binascii.unhexlify(json_obj['signature'])
         work = binascii.unhexlify(json_obj['work'])
         return block_state(account, prev, rep, bal, link, sig, work)
