@@ -1,0 +1,134 @@
+<!doctype html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}" />
+  </head>
+
+<title>Nano Peers</title>
+<h1>Nano Peers</h1>
+<table style="width:95%", border="1", id="workers">
+	<tr>
+		<th onclick="sortTable(0)">IPv6</th>
+		<th onclick="sortTable(1)">port</th>
+		<th onclick="sortTable(2)">peer_id</th>
+		<th onclick="sortTable(3)">is_voting</th>
+		<th onclick="sortTable(4)">hdr(ext)</th>
+		<th onclick="sortTable(5)">hdr(net_id)</th>
+		<th onclick="sortTable(6)">hdr(ver_max)</th>
+		<th onclick="sortTable(7)">hdr(ver_using)</th>
+		<th onclick="sortTable(8)">hdr(ver_min)</th>
+		<th onclick="sortTable(9)">hdr(msg_type)</th>
+		<th onclick="sortTable(10)">sig_verified</th>
+		<th onclick="sortTable(11)">sig</th>
+		<th onclick="sortTable(12)">node_id</th>
+		<th onclick="sortTable(13)">block_count</th>
+		<th onclick="sortTable(14)">cemented_count</th>
+		<th onclick="sortTable(15)">unchecked_count</th>
+		<th onclick="sortTable(16)">account_count</th>
+		<th onclick="sortTable(17)">bandwidth_cap</th>
+		<th onclick="sortTable(18)">peer_count</th>
+		<th onclick="sortTable(19)">protocol_ver</th>
+		<th onclick="sortTable(20)">uptime</th>
+		<th onclick="sortTable(21)">genesis_hash</th>
+		<th onclick="sortTable(22)">major_ver</th>
+		<th onclick="sortTable(23)">minor_ver</th>
+		<th onclick="sortTable(24)">patch_ver</th>
+		<th onclick="sortTable(25)">pre_release_ver</th>
+		<th onclick="sortTable(26)">maker_ver</th>
+		<th onclick="sortTable(27)">timestamp</th>
+		<th onclick="sortTable(28)">active_difficulty</th>
+		<th onclick="sortTable(29)">aux</th>
+		<th onclick="sortTable(30)">score</th>
+	</tr>
+        {% for item in name %}    
+        <tr>               
+            <td>{{item[0]}}</td>
+            <td>{{item[1]}}</td>
+            <td>{{item[2]}}</td>
+            <td>{{item[3]}}</td>
+            <td>{{item[4]}}</td>
+            <td>{{item[5]}}</td>
+            <td>{{item[6]}}</td>
+            <td>{{item[7]}}</td>
+            <td>{{item[8]}}</td>
+            <td>{{item[9]}}</td>
+            <td>{{item[10]}}</td>
+            <td>{{item[11]}}</td>
+            <td>{{item[12]}}</td>
+            <td>{{item[13]}}</td>
+            <td>{{item[14]}}</td>
+            <td>{{item[15]}}</td>
+            <td>{{item[16]}}</td>
+            <td>{{item[17]}}</td>
+            <td>{{item[18]}}</td>
+            <td>{{item[19]}}</td>
+            <td>{{item[20]}}</td>
+            <td>{{item[21]}}</td>
+            <td>{{item[22]}}</td>
+            <td>{{item[23]}}</td>
+            <td>{{item[24]}}</td>
+            <td>{{item[25]}}</td>
+            <td>{{item[26]}}</td>
+            <td>{{item[27]}}</td>
+            <td>{{item[28]}}</td>
+            <td>{{item[29]}}</td>
+            <td>{{item[30]}}</td>
+        </tr>
+        {% endfor %}    
+</table>
+
+<script>
+function sortTable(n) {
+  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+  table = document.getElementById("workers");
+  switching = true;
+  //Set the sorting direction to ascending:
+  dir = "asc"; 
+  /*Make a loop that will continue until
+  no switching has been done:*/
+  while (switching) {
+    //start by saying: no switching is done:
+    switching = false;
+    rows = table.rows;
+    /*Loop through all table rows (except the
+    first, which contains table headers):*/
+    for (i = 1; i < (rows.length - 1); i++) {
+      //start by saying there should be no switching:
+      shouldSwitch = false;
+      /*Get the two elements you want to compare,
+      one from current row and one from the next:*/
+      x = rows[i].getElementsByTagName("TD")[n];
+      y = rows[i + 1].getElementsByTagName("TD")[n];
+      /*check if the two rows should switch place,
+      based on the direction, asc or desc:*/
+      if (dir == "asc") {
+        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+          //if so, mark as a switch and break the loop:
+          shouldSwitch= true;
+          break;
+        }
+      } else if (dir == "desc") {
+        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+          //if so, mark as a switch and break the loop:
+          shouldSwitch = true;
+          break;
+        }
+      }
+    }
+    if (shouldSwitch) {
+      /*If a switch has been marked, make the switch
+      and mark that a switch has been done:*/
+      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      switching = true;
+      //Each time a switch is done, increase this count by 1:
+      switchcount ++;      
+    } else {
+      /*If no switching has been done AND the direction is "asc",
+      set the direction to "desc" and run the while loop again.*/
+      if (switchcount == 0 && dir == "asc") {
+        dir = "desc";
+        switching = true;
+      }
+    }
+  }
+}
+</script>
