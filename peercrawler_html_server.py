@@ -11,10 +11,12 @@ app = Flask(__name__, static_url_path='/peercrawler')
 ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
+
 def bg_thread_func():
     global peerman
     # look for peers forever
-    peerman.crawl(forever=True, delay=300)
+    peerman.crawl(forever=True, delay=60)
+
 
 @app.route("/peercrawler")
 def main_website():
@@ -81,17 +83,15 @@ def main_website():
 
     return render_template('index.html', name=peer_list)
 
+
 def main():
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
-    app.run(host='0.0.0.0', port=8888, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=False)
 
 
 if __name__ == "__main__":
     main()
-
-
-
