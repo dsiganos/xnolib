@@ -8,7 +8,7 @@ import base64
 import dns.resolver
 import ed25519_blake2
 import ed25519_blake2b
-import git
+#import git
 
 import acctools
 from exceptions import *
