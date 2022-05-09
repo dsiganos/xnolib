@@ -55,7 +55,7 @@ class peer_manager:
     def count_peers(self):
         return len(self.get_peers_copy())
 
-    def get_peers_from_peer(self, peer):
+    def get_peers_from_peer(self, peer, no_telemetry=False, no_confirm_req=False):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(3)
@@ -89,8 +89,10 @@ class peer_manager:
                         keepalive = message_keepalive.parse_payload(hdr, payload)
                         self.add_peers(keepalive.peers)
                         peer.score = 1000
-                        peer.telemetry = get_telemetry(self.ctx, s)
-                        peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
+                        if not no_telemetry:
+                            peer.telemetry = get_telemetry(self.ctx, s)
+                        if not no_confirm_req:
+                            peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
                         return
                 # timeout whilst waiting for keepalive, score it with 2
                 peer.score = 2
