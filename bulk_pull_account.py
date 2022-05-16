@@ -170,10 +170,13 @@ def main():
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        if args.account is None:
-            account = binascii.unhexlify(ctx['genesis_pub'])
-        else:
-            account = binascii.unhexlify(args.account)
+        account = binascii.unhexlify(ctx['genesis_pub'])
+        if args.account is not None:
+            if len(args.account) == 64:
+                account = binascii.unhexlify(args.account)
+            else:
+                account = acctools.account_key(args.account)
+
         hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
 
         # Change the flag to see the different results (in range 0-2)

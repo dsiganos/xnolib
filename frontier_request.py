@@ -194,10 +194,14 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
+    account = args.start_acc
+    if len(account) != 64:
+        account = acctools.account_key(args.start_acc).hex()
+
     confirmed = not args.notconfirmed
     hdr = frontier_request.generate_header(ctx, confirmed)
     frontier_req = frontier_request(hdr,
-                                    start_account = binascii.unhexlify(args.start_acc),
+                                    start_account = unhexlify(account),
                                     maxage = args.maxage,
                                     maxacc = args.count)
 
