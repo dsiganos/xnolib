@@ -6,31 +6,12 @@
 import sys
 import time
 import argparse
+import datetime
 
+import common
 from pynanocoin import *
 from msg_handshake import node_handshake_id
 from peercrawler import *
-import datetime
-
-
-class hash_pair:
-    def __init__(self, hsh, root):
-        assert len(hsh) == 32 and len(root) == 32
-        self.hsh = hsh
-        self.root = root
-
-    def __str__(self):
-        string =  "  Hash: %s\n" % hexlify(self.hsh)
-        string += "  Root: %s\n" % hexlify(self.root)
-        return string
-
-    def serialise(self):
-        return self.hsh + self.root
-
-    @classmethod
-    def parse(self, data):
-        assert len(data) == 64
-        return hash_pair(data[0:32], data[32:64])
 
 
 class confirm_req:
@@ -60,7 +41,7 @@ class confirm_req_hash(confirm_req):
 
         hash_pairs = []
         for i in range(0, hdr.count_get()):
-            hash_pairs.append(hash_pair.parse(data[0:64]))
+            hash_pairs.append(common.hash_pair.parse(data[0:64]))
             data = data[64:]
 
         return confirm_req_hash(hdr, hash_pairs)
@@ -332,7 +313,7 @@ def search_for_response(s, req):
 def convert_blocks_to_hash_pairs(blocks):
     pairs = []
     for b in blocks:
-        pair = hash_pair(b.hash(), b.root())
+        pair = common.hash_pair(b.hash(), b.root())
         pairs.append(pair)
     return pairs
 
@@ -414,9 +395,9 @@ def main():
     if args.hash is not None:
         raw_pair = args.hash.split(':')
         if len(raw_pair) == 1:
-            pair = hash_pair(binascii.unhexlify(raw_pair[0]), b'\x00' * 32)
+            pair = common.hash_pair(binascii.unhexlify(raw_pair[0]), b'\x00' * 32)
         else:
-            pair = hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
+            pair = common.hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
     else:
         block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
                            ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
