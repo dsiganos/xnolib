@@ -210,7 +210,7 @@ def main():
         assert peers
     else:
         if args.peer is not None:
-            peeraddr, peerport = parse_endpoint(args.peer)
+            peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
             peers = [peer_from_endpoint(peeraddr, peerport)]
         else:
             hdr, peers = peercrawler.get_peers_from_service(ctx)
