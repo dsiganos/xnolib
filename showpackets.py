@@ -59,7 +59,7 @@ functions = {
     message_type_enum.keepalive: message_keepalive.parse_payload,
     message_type_enum.publish: msg_publish.parse,
     message_type_enum.confirm_req: confirm_req.confirm_req.parse,
-    message_type_enum.confirm_ack: confirm_ack.parse,
+    message_type_enum.confirm_ack: confirm_ack.confirm_ack.parse,
     message_type_enum.bulk_pull: message_bulk_pull.parse,
     message_type_enum.bulk_push: bulk_push.parse,
     message_type_enum.frontier_req: frontier_request.parse,
