@@ -1,5 +1,6 @@
 #!/bin/env python3
 
+import sys
 import lmdb
 import binascii
 import ipaddress
@@ -102,6 +103,9 @@ def main():
     elif args.command == 'add':
         peers_table.add_peer(args.peer)
     elif args.command == 'delete':
+        if args.peer is None:
+            print('Must specify peer to delete, to delete all peers, use the command delall')
+            sys.exit(1)
         peers_table.delete_peer(args.peer)
     else:
         print('Unknown command %s', args.command)
