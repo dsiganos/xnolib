@@ -24,27 +24,28 @@ class vote_common:
         assert (len(data) == 104)
         account = data[0:32]
         sig = data[32:96]
-        seq = int.from_bytes(data[96:], "little")
+        seq = int.from_bytes(data[96:], 'little')
         return vote_common(account, sig, seq)
 
     def serialise(self):
         data = self.account
         data += self.sig
-        data += self.seq.to_bytes(8, "little")
+        data += self.seq.to_bytes(8, 'little')
         return data
 
     def __str__(self):
         #print(type(self.account))
         #print(repr(self.account))
         #print(hexlify(self.account))
-        string = "Account: %s\n" % hexlify(self.account)
-        string += "Signature: %s\n" % hexlify(self.sig)
+        string  = 'Account: %s\n' % hexlify(self.account)
+        string += '         %s\n' % acctools.to_account_addr(self.account)
+        string += 'Signature: %s\n' % hexlify(self.sig)
 
         if self.seq == 0xffffffffffffffff:
-            string += "Sequence: %s(%s) [final vote]\n" % (self.seq, hex(self.seq))
+            string += 'Sequence: %s(%s) [final vote]\n' % (self.seq, hex(self.seq))
         else:
             ts = datetime.datetime.fromtimestamp(self.seq / 1000)
-            string += "Sequence: %s(%s) [%s]\n" % (self.seq, hex(self.seq), ts)
+            string += 'Sequence: %s(%s) [%s]\n' % (self.seq, hex(self.seq), ts)
         return string
 
 
