@@ -219,7 +219,8 @@ def confirm_blocks_by_hash(ctx, pairs, s):
 
     resp = search_for_response(s, req)
     print(resp)
-    print('Response is valid:', resp.is_valid())
+    if resp is not None:
+        print('Response is valid:', resp.is_valid())
 
     return resp is not None
 
