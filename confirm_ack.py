@@ -122,6 +122,7 @@ class confirm_ack_hash(confirm_ack):
         string += str(self.hdr)
         string += '\n'
         string += str(self.common)
+        string += '%s signature\n' % 'Valid' if self.is_valid() else 'INVALID'
         string += 'Hashes: \n'
         for h in self.hashes:
             string += '   '
