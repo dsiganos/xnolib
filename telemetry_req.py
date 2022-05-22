@@ -62,7 +62,8 @@ class telemetry_ack:
         string += "Pre-release Version: %d\n" % self.pre_release_ver
         string += "Maker Version: %d\n" % self.maker_ver
         string += "Timestamp: %d ms\n" % self.timestamp
-        string += "Active Difficulty: %s (%s)" % (self.active_difficulty, hex(self.active_difficulty))
+        string += "Active Difficulty: %s (%s)\n" % (self.active_difficulty, hex(self.active_difficulty))
+        string += '%s signature' % "Valid" if self.sig_verified else "INVALID"
         return string
 
     def get_sw_version(self):
