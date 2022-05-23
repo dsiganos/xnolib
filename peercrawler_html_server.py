@@ -8,11 +8,17 @@ import peercrawler
 import pynanocoin
 import common
 from acctools import to_account_addr
+from peercrawler_html_server_utils import *
+
 
 app = Flask(__name__, static_url_path='/peercrawler')
 
 ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
+
+
+# read from a file a list of dicts with info about prs
+nodes = try_load_peers_details("peers-details.json")
 
 
 def bg_thread_func():
@@ -42,6 +48,9 @@ def main_website():
             else:
                 hdr = telemetry.hdr
 
+            node_id = to_account_addr(telemetry.node_id, "node_")
+            node_details = get_node_details_from_id(node_id, nodes)
+
             peer_list.append([peer.ip,
                               peer.port,
                               common.hexlify(peer.peer_id),
@@ -54,7 +63,7 @@ def main_website():
                               hdr.msg_type,
                               telemetry.sig_verified,
                               common.hexlify(telemetry.sig),
-                              to_account_addr(telemetry.node_id, "node_"),
+                              node_id,
                               telemetry.block_count,
                               telemetry.cemented_count,
                               telemetry.unchecked_count,
