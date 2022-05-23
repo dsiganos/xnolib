@@ -58,8 +58,10 @@ def main_website():
                               telemetry.peer_count,
                               telemetry.protocol_ver,
                               str(timedelta(seconds=telemetry.uptime)),
+                              telemetry.uptime,
                               f"{telemetry.major_ver} {telemetry.minor_ver} {telemetry.patch_ver} {telemetry.pre_release_ver} {telemetry.maker_ver}",
                               datetime.utcfromtimestamp(telemetry.timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S'),
+                              telemetry.timestamp,
                               peer.score])
         else:
             peer_list.append([peer.ip,
