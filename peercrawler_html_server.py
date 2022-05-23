@@ -1,4 +1,6 @@
 #!/bin/env python3
+from datetime import datetime, timedelta
+
 from flask import Flask,jsonify,request,render_template,redirect
 import threading
 
@@ -59,14 +61,14 @@ def main_website():
                               telemetry.bandwidth_cap,
                               telemetry.peer_count,
                               telemetry.protocol_ver,
-                              telemetry.uptime,
+                              str(timedelta(seconds=telemetry.uptime)),
                               common.hexlify(telemetry.genesis_hash),
                               telemetry.major_ver,
                               telemetry.minor_ver,
                               telemetry.patch_ver,
                               telemetry.pre_release_ver,
                               telemetry.maker_ver,
-                              telemetry.timestamp,
+                              datetime.utcfromtimestamp(telemetry.timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S'),
                               telemetry.active_difficulty,
                               peer.aux,
                               peer.score])
