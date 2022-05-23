@@ -28,6 +28,7 @@ h1 {
 #workers td, #workers th {
   border: 1px solid #ddd;
   padding: 2px;
+  white-space: nowrap;
 }
 
 #workers tr:nth-child(even){background-color: #f2f2f2;}
