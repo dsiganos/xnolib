@@ -36,33 +36,19 @@ def main_website():
     peer_list = []
     for peer in peers_copy:
         telemetry = peer.telemetry
-        hdr = {}
-        if telemetry != None:
-            if telemetry.hdr == None:
-                hdr.ext = 0
-                hdr.net_id = 0
-                hdr.ver_max = 0
-                hdr.ver_using = 0
-                hdr.ver_min = 0
-                hdr.msg_type = 0
-            else:
-                hdr = telemetry.hdr
 
+        if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
             node_details = get_node_details_from_id(node_id, nodes)
+            if node_details is None:
+                node_details = {}
 
             peer_list.append([peer.ip,
                               peer.port,
-                              common.hexlify(peer.peer_id),
+                              node_details.get("name", " "),
+                              node_details.get("nano_address", " "),
                               peer.is_voting,
-                              hdr.ext,
-                              hdr.net_id,
-                              hdr.ver_max,
-                              hdr.ver_using,
-                              hdr.ver_min,
-                              hdr.msg_type,
                               telemetry.sig_verified,
-                              common.hexlify(telemetry.sig),
                               node_id,
                               telemetry.block_count,
                               telemetry.cemented_count,
@@ -72,25 +58,13 @@ def main_website():
                               telemetry.peer_count,
                               telemetry.protocol_ver,
                               str(timedelta(seconds=telemetry.uptime)),
-                              common.hexlify(telemetry.genesis_hash),
-                              telemetry.major_ver,
-                              telemetry.minor_ver,
-                              telemetry.patch_ver,
-                              telemetry.pre_release_ver,
-                              telemetry.maker_ver,
+                              f"{telemetry.major_ver} {telemetry.minor_ver} {telemetry.patch_ver} {telemetry.pre_release_ver} {telemetry.maker_ver}",
                               datetime.utcfromtimestamp(telemetry.timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S'),
-                              telemetry.active_difficulty,
-                              peer.aux,
                               peer.score])
         else:
             peer_list.append([peer.ip,
                               peer.port,
-                              common.hexlify(peer.peer_id),
-                              peer.is_voting,
-                              "0", "0", "0", "0", "0", "0", "0", "0",
-                              "0", "0", "0", "0", "0", "0", "0", "0",
-                              "0", "0", "0", "0", "0", "0", "0", "0",
-                              "0", "0",
+                              "", "", "", "", "", "", "", "", "", "", "", "", "", "",
                               peer.aux, peer.score])
 
     return render_template('index.html', name=peer_list)
