@@ -7,6 +7,7 @@ import threading
 import peercrawler
 import pynanocoin
 import common
+from acctools import to_account_addr
 
 app = Flask(__name__, static_url_path='/peercrawler')
 
@@ -53,7 +54,7 @@ def main_website():
                               hdr.msg_type,
                               telemetry.sig_verified,
                               common.hexlify(telemetry.sig),
-                              common.hexlify(telemetry.node_id),
+                              to_account_addr(telemetry.node_id, "node_"),
                               telemetry.block_count,
                               telemetry.cemented_count,
                               telemetry.unchecked_count,
