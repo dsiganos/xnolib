@@ -14,7 +14,7 @@ def try_load_peers_details(path: str) -> list:
         return []
 
 
-def get_node_details_from_id(node_id: str, node_details: list) -> dict | None:
+def get_node_details_from_id(node_id: str, node_details: list) -> dict:
     for i in node_details:
         try:
             if i["node_id"] == node_id:
@@ -23,4 +23,4 @@ def get_node_details_from_id(node_id: str, node_details: list) -> dict | None:
         except KeyError:
             continue
 
-    return None
+    return {}

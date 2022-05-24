@@ -40,8 +40,6 @@ def main_website():
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
             node_details = get_node_details_from_id(node_id, nodes)
-            if node_details is None:
-                node_details = {}
 
             peer_list.append([peer.ip,
                               peer.port,
