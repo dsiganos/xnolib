@@ -369,13 +369,14 @@ class TestComms(unittest.TestCase):
 
     def test_is_voting_peers(self):
         ctx = livectx
+        signing_key, verifying_key = ed25519_blake2b.create_keypair()
         p = Peer(ip_addr(ipaddress.IPv6Address("::ffff:94.130.135.50")), 7075)
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(3)
             try:
                 s.connect((str(p.ip), 7075))
-                node_handshake_id.perform_handshake_exchange(ctx, s)
+                node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
                 self.assertTrue(send_confirm_req_genesis(ctx, p, s))
                 s.close()
             except OSError:
@@ -415,9 +416,9 @@ class TestComms(unittest.TestCase):
         b1.ancillary["account"] = binascii.unhexlify(livectx["genesis_pub"])
         b2.ancillary["account"] = binascii.unhexlify(livectx["genesis_pub"])
         b3.ancillary["account"] = binascii.unhexlify(livectx["genesis_pub"])
-        self.assertTrue(valid_block(livectx, b1))
-        self.assertTrue(valid_block(livectx, b2))
-        self.assertTrue(valid_block(livectx, b3))
+        self.assertTrue(valid_block(livectx, b1, False))
+        self.assertTrue(valid_block(livectx, b2, False))
+        self.assertTrue(valid_block(livectx, b3, False))
 
     def test_epoch_validation(self):
         epochv2 = {
@@ -502,19 +503,20 @@ class TestComms(unittest.TestCase):
         sig = signing_key.sign(my_cookie)
         self.assertEqual(verifying_key.verify(sig, my_cookie), None)
 
-    def test_handshake_server(self):
-        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.settimeout(1000)
-            s.bind(('::1', 6060))
-            s.listen()
-            conn, _ = s.accept()
-            with conn:
-                data = read_socket(conn, 40)
-                hdr = message_header.parse_header(data[0:8])
-                query = handshake_query.parse_query(hdr, data[8:])
-                handshake_exchange_server(livectx, conn, query)
-                print("server done")
+    # def test_handshake_server(self):
+    #     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+    #         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    #         s.settimeout(1000)
+    #         s.bind(('::1', 6060))
+    #         s.listen()
+    #         conn, _ = s.accept()
+    #         with conn:
+    #             data = read_socket(conn, 40)
+    #             hdr = message_header.parse_header(data[0:8])
+    #             query = handshake_query.parse_query(hdr, data[8:])
+    #             signing_key, verifying_key = ed25519_blake2b.create_keypair()
+    #             handshake_exchange_server(livectx, conn, query, signing_key, verifying_key)
+    #             print("server done")
 
     def test_handshake_client(self):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
@@ -633,12 +635,6 @@ class TestComms(unittest.TestCase):
     def test_frontier_service_client(self):
         s_packet = get_all_frontiers_packet_from_service()
         print(s_packet)
-
-    def test_deleteme(self):
-        ts = [True, False, True, False, True]
-        ts2 = itertools.filterfalse(lambda t: t, ts)
-        pass
-
 
 
 if __name__ == '__main__':
