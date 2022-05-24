@@ -246,6 +246,41 @@ class peer_crawler_thread(threading.Thread):
         print('Peer crawler thread ended')
 
 
+class network_connections():
+    def __init__(self, peerman: peer_manager, inactivity_threshold_seconds=0):
+        self.peerman = peerman
+        self.inactivity_threshold_seconds = inactivity_threshold_seconds
+
+        self.__connections: dict[Peer, dict[Peer, int]] = {}
+
+    def register_connections(self, peer: Peer, new_peers: list[Peer]):
+        for new_peer in new_peers:
+            self.__connections[peer][new_peer] = int(time.time())
+            self.__connections[new_peer][peer] = int(time.time())
+
+    def get_connections(self):
+        return self.__connections.copy()
+
+    def run(self, initial_peer: Peer):
+        initial_peers = self.peerman.get_peers_from_peer(initial_peer)
+        self.register_connections(initial_peer, initial_peers)
+
+        while True:
+            peers_list = [peer for peer in self.__connections]
+            for peer in peers_list:
+                new_peers = self.peerman.get_peers_from_peer(peer)
+                self.register_connections(peer, new_peers)
+
+            self.cleanup_inactive_peers()
+
+    def cleanup_inactive_peers(self):
+        if self.inactivity_threshold_seconds > 0:
+            for peer, connections in self.__connections.items():
+                for connection, last_seen in connections.items():
+                    if int(time.time()) - last_seen > self.inactivity_threshold_seconds:
+                        self.__connections[peer].pop(connection)
+
+
 def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
     t = peer_crawler_thread(ctx, forever, delay, verbosity)
     t.start()
