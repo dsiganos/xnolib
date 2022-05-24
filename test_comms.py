@@ -596,10 +596,10 @@ class TestComms(unittest.TestCase):
     def test_handshake_query_serialise_deserialise(self):
         ctx = livectx
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
-        query1 = handshake_query(ctx, hdr)
+        query1 = handshake_query(hdr)
         serialised = query1.serialise()
         hdr = message_header.parse_header(serialised[0:8])
-        query2 = handshake_query.parse_query(ctx, hdr, serialised[8:])
+        query2 = handshake_query.parse_query(hdr, serialised[8:])
 
         self.assertEqual(query1, query2)
 
@@ -607,30 +607,33 @@ class TestComms(unittest.TestCase):
         ctx = livectx
         account = os.urandom(32)
         sig = os.urandom(64)
-        resp1 = handshake_response(ctx, account, sig)
+        hdr1 = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 0)
+        hdr1.set_is_response(True)
+        resp1 = handshake_response(hdr1, account, sig)
         serialised = resp1.serialise()
-        hdr = message_header.parse_header(serialised[0:8])
+        hdr2 = message_header.parse_header(serialised[0:8])
 
-        resp2 = handshake_response.parse_response(ctx, serialised)
-        resp3 = handshake_response.parse_response(ctx, serialised, hdr=hdr)
+        resp2 = handshake_response.parse_response(hdr2, serialised[8:])
 
+        self.assertEqual(hdr1, hdr2)
         self.assertEqual(resp1, resp2)
-        self.assertEqual(resp1, resp3)
 
     def test_handshake_query_response_serialise_deserialise(self):
         ctx = livectx
         cookie = os.urandom(32)
         account = os.urandom(32)
         sig = os.urandom(64)
-        hs1 = handshake_response_query(ctx, cookie, account, sig)
+        hdr1 = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 0)
+        hdr1.set_is_query(True)
+        hdr1.set_is_response(True)
+        hs1 = handshake_response_query(hdr1, cookie, account, sig)
         serialised = hs1.serialise()
-        hdr = message_header.parse_header(serialised[0:8])
+        hdr2 = message_header.parse_header(serialised[0:8])
 
-        hs2 = handshake_response_query.parse_query_response(ctx, serialised)
-        hs3 = handshake_response_query.parse_query_response(ctx, serialised, hdr=hdr)
+        hs2 = handshake_response_query.parse_query_response(hdr2, serialised[8:])
 
+        self.assertEqual(hdr1, hdr2)
         self.assertEqual(hs1, hs2)
-        self.assertEqual(hs1, hs3)
 
     def test_frontier_service_client(self):
         s_packet = get_all_frontiers_packet_from_service()
