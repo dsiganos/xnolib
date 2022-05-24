@@ -6,8 +6,6 @@ from binascii import unhexlify
 import base64
 import json
 import unittest
-
-import pow
 import acctools
 from net import *
 from common import *
@@ -354,7 +352,7 @@ class block_open:
         if self.source == self.account:
             # genesis block
             assert self.source == self.representative
-            assert self.source == livectx['genesis_pub'] or self.source == betactx['genesis_pub']
+            # assert self.source == livectx['genesis_pub'] or self.source == betactx['genesis_pub']
             return None
         else:
             # it is a regular open block and it has a source
@@ -608,6 +606,7 @@ class block_state:
         self.ancillary = {
             "next": None,
             "peers" : set(),
+            "type": block_type_enum.not_a_block
         }
 
     def get_previous(self):
@@ -630,6 +629,10 @@ class block_state:
             return self.account
         else:
             return self.previous
+
+    def set_type(self, block_type):
+        assert block_type in range(block_type_enum.invalid, block_type_enum.state + 1)
+        self.ancillary["type"] = block_type
 
     def hash(self):
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
@@ -805,6 +808,7 @@ def read_block_state(s):
     data = read_socket(s, 216)
     block = block_state.parse(data)
     return block
+
 
 class TestBlock(unittest.TestCase):
     def setUp(self):
