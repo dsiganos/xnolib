@@ -118,15 +118,16 @@ class confirm_ack_hash(confirm_ack):
         return verify(hasher.digest(), self.common.sig, self.common.account)
 
     def __str__(self):
-        string = ""
+        string = ''
         string += str(self.hdr)
-        string += "\n"
+        string += '\n'
         string += str(self.common)
-        string += "Hashes: \n"
+        string += '%s signature\n' % 'Valid' if self.is_valid() else 'INVALID'
+        string += 'Hashes: \n'
         for h in self.hashes:
-            string += "   "
+            string += '   '
             string += hexlify(h)
-            string += "\n"
+            string += '\n'
         return string
 
 
@@ -170,9 +171,9 @@ class confirm_ack_block(confirm_ack):
         return verify(hasher.digest(), self.common.sig, self.common.account)
 
     def __str__(self):
-        string = ""
+        string = ''
         string += str(self.hdr)
-        string += "\n"
+        string += '\n'
         string += str(self.block)
 
 
@@ -208,7 +209,7 @@ def main():
     
     peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
 
-    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(message_type_enum.confirm_ack), 0)
+    hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.confirm_ack), 0)
     common = vote_common(b'\x0A' * 32, b'\x00' * 64, 0xFFFFFFFFFFFFFFFF)
     hashes = [b'\x02' * 32, b'\x03' * 32]
     ack = confirm_ack_hash(hdr, common, hashes)
@@ -241,5 +242,5 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

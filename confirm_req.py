@@ -69,9 +69,9 @@ class confirm_req_hash(confirm_req):
         return True
 
     def __str__(self):
-        string = str(self.hdr) + "\n"
+        string = str(self.hdr) + '\n'
         for i in range(1, len(self.hash_pairs) + 1):
-            string += "Pair %d:\n" % i
+            string += 'Pair %d:\n' % i
             string += str(self.hash_pairs[i-1])
         return string
 
@@ -123,7 +123,7 @@ class confirm_req_block(confirm_req):
         return True
 
     def __str__(self):
-        string = str(self.hdr) + "\n"
+        string = str(self.hdr) + '\n'
         string += str(self.block)
         return string
 
@@ -136,33 +136,33 @@ def get_next_confirm_ack(s):
 
 
 def send_confirm_req_block(ctx, s):
-    block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
-                       ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
-                       ctx["genesis_block"]["work"])
+    block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
+                       ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
+                       ctx['genesis_block']['work'])
 
-    print("The block we send hash: %s" % hexlify(block.hash()))
+    print('The block we send hash: %s' % hexlify(block.hash()))
 
     outcome = confirm_block(ctx, block, s)
 
     if not outcome:
-        print("block %s not confirmed!" % hexlify(block.hash()))
+        print('block %s not confirmed!' % hexlify(block.hash()))
     else:
-        print("block %s confirmed!" % hexlify(block.hash()))
+        print('block %s confirmed!' % hexlify(block.hash()))
 
 
 def send_example_confirm_req_hash(ctx, s):
-    block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
-                       ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
-                       ctx["genesis_block"]["work"])
+    block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
+                       ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
+                       ctx['genesis_block']['work'])
 
     # print(block)
 
     outcome = confirm_blocks_by_hash(ctx, convert_blocks_to_hash_pairs([block]), s)
 
     if not outcome:
-        print("blocks not confirmed!")
+        print('blocks not confirmed!')
     else:
-        print("blocks confirmed")
+        print('blocks confirmed')
 
 
 def search_for_response(s, req):
@@ -188,7 +188,7 @@ def convert_blocks_to_hash_pairs(blocks):
 
 
 def confirm_block(ctx, block, s):
-    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
+    hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
     s.send(req.serialise())
 
@@ -202,7 +202,7 @@ def confirm_block(ctx, block, s):
 
 
 def get_confirm_block_resp(ctx, block, s):
-    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
+    hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
     s.send(req.serialise())
 
@@ -213,7 +213,7 @@ def get_confirm_block_resp(ctx, block, s):
 
 def confirm_blocks_by_hash(ctx, pairs, s):
     assert(isinstance(pairs, list))
-    hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(4), 0)
+    hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_hash(hdr, pairs)
     s.send(req.serialise())
 
@@ -237,13 +237,13 @@ def confirm_req_peer(ctx, block, pair, peeraddr=None, peerport=None):
 
         s.settimeout(10)
         if pair is None:
-            print("Confirm Block")
+            print('Confirm Block')
             outcome = confirm_block(ctx, block, s)
-            print("Finished with confirmed status: %s" % outcome)
+            print('Finished with confirmed status: %s' % outcome)
         else:
-            print("Confirm Hash")
+            print('Confirm Hash')
             outcome = confirm_blocks_by_hash(ctx, [pair], s)
-            print("Finished with confirmed status: %s" % outcome)
+            print('Finished with confirmed status: %s' % outcome)
 
 
 def main():
@@ -269,9 +269,9 @@ def main():
         else:
             pair = common.hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
     else:
-        block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
-                           ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
-                           ctx["genesis_block"]["work"])
+        block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
+                           ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
+                           ctx['genesis_block']['work'])
 
     if args.peer is not None:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
@@ -289,9 +289,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     group1 = parser.add_mutually_exclusive_group(required=True)
-    group1.add_argument('-B', '--block', action="store_true", default=False)
+    group1.add_argument('-B', '--block', action='store_true', default=False)
     group1.add_argument('-H', '--hash', type=str, default=None,
-                        help='hash or hash-root pair in the form "hash:root"')
+                        help='hash or hash-root pair in the form hash:root')
 
     group2 = parser.add_mutually_exclusive_group()
     group2.add_argument('-b', '--beta', action='store_true', default=False,
@@ -305,5 +305,5 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

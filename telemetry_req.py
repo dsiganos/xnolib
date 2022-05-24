@@ -44,30 +44,30 @@ class telemetry_ack:
         self.active_difficulty = active_difficulty
 
     def __str__(self):
-        string =  "Signature: %s\n" % hexlify(self.sig)
-        string += "Node ID: %s\n" % hexlify(self.node_id)
-        string += "         %s\n" % acctools.to_account_addr(self.node_id, 'node_')
-        string += "Block Count: %d\n" % self.block_count
-        string += "Cemented Count: %d\n" % self.cemented_count
-        string += "Unchecked Count: %d\n" % self.unchecked_count
-        string += "Account Count: %d\n" % self.account_count
-        string += "Bandwidth Cap: %d\n" % self.bandwidth_cap
-        string += "Peer Count: %d\n" % self.peer_count
-        string += "Protocol Version: %d\n" % self.protocol_ver
-        string += "Uptime: %d s\n" % self.uptime
-        string += "Genesis Hash: %s\n" % hexlify(self.genesis_hash)
-        string += "Major Version: %d\n" % self.major_ver
-        string += "Minor Version: %d\n" % self.minor_ver
-        string += "Patch Version: %d\n" % self.patch_ver
-        string += "Pre-release Version: %d\n" % self.pre_release_ver
-        string += "Maker Version: %d\n" % self.maker_ver
-        string += "Timestamp: %d ms\n" % self.timestamp
-        string += "Active Difficulty: %s (%s)\n" % (self.active_difficulty, hex(self.active_difficulty))
-        string += '%s signature' % "Valid" if self.sig_verified else "INVALID"
+        string =  'Signature: %s\n' % hexlify(self.sig)
+        string += 'Node ID: %s\n' % hexlify(self.node_id)
+        string += '         %s\n' % acctools.to_account_addr(self.node_id, 'node_')
+        string += 'Block Count: %d\n' % self.block_count
+        string += 'Cemented Count: %d\n' % self.cemented_count
+        string += 'Unchecked Count: %d\n' % self.unchecked_count
+        string += 'Account Count: %d\n' % self.account_count
+        string += 'Bandwidth Cap: %d\n' % self.bandwidth_cap
+        string += 'Peer Count: %d\n' % self.peer_count
+        string += 'Protocol Version: %d\n' % self.protocol_ver
+        string += 'Uptime: %d s\n' % self.uptime
+        string += 'Genesis Hash: %s\n' % hexlify(self.genesis_hash)
+        string += 'Major Version: %d\n' % self.major_ver
+        string += 'Minor Version: %d\n' % self.minor_ver
+        string += 'Patch Version: %d\n' % self.patch_ver
+        string += 'Pre-release Version: %d\n' % self.pre_release_ver
+        string += 'Maker Version: %d\n' % self.maker_ver
+        string += 'Timestamp: %d ms\n' % self.timestamp
+        string += 'Active Difficulty: %s (%s)\n' % (self.active_difficulty, hex(self.active_difficulty))
+        string += '%s signature' % 'Valid' if self.sig_verified else 'INVALID'
         return string
 
     def get_sw_version(self):
-        return "%s.%s.%s.%s" % (self.major_ver, self.minor_ver, self.patch_ver, self.pre_release_ver)
+        return '%s.%s.%s.%s' % (self.major_ver, self.minor_ver, self.patch_ver, self.pre_release_ver)
 
     def serialize_without_signature(self):
         data = struct.pack('>32sQQQQQIBQ32sBBBBBQQ', \
@@ -141,7 +141,7 @@ def parse_args():
 
 
     group1 = parser.add_mutually_exclusive_group(required=False)
-    group1.add_argument('-a', '--allpeers', action="store_true", default=False,
+    group1.add_argument('-a', '--allpeers', action='store_true', default=False,
                         help='contact all known peers for telemetry')
     group1.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
@@ -197,5 +197,5 @@ def main():
                 raise
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

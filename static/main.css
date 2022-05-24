@@ -28,6 +28,7 @@ h1 {
 #workers td, #workers th {
   border: 1px solid #ddd;
   padding: 2px;
+  white-space: nowrap;
 }
 
 #workers tr:nth-child(even){background-color: #f2f2f2;}
@@ -40,4 +41,45 @@ h1 {
   text-align: left;
   background-color: #04AA6D;
   color: white;
+}
+
+/* https://www.w3schools.com/howto/howto_css_tooltip.asp */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+
+  opacity: 0;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
 }

@@ -9,42 +9,29 @@
 	<tr>
 		<th onclick="sortTable(0)">IPv6</th>
 		<th onclick="sortTable(1)">port</th>
-		<th onclick="sortTable(2)">peer_id</th>
-		<th onclick="sortTable(3)">is_voting</th>
-		<th onclick="sortTable(4)">hdr(ext)</th>
-		<th onclick="sortTable(5)">hdr(net_id)</th>
-		<th onclick="sortTable(6)">hdr(ver_max)</th>
-		<th onclick="sortTable(7)">hdr(ver_using)</th>
-		<th onclick="sortTable(8)">hdr(ver_min)</th>
-		<th onclick="sortTable(9)">hdr(msg_type)</th>
-		<th onclick="sortTable(10)">sig_verified</th>
-		<th onclick="sortTable(11)">sig</th>
-		<th onclick="sortTable(12)">node_id</th>
-		<th onclick="sortTable(13)">block_count</th>
-		<th onclick="sortTable(14)">cemented_count</th>
-		<th onclick="sortTable(15)">unchecked_count</th>
-		<th onclick="sortTable(16)">account_count</th>
-		<th onclick="sortTable(17)">bandwidth_cap</th>
-		<th onclick="sortTable(18)">peer_count</th>
-		<th onclick="sortTable(19)">protocol_ver</th>
-		<th onclick="sortTable(20)">uptime</th>
-		<th onclick="sortTable(21)">genesis_hash</th>
-		<th onclick="sortTable(22)">major_ver</th>
-		<th onclick="sortTable(23)">minor_ver</th>
-		<th onclick="sortTable(24)">patch_ver</th>
-		<th onclick="sortTable(25)">pre_release_ver</th>
-		<th onclick="sortTable(26)">maker_ver</th>
-		<th onclick="sortTable(27)">timestamp</th>
-		<th onclick="sortTable(28)">active_difficulty</th>
-		<th onclick="sortTable(29)">aux</th>
-		<th onclick="sortTable(30)">score</th>
+        <th onclick="sortTable(2)">*Friendly name</th>
+        <th onclick="sortTable(3)">*Nano address</th>
+		<th onclick="sortTable(4)">is_voting</th>
+		<th onclick="sortTable(5)">sig_verified</th>
+		<th onclick="sortTable(6)">node_id</th>
+		<th onclick="sortTable(7)">block_count</th>
+		<th onclick="sortTable(8)">cemented_count</th>
+		<th onclick="sortTable(9)">unchecked_count</th>
+		<th onclick="sortTable(10)">account_count</th>
+		<th onclick="sortTable(11)">bandwidth_cap</th>
+		<th onclick="sortTable(12)">peer_count</th>
+		<th onclick="sortTable(13)">protocol_ver</th>
+		<th onclick="sortTable(14)">uptime</th>
+		<th onclick="sortTable(15)">(major, minor,patch,pre_release,maker)_ver</th>
+		<th onclick="sortTable(16)">timestamp</th>
+		<th onclick="sortTable(17)">score</th>
 	</tr>
         {% for item in name %}    
         <tr>               
             <td>{{item[0]}}</td>
             <td>{{item[1]}}</td>
             <td>{{item[2]}}</td>
-            <td>{{item[3]}}</td>
+            <td><a href="https://nano.community/{{item[3]}}" target="_blank" style="text-decoration: none;">{{item[3]}}</a></td>
             <td>{{item[4]}}</td>
             <td>{{item[5]}}</td>
             <td>{{item[6]}}</td>
@@ -55,23 +42,10 @@
             <td>{{item[11]}}</td>
             <td>{{item[12]}}</td>
             <td>{{item[13]}}</td>
-            <td>{{item[14]}}</td>
-            <td>{{item[15]}}</td>
+            <td><div class="tooltip">{{item[14]}}<span class="tooltiptext">{{item[15]}}</span></div></td>
             <td>{{item[16]}}</td>
-            <td>{{item[17]}}</td>
-            <td>{{item[18]}}</td>
+            <td><div class="tooltip">{{item[17]}}<span class="tooltiptext">{{item[18]}}</span></div></td>
             <td>{{item[19]}}</td>
-            <td>{{item[20]}}</td>
-            <td>{{item[21]}}</td>
-            <td>{{item[22]}}</td>
-            <td>{{item[23]}}</td>
-            <td>{{item[24]}}</td>
-            <td>{{item[25]}}</td>
-            <td>{{item[26]}}</td>
-            <td>{{item[27]}}</td>
-            <td>{{item[28]}}</td>
-            <td>{{item[29]}}</td>
-            <td>{{item[30]}}</td>
         </tr>
         {% endfor %}    
 </table>
