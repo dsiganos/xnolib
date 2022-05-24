@@ -266,7 +266,7 @@ class network_connections():
     def get_connections(self):
         return self.__connections.copy()
 
-    def run(self, initial_peer: Peer):
+    def run(self, initial_peer: Peer, interval_seconds=5):
         initial_peers = self.peerman.get_peers_from_peer(initial_peer)
         self.register_connections(initial_peer, initial_peers)
 
@@ -275,8 +275,10 @@ class network_connections():
             for peer in peers_list:
                 new_peers = self.peerman.get_peers_from_peer(peer)
                 self.register_connections(peer, new_peers)
+                print(f"Received peers from {peer.ip}, active peer count is {self.__connections[peer].__len__()}")
 
             self.cleanup_inactive_peers()
+            time.sleep(interval_seconds)
 
     def cleanup_inactive_peers(self):
         if self.inactivity_threshold_seconds > 0:
