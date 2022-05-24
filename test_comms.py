@@ -2,6 +2,7 @@ import time
 import unittest
 import binascii
 
+from block import *
 from msg_handshake import handshake_response, handshake_query, handshake_response_query, \
     handshake_exchange_server
 from pynanocoin import *
@@ -442,9 +443,11 @@ class TestComms(unittest.TestCase):
                           epochv1['link'], epochv1['sign'], epochv1['work'])
         ev2 = block_state(epochv2['account'], epochv2['prev'], epochv2['rep'], epochv2['bal'],
                           epochv2['link'], epochv2['sign'], epochv2['work'])
+        ev1.set_type(block_type_enum.open)
+        ev2.set_type(block_type_enum.open)
         print(ev2)
 
-        self.assertTrue(valid_block(livectx, ev1))
+        self.assertTrue(valid_block(livectx, ev1, post_v2=False))
         self.assertTrue(valid_block(livectx, ev2))
 
     def test_parse_endpoint(self):
@@ -514,11 +517,12 @@ class TestComms(unittest.TestCase):
                 print("server done")
 
     def test_handshake_client(self):
+        signing_key, verifying_key = ed25519_blake2b.create_keypair()
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(1000)
             s.connect(('::1', 6060))
-            node_handshake_id.perform_handshake_exchange(livectx, s)
+            node_handshake_id.perform_handshake_exchange(livectx, s, signing_key, verifying_key)
             print("done")
 
     def test_account_key(self):
