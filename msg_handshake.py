@@ -186,7 +186,7 @@ class handshake_response_query(node_handshake_id):
         return True
 
 
-def handshake_exchange_server(ctx, s, query):
+def handshake_exchange_server(ctx, s, query, signing_key, verifying_key):
     assert(isinstance(s, socket.socket) and isinstance(query, handshake_query))
     response = handshake_response_query.create_response(ctx, query.cookie, signing_key, verifying_key)
     s.send(response.serialise())
