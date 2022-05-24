@@ -2,6 +2,10 @@ import hashlib
 import os
 
 
+epoch1_threshold = 0xffffffc000000000
+epoch2_threshold_high = 0xfffffff800000000
+epoch2_threshold_low  = 0xfffffe0000000000
+
 # return a random 8-byte nonce as an integer
 def random_nonce():
     nonce_bytes = os.urandom(8)
