@@ -10,6 +10,8 @@ import ed25519_blake2
 import ed25519_blake2b
 import git
 
+import pow_validation
+
 import acctools
 from exceptions import *
 from block import *
@@ -1020,7 +1022,7 @@ def verify_pow(block):
         return pow_validate(block.work, block.root())
 
 
-def valid_block(ctx, block):
+def valid_block(ctx, block, post_v2=True):
     if isinstance(block, block_state):
         if block.is_epoch_v2_block():
             sig_valid = verify(block.hash(), block.signature, binascii.unhexlify(ctx["epoch_v2_signing_account"]))
@@ -1033,7 +1035,7 @@ def valid_block(ctx, block):
             raise VerificationErrorNoAccount()
         sig_valid = verify(block.hash(), block.signature, block.get_account())
 
-    work_valid = verify_pow(block)
+    work_valid = pow_validation.validate_pow(block, post_v2)
     return work_valid and sig_valid
 
 
@@ -1152,6 +1154,8 @@ def get_connected_socket_endpoint(addr, port, bind_endpoint=None):
         s.bind(bind_endpoint)
     s.connect((addr, port))
     return s
+
+
 
 
 live_genesis_block = {
