@@ -255,7 +255,12 @@ class network_connections():
 
     def register_connections(self, peer: Peer, new_peers: list[Peer]):
         for new_peer in new_peers:
+            if peer not in self.__connections:
+                self.__connections[peer] = {}
             self.__connections[peer][new_peer] = int(time.time())
+
+            if new_peer not in self.__connections:
+                self.__connections[new_peer] = {}
             self.__connections[new_peer][peer] = int(time.time())
 
     def get_connections(self):
