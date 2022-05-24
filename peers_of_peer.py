@@ -45,11 +45,13 @@ def main():
         peerport = peer.port
 
     peerman = peercrawler.peer_manager(ctx, verbosity=1)
+    peers = []
+
     for i in range(args.count):
         print('.', flush=True, end='')
-        peerman.get_peers_from_peer(peer, no_telemetry=True, no_confirm_req=True)
+        new_peers = peerman.get_peers_from_peer(peer, no_telemetry=True, no_confirm_req=True)
+        peers.extend(new_peers)
 
-    peers = peerman.get_peers_copy()
     for p in peers:
         print(p)
 

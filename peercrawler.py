@@ -55,7 +55,7 @@ class peer_manager:
     def count_peers(self):
         return len(self.get_peers_copy())
 
-    def get_peers_from_peer(self, peer, no_telemetry=False, no_confirm_req=False):
+    def get_peers_from_peer(self, peer, no_telemetry=False, no_confirm_req=False) -> list[Peer]:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(3)
@@ -68,7 +68,7 @@ class peer_manager:
                 peer.score = 0
                 if self.verbosity >= 3:
                     print('Failed to connect to peer %s, error: %s' % (peer, error))
-                return
+                return []
 
             # connected to peer, do handshake followed by listening for the first keepalive
             # and the reply to the confirm request
@@ -87,13 +87,14 @@ class peer_manager:
                     hdr, payload = get_next_hdr_payload(s)
                     if hdr.msg_type == message_type(message_type_enum.keepalive):
                         keepalive = message_keepalive.parse_payload(hdr, payload)
-                        self.add_peers(keepalive.peers)
                         peer.score = 1000
                         if not no_telemetry:
                             peer.telemetry = get_telemetry(self.ctx, s)
                         if not no_confirm_req:
                             peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
-                        return
+
+                        return keepalive.peers
+
                 # timeout whilst waiting for keepalive, score it with 2
                 peer.score = 2
             except (PyNanoCoinException, OSError) as e:
@@ -112,7 +113,9 @@ class peer_manager:
         for p in peers_copy:
             if self.verbosity >= 2:
                 print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
-            self.get_peers_from_peer(p)
+
+            new_peers = self.get_peers_from_peer(p)
+            self.add_peers(new_peers)
 
         # if an inactivity threshold is set the peers considered inactive will be removed here
         if self.inactivity_threshold_seconds > 0:
