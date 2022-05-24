@@ -576,8 +576,8 @@ def main():
         ctx = testctx
         db_name = "test_net_frontiers"
 
-    if args.db is None:
-        args.db = db_name
+    # if args.db is None:
+    #     args.db = db_name
 
     if args.rmdb:
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
@@ -585,7 +585,7 @@ def main():
         sys.exit(0)
     if args.ram:
         inter = store_in_ram_interface(ctx, args.verbosity)
-    if args.lmdb:
+    elif args.lmdb:
         inter = store_in_lmdb(ctx, args.verbosity)
 
     else:
