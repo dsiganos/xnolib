@@ -102,6 +102,8 @@ class peer_manager:
                 peer.score = 1
                 print('Exception %s: %s' % (type(e), e))
 
+            return []
+
     def crawl_once(self):
         if self.verbosity >= 1:
             print('Starting a peer crawl')
