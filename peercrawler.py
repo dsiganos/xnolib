@@ -1,7 +1,5 @@
 #!/bin/env python3
-import ipaddress
-import random
-import socket
+
 import copy
 import time
 import sys
@@ -9,11 +7,10 @@ import argparse
 import threading
 import jsonpickle
 from functools import reduce
+from typing import Iterable
 
 import confirm_req
-import acctools
 import telemetry_req
-from pynanocoin import *
 from msg_handshake import *
 
 
@@ -27,19 +24,22 @@ def get_telemetry(ctx, s):
 
 
 class peer_manager:
-    def __init__(self, ctx, peers=[], verbosity=0):
+    def __init__(self, ctx, peers=[], verbosity=0, inactivity_threshold_seconds=0):
         self.ctx = ctx
-        self.mutex = threading.Lock()
-        self.peers = set()
         self.verbosity = verbosity
+        self.inactivity_threshold_seconds = inactivity_threshold_seconds
+
+        self.mutex = threading.Lock()
+        # a dictionary storing all the discovered peers and the last time it was seen
+        self.peers: dict[Peer, int] = {}
         self.add_peers(peers)
 
-    def add_peers(self, newpeers):
+    def add_peers(self, new_peers: Iterable[Peer]):
         with self.mutex:
-            for p in newpeers:
+            for peer in new_peers:
                 if self.verbosity >= 3:
-                    print('adding peer %s' % p)
-                self.peers.add(p)
+                    print('adding peer %s' % peer)
+                self.peers[peer] = int(time.time())
 
     def get_peers_copy(self):
         with self.mutex:
@@ -113,6 +113,12 @@ class peer_manager:
             if self.verbosity >= 2:
                 print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
             self.get_peers_from_peer(p)
+
+        # if an inactivity threshold is set the peers considered inactive will be removed here
+        if self.inactivity_threshold_seconds > 0:
+            for peer, last_seen in self.peers.items():
+                if int(time.time()) - last_seen > self.inactivity_threshold_seconds:
+                    self.peers.pop(peer)
 
     def crawl(self, forever, delay):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
