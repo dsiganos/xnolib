@@ -265,8 +265,8 @@ class network_connections():
 
     def register_connections(self, peer: Peer, new_peers: Iterable[Peer]):
         for new_peer in new_peers:
-            if peer not in self.__connections:
-                self.__connections[peer] = set()
+            if new_peer not in self.__connections:
+                self.__connections[new_peer] = set()
 
             # Peer objects only consider the address and port properties in equality checks,
             # the following code updates the last_seen property of a peer
@@ -279,15 +279,14 @@ class network_connections():
         return self.__connections.copy()
 
     def run(self, initial_peer: Peer, interval_seconds=5):
-        initial_peers = self.peerman.get_peers_from_peer(initial_peer)
-        self.register_connections(initial_peer, initial_peers)
+        self.__connections[initial_peer] = set()
 
         while True:
             peers_list = [peer for peer in self.__connections]
             for peer in peers_list:
                 new_peers = self.peerman.get_peers_from_peer(peer)
                 self.register_connections(peer, new_peers)
-                print(f"Received peers from {peer.ip}, active peer count is {self.__connections[peer].__len__()}")
+                print(f"Received peers from {peer.ip}, active peer count for this peer is now {self.__connections[peer].__len__()}\nNow tracking {len(self.__connections)} peers in total")
 
             for _, peers in self.__connections.items():
                 cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
