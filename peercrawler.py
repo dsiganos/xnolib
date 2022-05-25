@@ -259,11 +259,8 @@ class network_connections():
         for new_peer in new_peers:
             if peer not in self.__connections:
                 self.__connections[peer] = set()
-            self.__connections[peer].add(new_peer)
 
-            if new_peer not in self.__connections:
-                self.__connections[new_peer] = set()
-            self.__connections[new_peer].add(peer)
+            self.__connections[peer].add(new_peer)
 
     def get_connections(self):
         return self.__connections.copy()
