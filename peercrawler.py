@@ -30,7 +30,6 @@ class peer_manager:
         self.inactivity_threshold_seconds = inactivity_threshold_seconds
 
         self.mutex = threading.Lock()
-        # a dictionary storing all the discovered peers and the last time it was seen
         self.peers: set[Peer] = set()
         self.add_peers(peers)
 
