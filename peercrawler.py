@@ -27,11 +27,14 @@ class peer_manager:
     def __init__(self, ctx, peers=[], verbosity=0, inactivity_threshold_seconds=0):
         self.ctx = ctx
         self.verbosity = verbosity
-        self.inactivity_threshold_seconds = inactivity_threshold_seconds
 
         self.mutex = threading.Lock()
         self.peers: set[Peer] = set()
         self.add_peers(peers)
+
+        if inactivity_threshold_seconds > 0:
+            thread = threading.Thread(target=self.run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
+            thread.start()
 
     def add_peers(self, new_peers: Iterable[Peer]):
         with self.mutex:
@@ -42,6 +45,12 @@ class peer_manager:
                 if peer in self.peers:
                     self.peers.remove(peer)  # update last_seen property
                 self.peers.add(peer)
+
+    def run_periodic_cleanup(self, inactivity_threshold_seconds):
+        while True:
+            with self.mutex:
+                cleanup_inactive_peers(self.peers, inactivity_threshold_seconds)
+                time.sleep(inactivity_threshold_seconds)
 
     def get_peers_copy(self):
         with self.mutex:
@@ -120,10 +129,6 @@ class peer_manager:
 
             new_peers = self.get_peers_from_peer(p)
             self.add_peers(new_peers)
-
-        # if an inactivity threshold is set the peers considered inactive will be removed here
-        if self.inactivity_threshold_seconds > 0:
-            cleanup_inactive_peers(self.peers, self.inactivity_threshold_seconds)
 
     def crawl(self, forever, delay):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
