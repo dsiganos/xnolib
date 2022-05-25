@@ -50,7 +50,8 @@ class peer_manager:
         while True:
             with self.mutex:
                 cleanup_inactive_peers(self.peers, inactivity_threshold_seconds)
-                time.sleep(inactivity_threshold_seconds)
+
+            time.sleep(inactivity_threshold_seconds)
 
     def get_peers_copy(self):
         with self.mutex:
