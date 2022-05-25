@@ -446,7 +446,7 @@ class TestComms(unittest.TestCase):
                           epochv2['link'], epochv2['sign'], epochv2['work'])
         ev1.set_type(block_type_enum.open)
         ev2.set_type(block_type_enum.open)
-        print(ev2)
+        # print(ev2)
 
         self.assertTrue(valid_block(livectx, ev1, post_v2=False))
         self.assertTrue(valid_block(livectx, ev2))
@@ -503,29 +503,31 @@ class TestComms(unittest.TestCase):
         sig = signing_key.sign(my_cookie)
         self.assertEqual(verifying_key.verify(sig, my_cookie), None)
 
-    # def test_handshake_server(self):
-    #     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-    #         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-    #         s.settimeout(1000)
-    #         s.bind(('::1', 6060))
-    #         s.listen()
-    #         conn, _ = s.accept()
-    #         with conn:
-    #             data = read_socket(conn, 40)
-    #             hdr = message_header.parse_header(data[0:8])
-    #             query = handshake_query.parse_query(hdr, data[8:])
-    #             signing_key, verifying_key = ed25519_blake2b.create_keypair()
-    #             handshake_exchange_server(livectx, conn, query, signing_key, verifying_key)
-    #             print("server done")
-
-    def test_handshake_client(self):
+    def test_handshake_server_client(self):
+        thread1 = threading.Thread(target=self.handshake_server, daemon=True)
+        thread1.start()
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(1000)
             s.connect(('::1', 6060))
             node_handshake_id.perform_handshake_exchange(livectx, s, signing_key, verifying_key)
-            print("done")
+        thread1.join()
+        self.assertTrue(True)
+
+    def handshake_server(self):
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.settimeout(1000)
+            s.bind(('::1', 6060))
+            s.listen()
+            conn, _ = s.accept()
+            with conn:
+                data = read_socket(conn, 40)
+                hdr = message_header.parse_header(data[0:8])
+                query = handshake_query.parse_query(hdr, data[8:])
+                signing_key, verifying_key = ed25519_blake2b.create_keypair()
+                handshake_exchange_server(livectx, conn, query, signing_key, verifying_key)
 
     def test_account_key(self):
         acc_id = acctools.to_account_addr(binascii.unhexlify(livectx["genesis_pub"]))
@@ -636,8 +638,13 @@ class TestComms(unittest.TestCase):
         self.assertEqual(hs1, hs2)
 
     def test_frontier_service_client(self):
+        inter = store_in_ram_interface(livectx, 0)
+        frontserv = frontier_service(livectx, inter, 0)
+        thread1 = threading.Thread(target=frontserv.start_service, daemon=True)
+        thread1.start()
+        time.sleep(1)
         s_packet = get_all_frontiers_packet_from_service()
-        print(s_packet)
+        self.assertTrue(len(s_packet.frontiers) > 0)
 
 
 if __name__ == '__main__':
