@@ -290,7 +290,6 @@ class network_connections():
                 cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
 
             time.sleep(interval_seconds)
-            print(self.get_connections_flat())
 
     def get_connections_flat(self) -> set[tuple[Peer, Peer]]:
         connections = set()
