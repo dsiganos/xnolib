@@ -285,6 +285,7 @@ class network_connections():
                 cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
 
             time.sleep(interval_seconds)
+            print(self.get_connections_flat())
 
     def get_connections_flat(self) -> set[tuple[Peer, Peer]]:
         connections = set()
@@ -404,7 +405,7 @@ def send_confirm_req_genesis(ctx, peer, s):
 
 
 def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int):
-    for peer in peers:
+    for peer in peers.copy():
         if int(time.time()) - peer.last_seen > inactivity_threshold_seconds:
             peers.remove(peer)
 
