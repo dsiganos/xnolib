@@ -257,7 +257,7 @@ class network_connections():
 
         self.__connections: dict[Peer, set[Peer]] = {}
 
-    def register_connections(self, peer: Peer, new_peers: list[Peer]):
+    def register_connections(self, peer: Peer, new_peers: Iterable[Peer]):
         for new_peer in new_peers:
             if peer not in self.__connections:
                 self.__connections[peer] = set()
