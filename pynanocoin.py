@@ -2,6 +2,7 @@ import ipaddress
 import os
 import random
 import socket
+import time
 from hashlib import blake2b
 import binascii
 import base64
@@ -274,7 +275,7 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class Peer:
-    def __init__(self, ip = ip_addr(), port = 0, score = -1, is_voting = False):
+    def __init__(self, ip = ip_addr(), port = 0, score = -1, is_voting = False, last_seen=None):
         assert isinstance(ip, ip_addr)
         self.ip = ip
         self.port = port
@@ -282,6 +283,7 @@ class Peer:
         self.is_voting = is_voting
         self.telemetry = None
         self.aux = {}
+        self.last_seen = last_seen
 
         # sideband info, not used for equality and hashing
         self.score = score
@@ -364,6 +366,7 @@ class message_keepalive:
         peers_list = []
         for i in range(0, no_of_peers):
             p = Peer.parse_peer(rawdata[start_index:end_index])
+            p.last_seen = int(time.time())
             peers_list.append(p)
             start_index = end_index
             end_index += 18

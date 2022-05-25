@@ -31,7 +31,7 @@ class peer_manager:
 
         self.mutex = threading.Lock()
         # a dictionary storing all the discovered peers and the last time it was seen
-        self.peers: dict[Peer, int] = {}
+        self.peers: set[Peer] = set()
         self.add_peers(peers)
 
     def add_peers(self, new_peers: Iterable[Peer]):
@@ -39,7 +39,8 @@ class peer_manager:
             for peer in new_peers:
                 if self.verbosity >= 3:
                     print('adding peer %s' % peer)
-                self.peers[peer] = int(time.time())
+
+                self.peers.add(peer)
 
     def get_peers_copy(self):
         with self.mutex:
@@ -121,9 +122,9 @@ class peer_manager:
 
         # if an inactivity threshold is set the peers considered inactive will be removed here
         if self.inactivity_threshold_seconds > 0:
-            for peer, last_seen in self.peers.items():
-                if int(time.time()) - last_seen > self.inactivity_threshold_seconds:
-                    self.peers.pop(peer)
+            for peer in self.peers:
+                if int(time.time()) - peer.last_seen > self.inactivity_threshold_seconds:
+                    self.peers.remove(peer)
 
     def crawl(self, forever, delay):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
@@ -253,17 +254,17 @@ class network_connections():
         self.peerman = peerman
         self.inactivity_threshold_seconds = inactivity_threshold_seconds
 
-        self.__connections: dict[Peer, dict[Peer, int]] = {}
+        self.__connections: dict[Peer, set[Peer]] = {}
 
     def register_connections(self, peer: Peer, new_peers: list[Peer]):
         for new_peer in new_peers:
             if peer not in self.__connections:
-                self.__connections[peer] = {}
-            self.__connections[peer][new_peer] = int(time.time())
+                self.__connections[peer] = set()
+            self.__connections[peer].add(new_peer)
 
             if new_peer not in self.__connections:
-                self.__connections[new_peer] = {}
-            self.__connections[new_peer][peer] = int(time.time())
+                self.__connections[new_peer] = set()
+            self.__connections[new_peer].add(peer)
 
     def get_connections(self):
         return self.__connections.copy()
@@ -285,9 +286,9 @@ class network_connections():
     def cleanup_inactive_peers(self):
         if self.inactivity_threshold_seconds > 0:
             for peer, connections in self.__connections.items():
-                for connection, last_seen in connections.items():
-                    if int(time.time()) - last_seen > self.inactivity_threshold_seconds:
-                        self.__connections[peer].pop(connection)
+                for connection in connections:
+                    if int(time.time()) - connection.last_seen > self.inactivity_threshold_seconds:
+                        self.__connections[peer].remove(connection)
 
 
 def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
