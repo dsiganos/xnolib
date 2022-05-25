@@ -39,6 +39,8 @@ class peer_manager:
                 if self.verbosity >= 3:
                     print('adding peer %s' % peer)
 
+                if peer in self.peers:
+                    self.peers.remove(peer)  # update last_seen property
                 self.peers.add(peer)
 
     def get_peers_copy(self):
@@ -260,7 +262,12 @@ class network_connections():
             if peer not in self.__connections:
                 self.__connections[peer] = set()
 
-            self.__connections[peer].add(new_peer)
+            # Peer objects only consider the address and port properties in equality checks,
+            # the following code updates the last_seen property of a peer
+            peer_connections = self.__connections[peer]
+            if new_peer in peer_connections:
+                peer_connections.remove(new_peer)
+            peer_connections.add(new_peer)
 
     def get_connections(self):
         return self.__connections.copy()
