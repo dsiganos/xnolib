@@ -123,9 +123,7 @@ class peer_manager:
 
         # if an inactivity threshold is set the peers considered inactive will be removed here
         if self.inactivity_threshold_seconds > 0:
-            for peer in self.peers:
-                if int(time.time()) - peer.last_seen > self.inactivity_threshold_seconds:
-                    self.peers.remove(peer)
+            cleanup_inactive_peers(self.peers, self.inactivity_threshold_seconds)
 
     def crawl(self, forever, delay):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
@@ -283,7 +281,9 @@ class network_connections():
                 self.register_connections(peer, new_peers)
                 print(f"Received peers from {peer.ip}, active peer count is {self.__connections[peer].__len__()}")
 
-            self.cleanup_inactive_peers()
+            for _, peers in self.__connections.items():
+                cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
+
             time.sleep(interval_seconds)
 
     def cleanup_inactive_peers(self):
@@ -399,6 +399,12 @@ def send_confirm_req_genesis(ctx, peer, s):
         outcome = False
 
     return outcome
+
+
+def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int):
+    for peer in peers:
+        if int(time.time()) - peer.last_seen > inactivity_threshold_seconds:
+            peers.remove(peer)
 
 
 def main():
