@@ -414,6 +414,8 @@ def send_confirm_req_genesis(ctx, peer, s):
 def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int):
     for peer in peers.copy():
         if int(time.time()) - peer.last_seen > inactivity_threshold_seconds:
+            if self.verbosity >= 2:
+                print('removing inactive peer %s' % peer)
             peers.remove(peer)
 
 
