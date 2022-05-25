@@ -275,8 +275,8 @@ class network_connections():
                 peer_connections.remove(new_peer)
             peer_connections.add(new_peer)
 
-    def get_connections(self):
-        return self.__connections.copy()
+    def get_connections(self) -> dict[Peer, set[Peer]]:
+        return copy.deepcopy(self.__connections)
 
     def run(self, initial_peer: Peer, interval_seconds=5):
         self.__connections[initial_peer] = set()
@@ -288,8 +288,9 @@ class network_connections():
                 self.register_connections(peer, new_peers)
                 print(f"Received peers from {peer.ip}, active peer count for this peer is now {self.__connections[peer].__len__()}\nNow tracking {len(self.__connections)} peers in total")
 
-            for _, peers in self.__connections.items():
-                cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
+            if self.inactivity_threshold_seconds > 0:
+                for _, peers in self.__connections.items():
+                    cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
 
             time.sleep(interval_seconds)
 
