@@ -286,12 +286,14 @@ class network_connections():
 
             time.sleep(interval_seconds)
 
-    def cleanup_inactive_peers(self):
-        if self.inactivity_threshold_seconds > 0:
-            for peer, connections in self.__connections.items():
-                for connection in connections:
-                    if int(time.time()) - connection.last_seen > self.inactivity_threshold_seconds:
-                        self.__connections[peer].remove(connection)
+    def get_connections_flat(self) -> set[tuple[Peer, Peer]]:
+        connections = set()
+
+        for peer_origin, peers in self.__connections.items():
+            for peer_destination in peers:
+                connections.add((peer_origin, peer_destination))
+
+        return connections
 
 
 def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
