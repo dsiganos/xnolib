@@ -207,6 +207,7 @@ def main():
 
     if args.all:
         hdr, peers = peercrawler.get_peers_from_service(ctx)
+        peers = [ p for p in peers if p.score >= 1000 ]
         assert peers
     else:
         if args.peer is not None:
