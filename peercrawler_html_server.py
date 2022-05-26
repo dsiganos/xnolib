@@ -64,8 +64,8 @@ def main_website():
         else:
             peer_list.append([peer.ip,
                               peer.port,
-                              "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-                              peer.aux, peer.score])
+                              "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+                              peer.score])
 
     return render_template('index.html', name=peer_list)
 
