@@ -438,16 +438,18 @@ def find_peer(item: Peer, collection: set[Peer]) -> Optional[Peer]:
 
 
 # noinspection PyUnresolvedReferences
-def get_dot_string(connections: dict[Peer, set[Peer]]) -> str:
+def get_dot_string(connections: dict[Peer, set[Peer]], only_voting: bool = False) -> str:
     def simplify_node(n: str) -> str:
         return n.replace("::ffff:", "").replace(" 7075", "")
 
     graph = Dot("network_connections", graph_type="digraph")
     for node, peers in connections.items():
         for peer in peers:
+            if only_voting and not (node.is_voting and peer.is_voting):
+                continue
+
             f = simplify_node(node.serialise_str())
             t = simplify_node(peer.serialise_str())
-
             graph.add_edge(Edge(f, t))
 
     return graph.to_string()
