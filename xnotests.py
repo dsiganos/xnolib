@@ -1,4 +1,32 @@
-import time
+#!/bin/env python3
+#
+# These unit tests test the following aspects of the code:
+#
+# - All functionalities required for packets on the nano protocol, for
+#   example serialisation and deserialisation.
+#
+# - Serialisation, deserialisation and equality check for Peer objects
+#
+# - Serialisation, hashing and equality checks for all block types
+#
+# - Block manager block processing for an account
+#
+# - All blacklist functionalities
+#
+# - Voting peer check
+#
+# - Block and epoch, POW and signature verification
+#
+# - Endpoint parsing
+#
+# - Signing and verifying key pair functionality
+#
+# - Handshake exchange peer to peer communication
+#
+# - Account hash to address conversion
+#
+# - Frontier service client-server communicationimport time
+
 import unittest
 import binascii
 
@@ -650,32 +678,3 @@ class TestComms(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-######################## Summary ########################
-# These unit tests test the following aspects of the code:
-#
-# - All functionalities required for packets on the nano protocol, for
-#   example serialisation and deserialisation.
-#
-# - Serialisation, deserialisation and equality check for Peer objects
-#
-# - Serialisation, hashing and equality checks for all block types
-#
-# - Block manager block processing for an account
-#
-# - All blacklist functionalities
-#
-# - Voting peer check
-#
-# - Block and epoch, POW and signature verification
-#
-# - Endpoint parsing
-#
-# - Signing and verifying key pair functionality
-#
-# - Handshake exchange peer to peer communication
-#
-# - Account hash to address conversion
-#
-# - Frontier service client-server communication
