@@ -9,7 +9,7 @@ import argparse
 import threading
 import jsonpickle
 from functools import reduce
-from typing import Iterable
+from typing import Iterable, Optional
 
 import confirm_req
 import telemetry_req
@@ -45,8 +45,9 @@ class peer_manager:
                     print('adding peer %s' % peer)
 
                 if peer in self.peers:
-                    self.peers.remove(peer)  # update last_seen property
-                self.peers.add(peer)
+                    find_peer(peer, self.peers).last_seen = int(time.time())
+                else:
+                    self.peers.add(peer)
 
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
@@ -269,12 +270,11 @@ class network_connections():
             if new_peer not in self.__connections:
                 self.__connections[new_peer] = set()
 
-            # Peer objects only consider the address and port properties in equality checks,
-            # the following code updates the last_seen property of a peer
             peer_connections = self.__connections[peer]
             if new_peer in peer_connections:
-                peer_connections.remove(new_peer)
-            peer_connections.add(new_peer)
+                find_peer(new_peer, peer_connections).last_seen = int(time.time())
+            else:
+                peer_connections.add(new_peer)
 
     def get_connections(self) -> dict[Peer, set[Peer]]:
         return copy.deepcopy(self.__connections)
@@ -419,6 +419,14 @@ def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int, 
             if verbosity >= 2:
                 print('removing inactive peer %s' % peer)
             peers.remove(peer)
+
+
+def find_peer(item: Peer, collection: set[Peer]) -> Optional[Peer]:
+    for i in collection:
+        if i == item:
+            return i
+
+    return None
 
 
 def main():
