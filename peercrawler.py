@@ -51,7 +51,7 @@ class peer_manager:
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
             with self.mutex:
-                cleanup_inactive_peers(self.peers, inactivity_threshold_seconds)
+                cleanup_inactive_peers(self.peers, inactivity_threshold_seconds, self.verbosity)
 
             time.sleep(inactivity_threshold_seconds)
 
@@ -257,9 +257,10 @@ class peer_crawler_thread(threading.Thread):
 
 
 class network_connections():
-    def __init__(self, peerman: peer_manager, inactivity_threshold_seconds=0):
+    def __init__(self, peerman: peer_manager, inactivity_threshold_seconds=0, verbosity=0):
         self.peerman = peerman
         self.inactivity_threshold_seconds = inactivity_threshold_seconds
+        self.verbosity = verbosity
 
         self.__connections: dict[Peer, set[Peer]] = {}
 
@@ -290,7 +291,7 @@ class network_connections():
 
             if self.inactivity_threshold_seconds > 0:
                 for _, peers in self.__connections.items():
-                    cleanup_inactive_peers(peers, self.inactivity_threshold_seconds)
+                    cleanup_inactive_peers(peers, self.inactivity_threshold_seconds, self.verbosity)
 
             time.sleep(interval_seconds)
 
@@ -411,10 +412,11 @@ def send_confirm_req_genesis(ctx, peer, s):
     return outcome
 
 
-def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int):
+# NOTE: this is a free standing function because it is used by both peer and conection managers
+def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int, verbosity: int):
     for peer in peers.copy():
         if int(time.time()) - peer.last_seen > inactivity_threshold_seconds:
-            if self.verbosity >= 2:
+            if verbosity >= 2:
                 print('removing inactive peer %s' % peer)
             peers.remove(peer)
 
