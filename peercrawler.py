@@ -41,6 +41,9 @@ class peer_manager:
     def add_peers(self, new_peers: Iterable[Peer]):
         with self.mutex:
             for peer in new_peers:
+                if peer.ip.ipv6.is_unspecified:
+                    continue
+
                 if self.verbosity >= 3:
                     print('adding peer %s' % peer)
 
@@ -267,6 +270,9 @@ class network_connections():
 
     def register_connections(self, peer: Peer, new_peers: Iterable[Peer]):
         for new_peer in new_peers:
+            if new_peer.ip.ipv6.is_unspecified:
+                continue
+
             if new_peer not in self.__connections:
                 self.__connections[new_peer] = set()
 
