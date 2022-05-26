@@ -15,6 +15,8 @@ import confirm_req
 import telemetry_req
 from msg_handshake import *
 
+from pydot import Dot, Node, Edge
+
 
 def get_telemetry(ctx, s):
     req = telemetry_req.telemetry_req(ctx)
@@ -285,7 +287,7 @@ class network_connections():
     def get_connections(self) -> dict[Peer, set[Peer]]:
         return copy.deepcopy(self.__connections)
 
-    def run(self, initial_peer: Peer, interval_seconds=5):
+    def run(self, initial_peer: Peer, interval_seconds=0):
         self.__connections[initial_peer] = set()
 
         while True:
@@ -433,6 +435,22 @@ def find_peer(item: Peer, collection: set[Peer]) -> Optional[Peer]:
             return i
 
     return None
+
+
+# noinspection PyUnresolvedReferences
+def get_dot_string(connections: dict[Peer, set[Peer]]) -> str:
+    def simplify_node(n: str) -> str:
+        return n.replace("::ffff:", "").replace(" 7075", "")
+
+    graph = Dot("network_connections", graph_type="digraph")
+    for node, peers in connections.items():
+        for peer in peers:
+            f = simplify_node(node.serialise_str())
+            t = simplify_node(peer.serialise_str())
+
+            graph.add_edge(Edge(f, t))
+
+    return graph.to_string()
 
 
 def main():
