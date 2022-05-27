@@ -297,20 +297,8 @@ class Peer:
     def serialise_address(self) -> str:
         return f"[{self.ip}]:{self.port}"
 
-    def is_valid(self):
-        data = self.ip.serialise()
-        data += self.port.to_bytes(2, "little")
-        if int.from_bytes(data[0:16], "big") == 0:
-            return False
-        elif int.from_bytes(data[16:], "little") == 0:
-            return False
-        return True
-
     def deduct_score(self, score):
-        if self.score - score < 0:
-            self.score = 0
-        else:
-            self.score -= score
+        self.score = max(0, self.score - score)
 
     @classmethod
     def parse_peer(cls, data):
