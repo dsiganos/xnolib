@@ -77,12 +77,8 @@ class peer_manager:
         return len(self.get_peers_copy())
 
     def send_keepalive_packet(self, connection: socket):
-        hdr = message_header(self.ctx["net_id"], [18, 18, 18], message_type(message_type_enum.keepalive), 0)
-
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), 7777)  # this should be changed manually
-
-        keepalive = message_keepalive(hdr, [local_peer])
-        packet = keepalive.serialise()
+        packet = message_keepalive.make_packet([local_peer], self.ctx["net_id"], 18)
         connection.send(packet)
 
     def get_peers_from_peer(self, peer, no_telemetry=False, no_confirm_req=False) -> list[Peer]:
