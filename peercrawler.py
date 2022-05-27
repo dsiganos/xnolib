@@ -7,6 +7,7 @@ import time
 import sys
 import argparse
 import threading
+from ipaddress import IPv6Address
 import jsonpickle
 from functools import reduce
 from typing import Iterable, Optional
@@ -75,6 +76,21 @@ class peer_manager:
     def count_peers(self):
         return len(self.get_peers_copy())
 
+    def send_keepalive_packet(self, connection: socket):
+        hdr = message_header(self.ctx["net_id"], [18, 18, 18], message_type(message_type_enum.keepalive), 0)
+
+        local_peer = Peer(IPv6Address("::ffff:78.46.80.199"), 7075)  # this should be changed manually
+
+        random_peers = [local_peer]
+        if len(self.peers) < 8:
+            random_peers = self.peers
+        else:
+            random_peers.extend(random.sample(list(self.peers), 7))  # choose 7 random peers
+
+        keepalive = message_keepalive(hdr, random_peers)
+        packet = keepalive.serialise()
+        connection.send(packet)
+
     def get_peers_from_peer(self, peer, no_telemetry=False, no_confirm_req=False) -> list[Peer]:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -98,6 +114,8 @@ class peer_manager:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 peer_id = node_handshake_id.perform_handshake_exchange(self.ctx, s, signing_key, verifying_key)
                 peer.peer_id = peer_id
+
+                self.send_keepalive_packet(s)
 
                 if self.verbosity >= 2:
                     print('  ID:%s' % hexlify(peer_id))
