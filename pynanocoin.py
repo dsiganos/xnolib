@@ -294,8 +294,8 @@ class Peer:
         data += self.port.to_bytes(2, "little")
         return data
 
-    def serialise_str(self) -> str:
-        return f"{self.ip} {self.port}"
+    def serialise_address(self) -> str:
+        return f"[{self.ip}]:{self.port}"
 
     def is_valid(self):
         data = self.ip.serialise()
