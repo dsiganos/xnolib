@@ -1,6 +1,7 @@
 import pow
 from block import *
 from peercrawler import *
+from pynanocoin import livectx
 
 
 def validate_pow(block, post_v2=True):
@@ -32,20 +33,6 @@ def get_blocks_difficulty(block):
             return pow.epoch2_threshold_high
         elif isinstance(block, block_receive) or isinstance(block, block_open):
             return pow.epoch2_threshold_low
-
-
-
-livectx = {
-    'net_id': network_id(ord('C')),
-    'peeraddr': "peering.nano.org",
-    'peerport': 7075,
-    'peercrawlerport': 7070,
-    'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
-    'another_pub': '059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5',
-    'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6',
-    'epoch_v2_signing_account': 'dd24a9200d4bf8247981e4ac63dbde38fd2319386970a26d02ecc98c79975db1',
-    'genesis_block': live_genesis_block
-}
 
 
 ctx = livectx
