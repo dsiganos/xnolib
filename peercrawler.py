@@ -81,13 +81,7 @@ class peer_manager:
 
         local_peer = Peer(IPv6Address("::ffff:78.46.80.199"), 7777)  # this should be changed manually
 
-        random_peers = [local_peer]
-        if len(self.peers) < 8:
-            random_peers = self.peers
-        else:
-            random_peers.extend(random.sample(list(self.peers), 7))  # choose 7 random peers
-
-        keepalive = message_keepalive(hdr, random_peers)
+        keepalive = message_keepalive(hdr, [local_peer])
         packet = keepalive.serialise()
         connection.send(packet)
 
