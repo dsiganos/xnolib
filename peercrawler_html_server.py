@@ -1,14 +1,15 @@
 #!/bin/env python3
+import time
 from datetime import datetime, timedelta
-
-from flask import Flask,jsonify,request,render_template,redirect
 import threading
+
+from flask import Flask, render_template
+from requests import get
 
 import peercrawler
 import pynanocoin
 import common
 from acctools import to_account_addr
-from peercrawler_html_server_utils import *
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
@@ -17,8 +18,7 @@ ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
 
-# read from a file a list of dicts with info about prs
-nodes = try_load_peers_details("peers-details.json")
+nodes: list[dict] = {}
 
 
 def bg_thread_func():
@@ -27,9 +27,18 @@ def bg_thread_func():
     peerman.crawl(forever=True, delay=60)
 
 
+def refresh_node_info():
+    global nodes
+
+    try:
+        nodes = get("https://nano.community/data/representative-mappings.json").json()
+    finally:
+        time.sleep(300)
+
+
 @app.route("/peercrawler")
 def main_website():
-    global app, peerman
+    global app, peerman, nodes
 
     peers_copy = list(peerman.get_peers_copy())
 
@@ -39,12 +48,16 @@ def main_website():
 
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
-            node_details = get_node_details_from_id(node_id, nodes)
+
+            node = {}
+            for n in nodes:
+                if n.get("node_id") == node_id or n.get("address") == str(peer.ip):
+                    node = n
 
             peer_list.append([peer.ip,
                               peer.port,
-                              node_details.get("name", " "),
-                              node_details.get("nano_address", " "),
+                              node.get("alias", " "),
+                              node.get("account", " "),
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
@@ -71,6 +84,8 @@ def main_website():
 
 
 def main():
+    threading.Thread(target=refresh_node_info, daemon=True).start()
+
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func).start()
 
