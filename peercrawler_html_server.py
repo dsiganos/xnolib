@@ -87,7 +87,7 @@ def main():
     threading.Thread(target=refresh_node_info, daemon=True).start()
 
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func).start()
+    threading.Thread(target=bg_thread_func, daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
