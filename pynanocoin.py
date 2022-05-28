@@ -2,6 +2,7 @@ import ipaddress
 import os
 import random
 import socket
+from typing import Iterable
 import time
 from hashlib import blake2b
 import binascii
@@ -359,6 +360,12 @@ class message_keepalive:
             start_index = end_index
             end_index += 18
         return message_keepalive(hdr, peers_list)
+
+    @classmethod
+    def make_packet(cls, peers: Iterable[Peer], net_id, version: int):
+        hdr = message_header(net_id, [version, version, version], message_type(message_type_enum.keepalive), 0)
+        keepalive = message_keepalive(hdr, list(peers))
+        return keepalive.serialise()
 
 
 class message_bulk_pull:
