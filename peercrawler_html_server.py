@@ -18,7 +18,7 @@ ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
 
-nodes: list[dict] = {}
+nodes: list[dict] = []
 
 
 def bg_thread_func():
@@ -33,7 +33,7 @@ def refresh_node_info():
     try:
         nodes = get("https://nano.community/data/representative-mappings.json").json()
     finally:
-        time.sleep(300)
+        time.sleep(3600)
 
 
 @app.route("/peercrawler")
