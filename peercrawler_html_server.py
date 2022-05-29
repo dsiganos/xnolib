@@ -1,31 +1,24 @@
 #!/bin/env python3
-import time
+
 from datetime import datetime, timedelta
 import threading
-from json import loads
 
 from flask import Flask, render_template
-from requests import get
 
 import peercrawler
 import pynanocoin
-import common
 from acctools import to_account_addr
+from representative_mapping import representative_mapping
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
 
 ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
-mutex = threading.Lock()
 
-
-representative_mappings: list[dict]
-try:
-    with open("representative-mappings.json") as file:
-        representative_mappings = loads(file.read())
-except FileNotFoundError:
-    representative_mappings = []
+representatives = representative_mapping()
+# representatives.load_from_file("representative-mappings.json")
+threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
 def bg_thread_func():
@@ -34,19 +27,9 @@ def bg_thread_func():
     peerman.crawl(forever=True, delay=60)
 
 
-def refresh_node_info():
-    global representative_mappings, mutex
-
-    try:
-        with mutex:
-            representative_mappings = get("https://nano.community/data/representative-mappings.json").json()
-    finally:
-        time.sleep(3600)
-
-
 @app.route("/peercrawler")
 def main_website():
-    global app, peerman, representative_mappings
+    global app, peerman, representatives
 
     peers_copy = list(peerman.get_peers_copy())
 
@@ -56,16 +39,12 @@ def main_website():
 
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
-
-            node = {}
-            for n in representative_mappings:
-                if n.get("node_id") == node_id or n.get("address") == str(peer.ip):
-                    node = n
+            representative_info = representatives.find(node_id, str(peer.ip))
 
             peer_list.append([peer.ip,
                               peer.port,
-                              node.get("alias", " "),
-                              node.get("account", " "),
+                              representative_info.get("alias", " "),
+                              representative_info.get("account", " "),
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
@@ -92,8 +71,6 @@ def main_website():
 
 
 def main():
-    threading.Thread(target=refresh_node_info, daemon=True).start()
-
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, daemon=True).start()
 
