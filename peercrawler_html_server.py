@@ -17,6 +17,7 @@ app = Flask(__name__, static_url_path='/peercrawler')
 
 ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
+mutex = threading.Lock()
 
 
 representative_mappings: list[dict]
@@ -34,10 +35,11 @@ def bg_thread_func():
 
 
 def refresh_node_info():
-    global representative_mappings
+    global representative_mappings, mutex
 
     try:
-        representative_mappings = get("https://nano.community/data/representative-mappings.json").json()
+        with mutex:
+            representative_mappings = get("https://nano.community/data/representative-mappings.json").json()
     finally:
         time.sleep(3600)
 
