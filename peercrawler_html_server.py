@@ -18,7 +18,7 @@ ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
 
-nodes: list[dict] = []
+representative_mappings: list[dict] = []
 
 
 def bg_thread_func():
@@ -28,17 +28,17 @@ def bg_thread_func():
 
 
 def refresh_node_info():
-    global nodes
+    global representative_mappings
 
     try:
-        nodes = get("https://nano.community/data/representative-mappings.json").json()
+        representative_mappings = get("https://nano.community/data/representative-mappings.json").json()
     finally:
         time.sleep(3600)
 
 
 @app.route("/peercrawler")
 def main_website():
-    global app, peerman, nodes
+    global app, peerman, representative_mappings
 
     peers_copy = list(peerman.get_peers_copy())
 
@@ -50,7 +50,7 @@ def main_website():
             node_id = to_account_addr(telemetry.node_id, "node_")
 
             node = {}
-            for n in nodes:
+            for n in representative_mappings:
                 if n.get("node_id") == node_id or n.get("address") == str(peer.ip):
                     node = n
 
