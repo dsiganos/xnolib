@@ -2,6 +2,7 @@
 import time
 from datetime import datetime, timedelta
 import threading
+from json import loads
 
 from flask import Flask, render_template
 from requests import get
@@ -18,7 +19,12 @@ ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
 
-representative_mappings: list[dict] = []
+representative_mappings: list[dict]
+try:
+    with open("representative-mappings.json") as file:
+        representative_mappings = loads(file.read())
+except FileNotFoundError:
+    representative_mappings = []
 
 
 def bg_thread_func():
