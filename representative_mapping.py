@@ -33,6 +33,6 @@ class representative_mapping:
         with self.__mutex:
             for n in self.__representative_mappings:
                 if n.get("node_id") == node_id or n.get("address") == address:
-                    return n
+                    return n.copy()
 
         return {}
