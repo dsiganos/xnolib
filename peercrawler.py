@@ -105,6 +105,8 @@ class peer_manager:
                 peer_id = node_handshake_id.perform_handshake_exchange(self.ctx, s, signing_key, verifying_key)
                 peer.peer_id = peer_id
 
+                self.send_keepalive_packet(s)
+
                 if self.verbosity >= 2:
                     print('  ID:%s' % hexlify(peer_id))
 
@@ -119,7 +121,6 @@ class peer_manager:
                         if not no_confirm_req:
                             peer.is_voting = send_confirm_req_genesis(self.ctx, peer, s)
 
-                        self.send_keepalive_packet(s)
                         return keepalive.peers
 
                 # timeout whilst waiting for keepalive, score it with 2
