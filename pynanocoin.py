@@ -331,6 +331,7 @@ class message_keepalive:
             self.peers = peers
 
     def serialise(self):
+        assert len(self.peers) == 8
         data = self.header.serialise_header()
         for p in self.peers:
             data += p.serialise()
