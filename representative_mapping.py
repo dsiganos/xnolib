@@ -29,10 +29,11 @@ class representative_mapping:
             finally:
                 sleep(delay_seconds)
 
-    def find(self, node_id: str, address: str) -> dict:
+    def find(self, node_id: str, address: str) -> list[dict]:
+        matches = []
         with self.__mutex:
             for n in self.__representative_mappings:
                 if n.get("node_id") == node_id or n.get("address") == address:
-                    return n.copy()
+                    matches.append(n.copy())
 
-        return {}
+        return matches

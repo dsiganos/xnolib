@@ -39,12 +39,15 @@ def main_website():
 
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
+
             representative_info = representatives.find(node_id, str(peer.ip))
+            aliases = [r.get("alias", " ") for r in representative_info]
+            accounts = [r.get("account", " ") for r in representative_info]
 
             peer_list.append([peer.ip,
                               peer.port,
-                              representative_info.get("alias", " "),
-                              representative_info.get("account", " "),
+                              "; ".join(aliases),
+                              "; ".join(accounts),
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
