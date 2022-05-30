@@ -365,10 +365,6 @@ class message_keepalive:
     @classmethod
     def make_packet(cls, peers: Iterable[Peer], net_id, version: int):
         peers = list(peers)
-
-        if len(peers) > 8:
-            raise Exception("A keepalive packet cannot include more than 8 peers.")
-
         for i in range(len(peers), 8):
             peers.append(Peer())
 
