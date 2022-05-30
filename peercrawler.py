@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-import time
+import logging
 import sys
 import argparse
 import threading
@@ -477,6 +477,12 @@ def main():
     ctx = livectx
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(levelname)s %(asctime)s: %(message)s",
+        handlers=[logging.FileHandler("network.log"), logging.StreamHandler()]
+    )
 
     if args.connect:
         do_connect(ctx, args.connect)
