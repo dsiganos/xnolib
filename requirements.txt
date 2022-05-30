@@ -6,4 +6,5 @@ lmdb
 jsonpickle
 mysql-connector-python
 flask
+requests
 pydot==1.4.2

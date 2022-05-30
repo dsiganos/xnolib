@@ -327,6 +327,7 @@ class message_keepalive:
             for i in range(0, 8):
                 self.peers.append(Peer())
         else:
+            assert len(peers) == 8
             self.peers = peers
 
     def serialise(self):
@@ -363,6 +364,10 @@ class message_keepalive:
 
     @classmethod
     def make_packet(cls, peers: Iterable[Peer], net_id, version: int):
+        peers = list(peers)
+        for i in range(len(peers), 8):
+            peers.append(Peer())
+
         hdr = message_header(net_id, [version, version, version], message_type(message_type_enum.keepalive), 0)
         keepalive = message_keepalive(hdr, list(peers))
         return keepalive.serialise()

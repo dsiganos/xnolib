@@ -1,14 +1,14 @@
 #!/bin/env python3
-from datetime import datetime, timedelta
 
-from flask import Flask,jsonify,request,render_template,redirect
+from datetime import datetime, timedelta
 import threading
+
+from flask import Flask, render_template
 
 import peercrawler
 import pynanocoin
-import common
 from acctools import to_account_addr
-from peercrawler_html_server_utils import *
+from representative_mapping import representative_mapping
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
@@ -16,9 +16,9 @@ app = Flask(__name__, static_url_path='/peercrawler')
 ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
-
-# read from a file a list of dicts with info about prs
-nodes = try_load_peers_details("peers-details.json")
+representatives = representative_mapping()
+# representatives.load_from_file("representative-mappings.json")
+threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
 def bg_thread_func():
@@ -29,7 +29,7 @@ def bg_thread_func():
 
 @app.route("/peercrawler")
 def main_website():
-    global app, peerman
+    global app, peerman, representatives
 
     peers_copy = list(peerman.get_peers_copy())
 
@@ -39,12 +39,12 @@ def main_website():
 
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
-            node_details = get_node_details_from_id(node_id, nodes)
+            representative_info = representatives.find(node_id, str(peer.ip))
 
             peer_list.append([peer.ip,
                               peer.port,
-                              node_details.get("name", " "),
-                              node_details.get("nano_address", " "),
+                              representative_info.get("alias", " "),
+                              representative_info.get("account", " "),
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
@@ -72,7 +72,7 @@ def main_website():
 
 def main():
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func).start()
+    threading.Thread(target=bg_thread_func, daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
