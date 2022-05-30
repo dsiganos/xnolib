@@ -46,8 +46,8 @@ def main_website():
 
             peer_list.append([peer.ip,
                               peer.port,
-                              "; ".join(aliases),
-                              "; ".join(accounts),
+                              " // ".join(aliases),
+                              " // ".join(accounts),
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
