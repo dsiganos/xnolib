@@ -17,7 +17,7 @@ ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
 
 representatives = representative_mapping()
-# representatives.load_from_file("representative-mappings.json")
+representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
