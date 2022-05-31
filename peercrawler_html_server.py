@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 import threading
 
-from flask import Flask, render_template
+from flask import Flask, Response, render_template
 
+import jsonencoder
 import peercrawler
 import pynanocoin
 from acctools import to_account_addr
@@ -75,6 +76,15 @@ def main_website():
                               peer.score])
 
     return render_template('index.html', name=peer_list)
+
+
+@app.route("/peercrawler/json")
+def json():
+    global app, peerman
+
+    peers = peerman.get_peers_copy()
+    js = jsonencoder.to_json(list(peers))
+    return Response(js, status=200, mimetype="application/json")
 
 
 def main():
