@@ -14,17 +14,18 @@
 		<th onclick="sortTable(4)">voting</th>
 		<th onclick="sortTable(5)">verified</th>
 		<th onclick="sortTable(6)">node_id</th>
-		<th onclick="sortTable(7)">count</th>
-		<th onclick="sortTable(8)">cemented</th>
-		<th onclick="sortTable(9)">unchecked</th>
-		<th onclick="sortTable(10)">accounts</th>
-		<th onclick="sortTable(11)">bw_cap</th>
-		<th onclick="sortTable(12)">peers</th>
-		<th onclick="sortTable(13)">protover</th>
-		<th onclick="sortTable(14)">uptime</th>
-		<th onclick="sortTable(15)">s/w version</th>
-		<th onclick="sortTable(16)">timestamp</th>
-		<th onclick="sortTable(17)">score</th>
+		<th onclick="sortTable(7)">weight</th>
+		<th onclick="sortTable(8)">count</th>
+		<th onclick="sortTable(9)">cemented</th>
+		<th onclick="sortTable(10)">unchecked</th>
+		<th onclick="sortTable(11)">accounts</th>
+		<th onclick="sortTable(12)">bw_cap</th>
+		<th onclick="sortTable(13)">peers</th>
+		<th onclick="sortTable(14)">protover</th>
+		<th onclick="sortTable(15)">uptime</th>
+		<th onclick="sortTable(16)">s/w version</th>
+		<th onclick="sortTable(17)">timestamp</th>
+		<th onclick="sortTable(18)">score</th>
 	</tr>
         {% for item in name %}    
         <tr>               
@@ -42,10 +43,11 @@
             <td>{{item[11]}}</td>
             <td>{{item[12]}}</td>
             <td>{{item[13]}}</td>
-            <td><div class="tooltip">{{item[14]}}<span class="tooltiptext">{{item[15]}}</span></div></td>
-            <td>{{item[16]}}</td>
-            <td><div class="tooltip">{{item[17]}}<span class="tooltiptext">{{item[18]}}</span></div></td>
-            <td>{{item[19]}}</td>
+            <td>{{item[14]}}</td>
+            <td><div class="tooltip">{{item[15]}}<span class="tooltiptext">{{item[16]}}</span></div></td>
+            <td>{{item[17]}}</td>
+            <td><div class="tooltip">{{item[18]}}<span class="tooltiptext">{{item[19]}}</span></div></td>
+            <td>{{item[20]}}</td>
         </tr>
         {% endfor %}    
 </table>

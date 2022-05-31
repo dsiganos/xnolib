@@ -45,6 +45,7 @@ def main_website():
             representative_info = representatives.find(node_id, str(peer.ip))
             aliases = [r.get("alias", " ") for r in representative_info]
             accounts = [r.get("account", " ") for r in representative_info]
+            weights = [r.get("weight", " ") for r in representative_info]
 
             peer_list.append([peer.ip,
                               peer.port,
@@ -53,6 +54,7 @@ def main_website():
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
+                              " // ".join(filter(lambda n: n is not None, weights)),
                               telemetry.block_count,
                               telemetry.cemented_count,
                               telemetry.unchecked_count,
