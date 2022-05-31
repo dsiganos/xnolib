@@ -6,7 +6,7 @@ def validate_pow(block, post_v2=True):
         difficulty = pow.epoch1_threshold
     else:
         difficulty = get_blocks_difficulty(block)
-    digest = pow.generate_pow_hash(int.from_bytes(block.work, "little"), int.from_bytes(block.root(), "big"))
+    digest = pow.generate_pow_hash(block.work, int.from_bytes(block.root(), "big"))
     return digest >= difficulty
 
 

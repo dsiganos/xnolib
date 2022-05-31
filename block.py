@@ -83,6 +83,7 @@ class Block:
 class block_send:
     def __init__(self, prev, dest, bal, sig, work):
         assert(isinstance(bal, int))
+        assert (isinstance(work, int))
         self.previous = prev
         self.destination = dest
         self.balance = bal
@@ -143,7 +144,7 @@ class block_send:
         data += self.destination
         data += self.balance.to_bytes(16, "big")
         data += self.signature
-        data += self.work[::-1]
+        data += self.work.to_bytes(8, "little")
         return data
 
     @classmethod
@@ -153,7 +154,7 @@ class block_send:
         dest = acctools.account_key(json_obj['destination'])
         bal = int(json_obj['balance'], 16)
         sig = binascii.unhexlify(json_obj['signature'])
-        work = binascii.unhexlify(json_obj['work'])
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
         return block_send(prev, dest, bal, sig, work)
 
     @classmethod
@@ -163,7 +164,7 @@ class block_send:
         dest = data[32:64]
         bal = int.from_bytes(data[64:80], "big")
         sig = data[80:144]
-        work = data[144:][::-1]
+        work = int.from_bytes(data[144:], "little")
         return block_send(prev, dest, bal, sig, work)
 
     def __str__(self):
@@ -174,7 +175,7 @@ class block_send:
         string += "       %s\n" % acctools.to_account_addr(self.destination)
         string += "Bal  : %f\n" % (self.balance / (10**30))
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work)
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
         string += "Acc  : %s\n      %s\n" % (self.get_account_str())
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
         string += "Sent : %s\n" % self.get_amount_sent_str()
@@ -184,7 +185,7 @@ class block_send:
     def __hash__(self):
         return hash((self.previous, self.destination,
                      self.balance.to_bytes(16, "big"), self.signature,
-                     self.work))
+                     self.work.to_bytes(8, "little")))
 
     def __eq__(self, other):
         if not isinstance(other, block_send):
@@ -212,6 +213,7 @@ class block_send:
 
 class block_receive:
     def __init__(self, prev, source, sig, work):
+        assert (isinstance(work, int))
         self.previous = prev
         self.source = source
         self.signature = sig
@@ -278,7 +280,7 @@ class block_receive:
         data += self.previous
         data += self.source
         data += self.signature
-        data += self.work[::-1]
+        data += self.work.to_bytes(8, "little")
         return data
 
     @classmethod
@@ -287,7 +289,7 @@ class block_receive:
         prev = binascii.unhexlify(json_obj['previous'])
         source = binascii.unhexlify(json_obj['source'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = binascii.unhexlify(json_obj['work'])
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
         return block_receive(prev, source, sig, work)
 
     @classmethod
@@ -296,7 +298,7 @@ class block_receive:
         prev = data[0:32]
         source = data[32:64]
         sig = data[64:128]
-        work = data[128:][::-1]
+        work = int.from_bytes(data[128:], "little")
         return block_receive(prev, source, sig, work)
 
     def __str__(self):
@@ -305,7 +307,7 @@ class block_receive:
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Src  : %s\n" % hexlify(self.source)
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work)
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
@@ -336,6 +338,7 @@ class block_receive:
 
 class block_open:
     def __init__(self, source, rep, account, sig, work):
+        assert (isinstance(work, int))
         self.source = source
         self.representative = rep
         self.account = account
@@ -407,7 +410,7 @@ class block_open:
         data += self.representative
         data += self.account
         data += self.signature
-        data += self.work[::-1]
+        data += self.work.to_bytes(8, "little")
         return data
 
     @classmethod
@@ -417,7 +420,7 @@ class block_open:
         rep = acctools.account_key(json_obj['representative'])
         acc = acctools.account_key(json_obj['account'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = binascii.unhexlify(json_obj['work'])
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
         return block_open(source, rep, acc, sig, work)
 
 
@@ -428,7 +431,7 @@ class block_open:
         rep = data[32:64]
         acc = data[64:96]
         sig = data[96:160]
-        work = data[160:][::-1]
+        work = int.from_bytes(data[160:], "little")
         return block_open(source, rep, acc, sig, work)
 
 
@@ -441,7 +444,7 @@ class block_open:
         string += "Acc  : %s\n" % hexacc
         string += "       %s\n" % acctools.to_account_addr(self.account)
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work)
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
@@ -473,6 +476,7 @@ class block_open:
 
 class block_change:
     def __init__(self, prev, rep, sig, work):
+        assert (isinstance(work, int))
         self.previous = prev
         self.representative = rep
         self.signature = sig
@@ -538,7 +542,7 @@ class block_change:
         data += self.previous
         data += self.representative
         data += self.signature
-        data += self.work[::-1]
+        data += self.work.to_bytes(8, "little")
         return data
 
     @classmethod
@@ -547,7 +551,7 @@ class block_change:
         prev = binascii.unhexlify(json_obj['previous'])
         rep = acctools.account_key(json_obj['representative'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = binascii.unhexlify(json_obj['work'])
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
         return block_change(prev, rep, sig, work)
 
     @classmethod
@@ -556,7 +560,7 @@ class block_change:
         prev = data[0:32]
         rep = data[32:64]
         sig = data[64:128]
-        work = data[128:][::-1]
+        work = int.from_bytes(data[128:], "little")
         return block_change(prev, rep, sig, work)
 
     def __str__(self):
@@ -565,7 +569,7 @@ class block_change:
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Repr : %s\n" % hexlify(self.representative)
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work)
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
@@ -596,6 +600,7 @@ class block_change:
 
 class block_state:
     def __init__(self, account, prev, rep, bal, link, sig, work):
+        assert(isinstance(work, int))
         self.account = account
         self.previous = prev
         self.representative = rep
@@ -659,7 +664,7 @@ class block_state:
         data += self.signature
 
         # Block states proof of work is received and sent in big endian
-        data += self.work
+        data += self.work.to_bytes(8, "big")
         return data
 
     def is_epoch_v2_block(self):
@@ -678,7 +683,7 @@ class block_state:
     def generate_work(self, min_difficulty):
         root_int = int.from_bytes(self.root(), byteorder='big')
         pow_int = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
-        self.work = pow_int.to_bytes(8, byteorder='big')
+        self.work = pow_int
 
     @classmethod
     def parse(cls, data):
@@ -690,7 +695,7 @@ class block_state:
         link = data[112:144]
         sig = data[144:208]
         # Block states proof of work is received and sent in big endian
-        work = data[208:]
+        work = int.from_bytes(data[208:], "big")
         return block_state(account, prev, rep, bal, link, sig, work)
 
     @classmethod
@@ -705,7 +710,7 @@ class block_state:
         else:
             link = acctools.account_key(json_obj['link'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = binascii.unhexlify(json_obj['work'])
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
         return block_state(account, prev, rep, bal, link, sig, work)
 
     def to_json(self):
@@ -718,7 +723,7 @@ class block_state:
             'link'            : hexlify(self.link),
             'link_as_account' : acctools.to_account_addr(self.link),
             'signature'       : hexlify(self.signature),
-            'work'            : hexlify(self.work)
+            'work'            : hexlify(self.work.to_bytes(8, "big"))
         }
         return json.dumps(jsonblk, indent=4)
 
@@ -740,7 +745,7 @@ class block_state:
         string += "Bal  : %s\n" % (self.balance / (10**30))
         string += "Link : %s\n" % self.link_to_string()
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work)
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "big"))
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
         string += "Peers: %s" % self.ancillary['peers']
         return string
