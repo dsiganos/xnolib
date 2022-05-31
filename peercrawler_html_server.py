@@ -49,7 +49,7 @@ def main_website():
             peer_list.append([peer.ip,
                               peer.port,
                               " // ".join(filter(lambda n: isinstance(n, str), aliases)),  # filter out None values
-                              " // ".join(filter(lambda n: isinstance(n, str), accounts)),
+                              filter(lambda n: isinstance(n, str), accounts),
                               peer.is_voting,
                               telemetry.sig_verified,
                               node_id,
