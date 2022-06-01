@@ -82,6 +82,31 @@ class peer_manager:
     def count_peers(self):
         return len(self.get_peers_copy())
 
+    def listen_incoming(self):
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.bind(("::", 7075))
+            s.listen()
+
+            while True:
+                connection, address = s.accept()
+                threading.Thread(target=self.handle_incoming, args=(connection, address), daemon=True).start()
+
+    def handle_incoming(self, connection, address):
+        print(f"Receiving connection from {address}")
+
+        header_raw = connection.recv(8)
+        header = message_header.parse_header(header_raw)
+
+        if header.msg_type != message_type(message_type_enum.keepalive):
+            print("Received wrong message type, skipping")
+            return
+
+        size = header.payload_length_bytes()
+        packet_raw = connection.recv(size)
+        keepalive = message_keepalive.parse_payload(header, packet_raw)
+        self.peers.update(keepalive.peers)
+        print(f"Successfully parsed keepalive packet, received {len(keepalive.peers)} peers")
+
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), 7777)  # this should be changed manually
         packet = message_keepalive.make_packet([local_peer], self.ctx["net_id"], 18)
