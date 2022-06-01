@@ -89,7 +89,16 @@ def json():
 
 @app.route("/peercrawler/logs")
 def logs():
-    return send_file("network.log")
+    try:
+        with open("network.log.1", mode="r", encoding="UTF-8") as f:
+            log_1 = f.read()
+    except FileNotFoundError:
+        log_1 = ""
+
+    with open("network.log", mode="r") as f:
+        log_2 = f.read()
+
+    return Response(log_1 + log_2, status=200, mimetype="text/plain")
 
 
 def main():

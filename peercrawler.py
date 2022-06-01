@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import argparse
 import threading
@@ -497,7 +498,10 @@ def main():
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(levelname)s %(asctime)s: %(message)s",
-        handlers=[logging.FileHandler(file_name), logging.StreamHandler()]
+        handlers=[
+            RotatingFileHandler(file_name, mode="a", maxBytes=(50 * 5000), backupCount=1),
+            logging.StreamHandler()
+        ]
     )
 
     if args.connect:
