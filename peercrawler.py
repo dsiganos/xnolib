@@ -92,20 +92,20 @@ class peer_manager:
                 threading.Thread(target=self.handle_incoming, args=(connection, address), daemon=True).start()
 
     def handle_incoming(self, connection, address):
-        print(f"Receiving connection from {address}")
+        while True:
+            header, payload = get_next_hdr_payload(connection)
 
-        header_raw = connection.recv(8)
-        header = message_header.parse_header(header_raw)
+            if header.msg_type == message_type(message_type_enum.node_id_handshake):
+                if header.is_response():
+                    raise CommsError()
 
-        if header.msg_type != message_type(message_type_enum.keepalive):
-            print("Received wrong message type, skipping")
-            return
+                query = handshake_query.parse_query(header, payload)
+                signing_key, verifying_key = node_handshake_id.keypair()
+                handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
 
-        size = header.payload_length_bytes()
-        packet_raw = connection.recv(size)
-        keepalive = message_keepalive.parse_payload(header, packet_raw)
-        self.peers.update(keepalive.peers)
-        print(f"Successfully parsed keepalive packet, received {len(keepalive.peers)} peers")
+            elif header.msg_type == message_type(message_type_enum.keepalive):
+                keepalive = message_keepalive.parse_payload(header, payload)
+                self.peers.update(keepalive.peers)
 
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), 7777)  # this should be changed manually
