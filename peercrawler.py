@@ -91,7 +91,7 @@ class peer_manager:
                 connection, address = s.accept()
                 threading.Thread(target=self.handle_incoming, args=(connection, address), daemon=True).start()
 
-    def handle_incoming(self, connection, address):
+    def handle_incoming(self, connection: socket.socket, address):
         while True:
             header, payload = get_next_hdr_payload(connection)
 
@@ -106,6 +106,9 @@ class peer_manager:
             elif header.msg_type == message_type(message_type_enum.keepalive):
                 keepalive = message_keepalive.parse_payload(header, payload)
                 self.peers.update(keepalive.peers)
+
+                connection.close()
+                return
 
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), 7777)  # this should be changed manually
