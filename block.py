@@ -154,7 +154,7 @@ class block_send:
         dest = acctools.account_key(json_obj['destination'])
         bal = int(json_obj['balance'], 16)
         sig = binascii.unhexlify(json_obj['signature'])
-        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "big")
         return block_send(prev, dest, bal, sig, work)
 
     @classmethod
@@ -175,7 +175,7 @@ class block_send:
         string += "       %s\n" % acctools.to_account_addr(self.destination)
         string += "Bal  : %f\n" % (self.balance / (10**30))
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "big"))
         string += "Acc  : %s\n      %s\n" % (self.get_account_str())
         string += "Next : %s\n" % hexlify(self.ancillary["next"])
         string += "Sent : %s\n" % self.get_amount_sent_str()
@@ -289,7 +289,7 @@ class block_receive:
         prev = binascii.unhexlify(json_obj['previous'])
         source = binascii.unhexlify(json_obj['source'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "big")
         return block_receive(prev, source, sig, work)
 
     @classmethod
@@ -307,7 +307,7 @@ class block_receive:
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Src  : %s\n" % hexlify(self.source)
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "big"))
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
@@ -420,7 +420,7 @@ class block_open:
         rep = acctools.account_key(json_obj['representative'])
         acc = acctools.account_key(json_obj['account'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "big")
         return block_open(source, rep, acc, sig, work)
 
 
@@ -444,7 +444,7 @@ class block_open:
         string += "Acc  : %s\n" % hexacc
         string += "       %s\n" % acctools.to_account_addr(self.account)
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "big"))
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
@@ -551,7 +551,7 @@ class block_change:
         prev = binascii.unhexlify(json_obj['previous'])
         rep = acctools.account_key(json_obj['representative'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "big")
         return block_change(prev, rep, sig, work)
 
     @classmethod
@@ -569,7 +569,7 @@ class block_change:
         string += "Prev : %s\n" % hexlify(self.previous)
         string += "Repr : %s\n" % hexlify(self.representative)
         string += "Sign : %s\n" % hexlify(self.signature)
-        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "little"))
+        string += "Work : %s\n" % hexlify(self.work.to_bytes(8, "big"))
         string += self.str_ancillary_data()
         string += "Peers: %s" % self.ancillary['peers']
         return string
@@ -682,8 +682,7 @@ class block_state:
 
     def generate_work(self, min_difficulty):
         root_int = int.from_bytes(self.root(), byteorder='big')
-        pow_int = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
-        self.work = pow_int
+        self.work = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
 
     @classmethod
     def parse(cls, data):
@@ -710,7 +709,7 @@ class block_state:
         else:
             link = acctools.account_key(json_obj['link'])
         sig = binascii.unhexlify(json_obj['signature'])
-        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "little")
+        work = int.from_bytes(binascii.unhexlify(json_obj['work']), "big")
         return block_state(account, prev, rep, bal, link, sig, work)
 
     def to_json(self):
