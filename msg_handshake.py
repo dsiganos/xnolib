@@ -186,15 +186,13 @@ class handshake_response_query(node_handshake_id):
         return True
 
 
-def handshake_exchange_server(ctx, s, query, signing_key, verifying_key):
-    assert(isinstance(s, socket.socket) and isinstance(query, handshake_query))
+def handshake_exchange_server(ctx, sock: socket.socket, query: handshake_query, signing_key, verifying_key):
     response = handshake_response_query.create_response(ctx, query.cookie, signing_key, verifying_key)
-    s.send(response.serialise())
+    sock.send(response.serialise())
 
-    data = read_socket(s, 104)
+    data = read_socket(sock, 104)
     hdr = message_header.parse_header(data[0:8])
     recvd_response = handshake_response.parse_response(hdr, data[8:])
 
     vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
     vk.verify(recvd_response.sig, response.cookie)
-
