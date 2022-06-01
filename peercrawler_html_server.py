@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 import threading
 
-from flask import Flask, Response, render_template
+from flask import Flask, Response, send_file, render_template
 
 import jsonencoder
 import peercrawler
@@ -85,6 +85,11 @@ def json():
     peers = peerman.get_peers_copy()
     js = jsonencoder.to_json(list(peers))
     return Response(js, status=200, mimetype="application/json")
+
+
+@app.route("/peercrawler/logs")
+def logs():
+    return send_file("network.log")
 
 
 def main():
