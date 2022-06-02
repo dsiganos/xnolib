@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import logging
-from logging.handlers import RotatingFileHandler
 import sys
 import argparse
 import threading
@@ -13,11 +12,18 @@ import jsonpickle
 from functools import reduce
 from typing import Iterable, Optional
 
+from pydot import Dot, Node, Edge
+
 import confirm_req
 import telemetry_req
 from msg_handshake import *
+from logger import setup_logging
 
-from pydot import Dot, Node, Edge
+
+LOGGER_NAME = "peercrawler"
+logger = logging.getLogger(LOGGER_NAME)
+if not logger.hasHandlers():  # peercrawler.py is imported from other files, so this check exists to ensure this logger is only configured once
+    setup_logging(LOGGER_NAME)
 
 
 def get_telemetry(ctx, s):
@@ -478,18 +484,6 @@ def main():
     ctx = livectx
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
-
-    # setup logging
-    file_name = "peercrawler.log"
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(levelname)s %(asctime)s: %(message)s",
-        handlers=[
-            RotatingFileHandler(file_name, mode="a", maxBytes=(50 * 5000), backupCount=1),
-            logging.StreamHandler()
-        ]
-    )
 
     if args.connect:
         do_connect(ctx, args.connect)
