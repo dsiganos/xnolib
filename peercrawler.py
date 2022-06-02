@@ -481,19 +481,6 @@ def main():
 
     # setup logging
     file_name = "network.log"
-    max_lines = 10000
-
-    # trim log file to stay under max_lines
-    if os.path.exists(file_name):
-        with open(file_name, mode="r+") as f:
-            lines = f.readlines()
-            if len(lines) > max_lines:
-                # go to the beginning and delete everything
-                f.seek(0)
-                f.truncate()
-
-                # write the last max_lines from the original file
-                f.writelines(lines[-max_lines:])
 
     logging.basicConfig(
         level=logging.DEBUG,
