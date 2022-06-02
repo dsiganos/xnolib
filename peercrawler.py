@@ -480,7 +480,7 @@ def main():
     if args.test: ctx = testctx
 
     # setup logging
-    file_name = "network.log"
+    file_name = "peercrawler.log"
 
     logging.basicConfig(
         level=logging.DEBUG,
