@@ -97,8 +97,11 @@ def logs():
     except FileNotFoundError:
         log_1 = ""
 
-    with open(log_file_name, mode="r") as f:
-        log_2 = f.read()
+    try:
+        with open(log_file_name, mode="r") as f:
+            log_2 = f.read()
+    except FileNotFoundError:
+        log_2 = ""
 
     return Response(log_1 + log_2, status=200, mimetype="text/plain")
 
