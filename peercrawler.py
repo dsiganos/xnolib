@@ -11,7 +11,6 @@ from _thread import interrupt_main
 from ipaddress import IPv6Address
 import jsonpickle
 from functools import reduce
-from typing import Iterable, Optional
 
 from pydot import Dot, Node, Edge
 
@@ -19,6 +18,7 @@ import confirm_req
 import telemetry_req
 from msg_handshake import *
 from logger import setup_logging
+from peer_set import peer_set
 
 
 def get_telemetry(ctx, s):
@@ -38,7 +38,7 @@ class peer_manager:
         self.ctx = ctx
         self.verbosity = verbosity
         self.mutex = threading.Lock()
-        self.peers: set[Peer] = set()
+        self.peers = peer_set()
         self.port = port
 
         if peers:
@@ -58,22 +58,13 @@ class peer_manager:
 
     def add_peers(self, new_peers: Iterable[Peer]):
         with self.mutex:
-            for peer in new_peers:
-                if peer.ip.ipv6.is_unspecified:
-                    continue
-
-                if self.verbosity >= 3:
-                    print('adding peer %s' % peer)
-
-                if peer in self.peers:
-                    find_peer(peer, self.peers).last_seen = int(time.time())
-                else:
-                    self.peers.add(peer)
+            new_peers = filter(lambda p: not p.ip.ipv6.is_unspecified, new_peers)  # filter out unspecified addresses
+            self.peers.update(new_peers)
 
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
             with self.mutex:
-                cleanup_inactive_peers(self.peers, inactivity_threshold_seconds, self.verbosity)
+                self.peers.cleanup_inactive(inactivity_threshold_seconds, self.verbosity)
 
             time.sleep(inactivity_threshold_seconds)
 
@@ -352,7 +343,7 @@ class network_connections():
         self.inactivity_threshold_seconds = inactivity_threshold_seconds
         self.verbosity = verbosity
 
-        self.__connections: dict[Peer, set[Peer]] = {}
+        self.__connections: dict[Peer, peer_set] = {}
 
     def register_connections(self, peer: Peer, new_peers: Iterable[Peer]):
         for new_peer in new_peers:
@@ -360,19 +351,15 @@ class network_connections():
                 continue
 
             if new_peer not in self.__connections:
-                self.__connections[new_peer] = set()
+                self.__connections[new_peer] = peer_set()
 
-            peer_connections = self.__connections[peer]
-            if new_peer in peer_connections:
-                find_peer(new_peer, peer_connections).last_seen = int(time.time())
-            else:
-                peer_connections.add(new_peer)
+            self.__connections[peer].add(new_peer)
 
     def get_connections(self) -> dict[Peer, set[Peer]]:
         return copy.deepcopy(self.__connections)
 
     def run(self, initial_peer: Peer, interval_seconds=0):
-        self.__connections[initial_peer] = set()
+        self.__connections[initial_peer] = peer_set()
 
         while True:
             peers_list = [peer for peer in self.__connections]
@@ -383,7 +370,7 @@ class network_connections():
 
             if self.inactivity_threshold_seconds > 0:
                 for _, peers in self.__connections.items():
-                    cleanup_inactive_peers(peers, self.inactivity_threshold_seconds, self.verbosity)
+                    peers.cleanup_inactive(self.inactivity_threshold_seconds, self.verbosity)
 
             time.sleep(interval_seconds)
 
@@ -502,23 +489,6 @@ def send_confirm_req_genesis(ctx, peer, s):
         outcome = False
 
     return outcome
-
-
-# NOTE: this is a free standing function because it is used by both peer and conection managers
-def cleanup_inactive_peers(peers: set[Peer], inactivity_threshold_seconds: int, verbosity: int):
-    for peer in peers.copy():
-        if int(time.time()) - peer.last_seen > inactivity_threshold_seconds:
-            if verbosity >= 2:
-                print('removing inactive peer %s' % peer)
-            peers.remove(peer)
-
-
-def find_peer(item: Peer, collection: set[Peer]) -> Optional[Peer]:
-    for i in collection:
-        if i == item:
-            return i
-
-    return None
 
 
 # noinspection PyUnresolvedReferences
