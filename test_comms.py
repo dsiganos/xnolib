@@ -2,7 +2,9 @@ import time
 import unittest
 import binascii
 
+import common
 from block import *
+from confirm_req import confirm_blocks_by_hash
 from msg_handshake import handshake_response, handshake_query, handshake_response_query, \
     handshake_exchange_server
 from pynanocoin import *
@@ -655,7 +657,16 @@ class TestComms(unittest.TestCase):
         blocks = get_account_blocks(ctx, s, ctx["genesis_pub"])
         print(blocks[0])
 
-
+    def test_confirm_req(self):
+        ctx = livectx
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.ip.is_ipv4() and p.is_voting)
+        with get_connected_socket_endpoint(str(peer.ip), peer.port) as s:
+            signing_key, verifying_key = node_handshake_id.keypair()
+            node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
+            pair = common.hash_pair(binascii.unhexlify("991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948"),
+                                    binascii.unhexlify("E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA"))
+            outcome = confirm_blocks_by_hash(ctx, [pair], s)
+        assert outcome
 
 if __name__ == '__main__':
     unittest.main()
