@@ -52,7 +52,7 @@ class Block:
         raise ParseErrorInvalidTypeInJson(json_str)
 
     @classmethod
-    def read_block_from_socket(cls, s):
+    def read_block_from_socket(cls, s: socket.socket):
         block = None
 
         block_type = s.recv(1)
@@ -81,7 +81,7 @@ class Block:
         return block
 
 class block_send:
-    def __init__(self, prev, dest, bal, sig, work):
+    def __init__(self, prev: bytes, dest: bytes, bal: int, sig: bytes, work: int):
         assert(isinstance(bal, int))
         assert (isinstance(work, int))
         self.previous = prev
@@ -136,7 +136,7 @@ class block_send:
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def serialise(self, include_block_type):
+    def serialise(self, include_block_type: bool):
         data = b''
         if include_block_type:
             data += (2).to_bytes(1, "big")
@@ -148,7 +148,7 @@ class block_send:
         return data
 
     @classmethod
-    def parse_from_json(cls, json_obj):
+    def parse_from_json(cls, json_obj: dict):
         assert(json_obj['type'] == 'send')
         prev = binascii.unhexlify(json_obj['previous'])
         dest = acctools.account_key(json_obj['destination'])
@@ -158,7 +158,7 @@ class block_send:
         return block_send(prev, dest, bal, sig, work)
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: bytes):
         assert(len(data) == block_length_by_type(2))
         prev = data[0:32]
         dest = data[32:64]
@@ -212,7 +212,7 @@ class block_send:
 
 
 class block_receive:
-    def __init__(self, prev, source, sig, work):
+    def __init__(self, prev: bytes, source: bytes, sig: bytes, work: int):
         assert (isinstance(work, int))
         self.previous = prev
         self.source = source
@@ -273,7 +273,7 @@ class block_receive:
         string += "Bal  : %f\n" % balance
         return string
 
-    def serialise(self, include_block_type):
+    def serialise(self, include_block_type: bool):
         data = b''
         if include_block_type:
             data += (3).to_bytes(1, "big")
@@ -284,7 +284,7 @@ class block_receive:
         return data
 
     @classmethod
-    def parse_from_json(cls, json_obj):
+    def parse_from_json(cls, json_obj: dict):
         assert(json_obj['type'] == 'receive')
         prev = binascii.unhexlify(json_obj['previous'])
         source = binascii.unhexlify(json_obj['source'])
@@ -293,7 +293,7 @@ class block_receive:
         return block_receive(prev, source, sig, work)
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: bytes):
         assert(len(data) == block_length_by_type(3))
         prev = data[0:32]
         source = data[32:64]
@@ -337,7 +337,7 @@ class block_receive:
 
 
 class block_open:
-    def __init__(self, source, rep, account, sig, work):
+    def __init__(self, source: bytes, rep: bytes, account: bytes, sig: bytes, work: int):
         assert (isinstance(work, int))
         self.source = source
         self.representative = rep
@@ -402,7 +402,7 @@ class block_open:
         string += "Bal  : %f\n" % balance
         return string
 
-    def serialise(self, include_block_type):
+    def serialise(self, include_block_type: bool):
         data = b''
         if include_block_type:
             data += (4).to_bytes(1, "big")
@@ -414,7 +414,7 @@ class block_open:
         return data
 
     @classmethod
-    def parse_from_json(cls, json_obj):
+    def parse_from_json(cls, json_obj: dict):
         assert(json_obj['type'] == 'open')
         source = binascii.unhexlify(json_obj['source'])
         rep = acctools.account_key(json_obj['representative'])
@@ -425,7 +425,7 @@ class block_open:
 
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: bytes):
         assert(len(data) == block_length_by_type(4))
         source = data[0:32]
         rep = data[32:64]
@@ -475,7 +475,7 @@ class block_open:
 
 
 class block_change:
-    def __init__(self, prev, rep, sig, work):
+    def __init__(self, prev: bytes, rep: bytes, sig: bytes, work: int):
         assert (isinstance(work, int))
         self.previous = prev
         self.representative = rep
@@ -535,7 +535,7 @@ class block_change:
         string += "Bal  : %f" % balance
         return string
 
-    def serialise(self, include_block_type):
+    def serialise(self, include_block_type: bool):
         data = b''
         if include_block_type:
             data += (5).to_bytes(1, "big")
@@ -546,7 +546,7 @@ class block_change:
         return data
 
     @classmethod
-    def parse_from_json(cls, json_obj):
+    def parse_from_json(cls, json_obj: dict):
         assert(json_obj['type'] == 'change')
         prev = binascii.unhexlify(json_obj['previous'])
         rep = acctools.account_key(json_obj['representative'])
@@ -555,7 +555,7 @@ class block_change:
         return block_change(prev, rep, sig, work)
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: bytes):
         assert(len(data) == block_length_by_type(5))
         prev = data[0:32]
         rep = data[32:64]
@@ -599,7 +599,7 @@ class block_change:
 
 
 class block_state:
-    def __init__(self, account, prev, rep, bal, link, sig, work):
+    def __init__(self, account: bytes, prev: bytes, rep: bytes, bal: int, link: bytes, sig: bytes, work: int):
         assert(isinstance(work, int))
         self.account = account
         self.previous = prev
@@ -635,7 +635,7 @@ class block_state:
         else:
             return self.previous
 
-    def set_type(self, block_type):
+    def set_type(self, block_type: int):
         assert block_type in range(block_type_enum.invalid, block_type_enum.state + 1)
         self.ancillary["type"] = block_type
 
@@ -652,7 +652,7 @@ class block_state:
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def serialise(self, include_block_type):
+    def serialise(self, include_block_type: bool):
         data = b''
         if include_block_type:
             data += (6).to_bytes(1, "big")
@@ -680,12 +680,12 @@ class block_state:
     def sign(self, signing_key):
         self.signature = signing_key.sign(self.hash())
 
-    def generate_work(self, min_difficulty):
+    def generate_work(self, min_difficulty: int):
         root_int = int.from_bytes(self.root(), byteorder='big')
         self.work = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: bytes):
         assert(len(data) == block_length_by_type(6))
         account = data[0:32]
         prev = data[32:64]
@@ -698,7 +698,7 @@ class block_state:
         return block_state(account, prev, rep, bal, link, sig, work)
 
     @classmethod
-    def parse_from_json(cls, json_obj):
+    def parse_from_json(cls, json_obj: dict):
         assert(json_obj['type'] == 'state')
         account = acctools.account_key(json_obj['account'])
         prev = binascii.unhexlify(json_obj['previous'])
@@ -784,31 +784,31 @@ class block_state:
         return True
 
 
-def read_block_send(s):
+def read_block_send(s: socket.socket):
     data = read_socket(s, 152)
     block = block_send.parse(data)
     return block
 
 
-def read_block_receive(s):
+def read_block_receive(s: socket.socket):
     data = read_socket(s, 136)
     block = block_receive.parse(data)
     return block
 
 
-def read_block_open(s):
+def read_block_open(s: socket.socket):
     data = read_socket(s, 168)
     block = block_open.parse(data)
     return block
 
 
-def read_block_change(s):
+def read_block_change(s: socket.socket):
     data = read_socket(s, 136)
     block = block_change.parse(data)
     return block
 
 
-def read_block_state(s):
+def read_block_state(s: socket.socket):
     data = read_socket(s, 216)
     block = block_state.parse(data)
     return block
