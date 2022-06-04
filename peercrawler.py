@@ -87,9 +87,18 @@ class peer_manager:
             s.bind(("::", port))
             s.listen()
 
+            semaphore = threading.BoundedSemaphore(8)
+
             while True:
+                semaphore.acquire()
                 connection, address = s.accept()
-                threading.Thread(target=self.handle_incoming, args=(connection, address), daemon=True).start()
+                threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address), daemon=True).start()
+
+    def __handle_incoming_semaphore(self, semaphore: threading.BoundedSemaphore, connection: socket.socket, address):
+        try:
+            self.handle_incoming(connection, address)
+        finally:
+            semaphore.release()
 
     def handle_incoming(self, connection: socket.socket, address):
         self.logger.debug(f"Receiving connection from {address}")
