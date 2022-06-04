@@ -3,7 +3,7 @@ from pynanocoin import *
 
 class node_handshake_id:
     @classmethod
-    def parse(cls, hdr, payload):
+    def parse(cls, hdr: message_header, payload: bytes):
         if hdr.is_query() and hdr.is_response():
             handshake = handshake_response_query.parse_query_response(hdr, payload)
         elif hdr.is_query():
@@ -17,7 +17,8 @@ class node_handshake_id:
         return ed25519_blake2b.create_keypair()
 
     @classmethod
-    def perform_handshake_exchange(cls, ctx, s, signing_key, verifying_key):
+    def perform_handshake_exchange(cls, ctx: dict, s: socket.socket, signing_key: ed25519_blake2b.keys.SigningKey,
+                                   verifying_key: ed25519_blake2b.keys.VerifyingKey):
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
         msg_handshake = handshake_query(hdr)
         s.send(msg_handshake.serialise())
@@ -38,7 +39,7 @@ class node_handshake_id:
 
 
 class handshake_query(node_handshake_id):
-    def __init__(self, hdr, cookie=os.urandom(32)):
+    def __init__(self, hdr: message_header, cookie: bytes = os.urandom(32)):
         assert isinstance(hdr, message_header)
         assert hdr.is_query()
         self.header = hdr
@@ -50,7 +51,7 @@ class handshake_query(node_handshake_id):
         return data
 
     @classmethod
-    def parse_query(cls, hdr, data):
+    def parse_query(cls, hdr: message_header, data: bytes):
         assert(len(data) == 32)
         cookie = data
         return handshake_query(hdr, cookie)
@@ -73,7 +74,7 @@ class handshake_query(node_handshake_id):
 
 
 class handshake_response(node_handshake_id):
-    def __init__(self, hdr, account, signature):
+    def __init__(self, hdr: message_header, account: bytes, signature: bytes):
         assert isinstance(hdr, message_header)
         assert hdr.is_response()
 
@@ -88,13 +89,14 @@ class handshake_response(node_handshake_id):
         return data
 
     @classmethod
-    def create_response(cls, ctx, cookie, signing_key, verifying_key):
+    def create_response(cls, ctx: dict, cookie: bytes, signing_key: ed25519_blake2b.keys.SigningKey,
+                                   verifying_key: ed25519_blake2b.keys.VerifyingKey):
         sig = signing_key.sign(cookie)
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 2)
         return handshake_response(hdr, verifying_key.to_bytes(), sig)
 
     @classmethod
-    def parse_response(cls, hdr, data):
+    def parse_response(cls, hdr: message_header, data: bytes):
         assert len(data) == 96
         assert isinstance(hdr, message_header)
 
@@ -126,7 +128,7 @@ class handshake_response(node_handshake_id):
 
 
 class handshake_response_query(node_handshake_id):
-    def __init__(self, hdr, cookie, account, signature):
+    def __init__(self, hdr: message_header, cookie: bytes, account: bytes, signature: bytes):
         assert isinstance(hdr, message_header)
         assert hdr.is_query()
         assert hdr.is_response()
@@ -144,7 +146,7 @@ class handshake_response_query(node_handshake_id):
         return data
 
     @classmethod
-    def parse_query_response(cls, hdr, data):
+    def parse_query_response(cls, hdr: message_header, data: bytes):
         assert isinstance(hdr, message_header)
         assert(len(data) == 128)
 
@@ -157,7 +159,8 @@ class handshake_response_query(node_handshake_id):
         return handshake_response_query(hdr, cookie, account, sig)
 
     @classmethod
-    def create_response(cls, ctx, cookie, signing_key, verifying_key):
+    def create_response(cls, ctx: dict, cookie: bytes, signing_key: ed25519_blake2b.keys.SigningKey,
+                                   verifying_key: ed25519_blake2b.keys.VerifyingKey):
         my_cookie = os.urandom(32)
         sig = signing_key.sign(cookie)
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 3)
@@ -186,7 +189,10 @@ class handshake_response_query(node_handshake_id):
         return True
 
 
-def handshake_exchange_server(ctx, s, query, signing_key, verifying_key):
+def handshake_exchange_server(ctx: dict, s: socket.socket, query: handshake_query,
+                              signing_key: ed25519_blake2b.keys.SigningKey,
+                              verifying_key: ed25519_blake2b.keys.VerifyingKey):
+
     assert(isinstance(s, socket.socket) and isinstance(query, handshake_query))
     response = handshake_response_query.create_response(ctx, query.cookie, signing_key, verifying_key)
     s.send(response.serialise())
