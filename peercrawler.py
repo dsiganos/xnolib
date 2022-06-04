@@ -94,6 +94,20 @@ class peer_manager:
     def handle_incoming(self, connection: socket.socket, address):
         self.logger.debug(f"Receiving connection from {address}")
 
+        header, payload = get_next_hdr_payload(connection)
+        if header.msg_type == message_type(message_type_enum.node_id_handshake):
+            if header.is_response():
+                raise CommsError()
+
+            query = handshake_query.parse_query(header, payload)
+            signing_key, verifying_key = node_handshake_id.keypair()
+            handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
+            self.logger.debug(f"Successful handshake from from {address}")
+        else:
+            self.logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
+            connection.close()
+            return
+
         start_time = time.time()
         while True:
             if time.time() - start_time > 60:
@@ -102,17 +116,7 @@ class peer_manager:
                 return
 
             header, payload = get_next_hdr_payload(connection)
-
-            if header.msg_type == message_type(message_type_enum.node_id_handshake):
-                if header.is_response():
-                    raise CommsError()
-
-                query = handshake_query.parse_query(header, payload)
-                signing_key, verifying_key = node_handshake_id.keypair()
-                handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
-                self.logger.debug(f"Successful handshake from from {address}")
-
-            elif header.msg_type == message_type(message_type_enum.keepalive):
+            if header.msg_type == message_type(message_type_enum.keepalive):
                 keepalive = message_keepalive.parse_payload(header, payload)
                 self.add_peers(keepalive.peers)
 
