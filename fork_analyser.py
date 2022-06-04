@@ -41,7 +41,7 @@ def pull_blocks(ctx, blockman, peer, acc):
 
         # send a block pull request
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(6), 0)
-        bulk_pull = message_bulk_pull(hdr, hexlify(acc))
+        bulk_pull = message_bulk_pull(hdr, acc)
         s.send(bulk_pull.serialise())
 
         # pull blocks from peer
