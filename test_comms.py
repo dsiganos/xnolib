@@ -104,9 +104,26 @@ class TestComms(unittest.TestCase):
 
     def test_msg_bulk_pull_serialisation(self):
         header = message_header(network_id(67), [18, 18, 18], message_type(6), 0)
-        bulk_pull = message_bulk_pull(header, livectx["genesis_pub"])
+        bulk_pull = message_bulk_pull(header, binascii.unhexlify(livectx["genesis_pub"]))
         expected = b'RC\x12\x12\x12\x06\x00\x00\xe8\x92\x08\xdd\x03\x8f\xbb&\x99\x87h\x96!\xd5"\x92\xae\x9c5\x94\x1at\x84un\xcc\xed\x92\xa6P\x93\xba\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
         self.assertEqual(bulk_pull.serialise(), expected)
+
+    def test_msg_bulk_pull_comms(self):
+        ctx = livectx
+        header = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
+        bulk_pull = message_bulk_pull(header, binascii.unhexlify(livectx["genesis_pub"]))
+        s, _ = get_initial_connected_socket(ctx)
+        with s:
+            s.send(bulk_pull.serialise())
+            blocks = read_bulk_pull_response(s)
+        self.assertEqual(len(blocks), 44)
+
+    def test_get_account_blocks(self):
+        ctx = livectx
+        s, _ = get_initial_connected_socket(ctx)
+        with s:
+            blocks = get_account_blocks(ctx, s, binascii.unhexlify(ctx["genesis_pub"]))
+        self.assertEqual(len(blocks), 44)
 
     def test_block_send_serialisation(self):
         prev = binascii.unhexlify('4270F4FB3A820FE81827065F967A9589DF5CA860443F812D21ECE964AC359E05')
@@ -651,12 +668,6 @@ class TestComms(unittest.TestCase):
         s_packet = get_all_frontiers_packet_from_service()
         self.assertTrue(len(s_packet.frontiers) > 0)
 
-    def test_pull_blocks(self):
-        ctx = livectx
-        s, _ = get_initial_connected_socket(ctx)
-        blocks = get_account_blocks(ctx, s, ctx["genesis_pub"])
-        print(blocks[0])
-
     def test_confirm_req(self):
         ctx = livectx
         peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.ip.is_ipv4() and p.is_voting)
@@ -667,6 +678,7 @@ class TestComms(unittest.TestCase):
                                     binascii.unhexlify("E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA"))
             outcome = confirm_blocks_by_hash(ctx, [pair], s)
         assert outcome
+
 
 if __name__ == '__main__':
     unittest.main()
