@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-import time
+import logging
 import sys
 import argparse
 import threading
@@ -12,11 +12,12 @@ import jsonpickle
 from functools import reduce
 from typing import Iterable, Optional
 
+from pydot import Dot, Node, Edge
+
 import confirm_req
 import telemetry_req
 from msg_handshake import *
-
-from pydot import Dot, Node, Edge
+from logger import setup_logging
 
 
 def get_telemetry(ctx, s):
@@ -29,13 +30,18 @@ def get_telemetry(ctx, s):
 
 
 class peer_manager:
-    def __init__(self, ctx, peers=[], verbosity=0, inactivity_threshold_seconds=0):
+    def __init__(self, ctx, peers=[], verbosity=0, inactivity_threshold_seconds=0, logger: logging.Logger = None):
         self.ctx = ctx
         self.verbosity = verbosity
 
         self.mutex = threading.Lock()
         self.peers: set[Peer] = set()
         self.add_peers(peers)
+
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = setup_logging("peercrawler")
 
         if inactivity_threshold_seconds > 0:
             thread = threading.Thread(target=self.run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
@@ -180,8 +186,8 @@ class peer_manager:
                     sw_ver = ' v' + p.telemetry.get_sw_version()
                     cemented_count = ' cc=%s' % p.telemetry.cemented_count
                 s += '%41s:%5s (score:%4s)%s%s%s\n' % \
-                    ('[%s]' % p.ip, p.port, p.score, sw_ver, cemented_count, voting_str)
-                #if p.score >= 1000:
+                     ('[%s]' % p.ip, p.port, p.score, sw_ver, cemented_count, voting_str)
+                # if p.score >= 1000:
                 #    s += 'ID: %s, voting:%s\n' % (acctools.to_account_addr(p.peer_id, prefix='node_'), p.is_voting)
             s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(self.peers), good)
         return s
@@ -215,10 +221,10 @@ def parse_args():
 class peer_service_header:
     size = 124
 
-    def __init__(self, net_id, good_peers, total_peers, software_ver = "devel", protocol_ver = 3):
+    def __init__(self, net_id, good_peers, total_peers, software_ver="devel", protocol_ver=3):
         self.magic = b'PEER'
-        assert(isinstance(net_id, network_id))
-        assert(isinstance(software_ver, str))
+        assert (isinstance(net_id, network_id))
+        assert (isinstance(software_ver, str))
         self.net_id = net_id
         self.good_peers = good_peers
         self.total_peers = total_peers
@@ -236,13 +242,13 @@ class peer_service_header:
 
     @classmethod
     def parse(cls, data):
-        assert(len(data) == peer_service_header.size)
-        assert(data[0:4] == b'PEER')
+        assert (len(data) == peer_service_header.size)
+        assert (data[0:4] == b'PEER')
         return peer_service_header(
-            net_id = network_id(data[4]),
-            protocol_ver = int.from_bytes(data[5:8], "big"),
-            good_peers = int.from_bytes(data[8:16], "big"),
-            total_peers = int.from_bytes(data[16:24], "big"),
+            net_id=network_id(data[4]),
+            protocol_ver=int.from_bytes(data[5:8], "big"),
+            good_peers=int.from_bytes(data[8:16], "big"),
+            total_peers=int.from_bytes(data[16:24], "big"),
             software_ver=data[24:].decode("utf-8")
         )
 
@@ -252,7 +258,7 @@ class peer_service_header:
         s += 'GoodPeers:  %s\n' % self.good_peers
         s += 'TotalPeers: %s\n' % self.total_peers
         s += 'ProtoVers:  %s\n' % self.protocol_ver
-        s += 'SwVers:     %s'   % self.software_ver
+        s += 'SwVers:     %s' % self.software_ver
         return s
 
 
@@ -345,7 +351,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
                 conn.sendall(data)
 
 
-def get_peers_from_service(ctx, addr = '::ffff:78.46.80.199'):
+def get_peers_from_service(ctx, addr='::ffff:78.46.80.199'):
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         s.settimeout(10)
@@ -353,7 +359,7 @@ def get_peers_from_service(ctx, addr = '::ffff:78.46.80.199'):
             s.connect((addr, ctx['peercrawlerport']))
             response = readall(s)
             hdr = peer_service_header.parse(response[0:peer_service_header.size])
-            assert(hdr.protocol_ver == 3)
+            assert (hdr.protocol_ver == 3)
             if hdr.net_id != ctx['net_id']:
                 raise PeerServiceUnavailable("Peer service for the given network is unavailable")
         except (PyNanoCoinException, OSError, TypeError) as e:
@@ -415,7 +421,7 @@ def do_connect(ctx, server):
 
 
 def send_confirm_req_genesis(ctx, peer, s):
-    assert(isinstance(peer, Peer))
+    assert (isinstance(peer, Peer))
     block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
                        ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
                        ctx["genesis_block"]["work"])

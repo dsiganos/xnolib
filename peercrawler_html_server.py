@@ -87,6 +87,25 @@ def json():
     return Response(js, status=200, mimetype="application/json")
 
 
+@app.route("/peercrawler/logs")
+def logs():
+    log_file_name = "peercrawler.log"
+
+    try:
+        with open(log_file_name + ".1", mode="r", encoding="UTF-8") as f:
+            log_1 = f.read()
+    except FileNotFoundError:
+        log_1 = ""
+
+    try:
+        with open(log_file_name, mode="r") as f:
+            log_2 = f.read()
+    except FileNotFoundError:
+        log_2 = ""
+
+    return Response(log_1 + log_2, status=200, mimetype="text/plain")
+
+
 def main():
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, daemon=True).start()
