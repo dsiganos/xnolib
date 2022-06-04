@@ -114,7 +114,7 @@ class peer_manager:
 
             elif header.msg_type == message_type(message_type_enum.keepalive):
                 keepalive = message_keepalive.parse_payload(header, payload)
-                self.peers.update(keepalive.peers)
+                self.add_peers(keepalive.peers)
 
                 self.logger.debug(f"Received peers from {address}, connection is now closing")
                 connection.close()
