@@ -93,7 +93,14 @@ class peer_manager:
 
     def handle_incoming(self, connection: socket.socket, address):
         self.logger.debug(f"Receiving connection from {address}")
+
+        start_time = time.time()
         while True:
+            if time.time() - start_time > 60:
+                self.logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
+                connection.close()
+                return
+
             header, payload = get_next_hdr_payload(connection)
 
             if header.msg_type == message_type(message_type_enum.node_id_handshake):
