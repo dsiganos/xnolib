@@ -371,12 +371,12 @@ class message_keepalive:
 
 
 class message_bulk_pull:
-    def __init__(self, hdr: message_header, start: str, finish: str = None, count: int = None):
+    def __init__(self, hdr: message_header, start: bytes, finish: bytes = None, count: int = None):
         self.header = hdr
         self.count = count
-        self.public_key = binascii.unhexlify(start)
+        self.public_key = start
         if finish is not None:
-            self.finish = binascii.unhexlify(finish)
+            self.finish = finish
         else:
             self.finish = (0).to_bytes(32, "big")
         if count is not None:
@@ -422,7 +422,7 @@ class bulk_push:
         return data
 
     @classmethod
-    def parse(cls, hdr, data):
+    def parse(cls, hdr: message_header, data: bytes):
         blocks = []
         ptr = 1
         block_type = data[0]
@@ -1043,8 +1043,6 @@ def get_account_blocks(ctx: dict, s: socket.socket, account: bytes, no_of_blocks
         hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
     else:
         hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 1)
-    if isinstance(account, bytes):
-        account = hexlify(account)
     bulk_pull = message_bulk_pull(hdr, account, count=no_of_blocks)
     s.send(bulk_pull.serialise())
     return read_bulk_pull_response(s)
