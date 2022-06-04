@@ -1,7 +1,7 @@
 from block import *
 import pow
 
-def validate_pow(block, post_v2=True):
+def validate_pow(block, post_v2: bool = True):
     if not post_v2:
         difficulty = pow.epoch1_threshold
     else:
