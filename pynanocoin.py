@@ -20,18 +20,18 @@ from common import *
 
 
 # return a list of ipv4 mapped ipv6 strings
-def get_all_dns_addresses(addr):
+def get_all_dns_addresses(addr: str):
     result = dns.resolver.resolve(addr, 'A')
     return ['::ffff:' + x.to_text() for x in result]
 
 
 # return DNS adresses as Peer objects
-def get_all_dns_addresses_as_peers(addr, peerport, score):
+def get_all_dns_addresses_as_peers(addr: str, peerport: int, score: int):
     addresses = get_all_dns_addresses(addr)
     return [ Peer(ip_addr(ipaddress.IPv6Address(a)), peerport, score) for a in addresses ]
 
 
-def confirm_req_size(block_type, i_count):
+def confirm_req_size(block_type: int, i_count: int):
     if block_type == message_type_enum.not_a_block:
         size = 64 * i_count
     else:
@@ -40,7 +40,7 @@ def confirm_req_size(block_type, i_count):
     return size
 
 
-def confirm_ack_size(block_type, i_count):
+def confirm_ack_size(block_type: int, i_count: int):
     size = 104
     if block_type == message_type_enum.not_a_block:
         size += i_count * 32
@@ -51,7 +51,7 @@ def confirm_ack_size(block_type, i_count):
 
 
 class ip_addr:
-    def __init__(self, ipv6 = ipaddress.IPv6Address(0)):
+    def __init__(self, ipv6: str = ipaddress.IPv6Address(0)):
         if isinstance(ipv6, str):
             self.ipv6 = ipaddress.IPv6Address(ipv6)
         else:
@@ -59,7 +59,7 @@ class ip_addr:
         assert isinstance(self.ipv6, ipaddress.IPv6Address)
 
     @classmethod
-    def from_string(cls, ipstr):
+    def from_string(cls, ipstr: str):
         assert isinstance(ipstr, str)
         a = ipaddress.ip_address(ipstr)
         if a.version == 4:
@@ -104,15 +104,15 @@ class message_type_enum:
     telemetry_ack = 0x0d
 
 
-def message_type_enum_to_str(msg_type):
+def message_type_enum_to_str(msg_type: int):
     return next(name for name, value in vars(message_type_enum).items() if value == msg_type)
 
 
 class network_id:
-    def __init__(self, rawbyte):
+    def __init__(self, rawbyte: int):
         self.parse_header(int(rawbyte))
 
-    def parse_header(self, rawbyte):
+    def parse_header(self, rawbyte: bytes):
         if not (rawbyte in [ord('X'), ord('B'), ord('C')]):
             raise ParseErrorBadNetworkId()
         self.id = rawbyte
@@ -129,7 +129,7 @@ class network_id:
 
 
 class message_type:
-    def __init__(self, num):
+    def __init__(self, num: int):
         if not (num in range(0, 14)):
              raise ParseErrorBadMessageType()
         self.type = num
@@ -145,7 +145,7 @@ class message_type:
 
 class message_header:
 
-    def __init__(self, net_id, versions, msg_type, ext):
+    def __init__(self, net_id: network_id, versions: list[int], msg_type: message_type, ext: int):
         self.ext = ext
         self.net_id = net_id
         self.ver_max = versions[0]
@@ -171,13 +171,13 @@ class message_header:
     def is_response(self):
         return self.ext& 2
 
-    def set_is_query(self, bool):
+    def set_is_query(self, bool: bool):
         QUERY_MASK = 0x0001
         self.ext = self.ext & 0xfffe
         if bool:
             self.ext = self.ext | QUERY_MASK
 
-    def set_is_response(self, bool):
+    def set_is_response(self, bool: bool):
         RESPONSE_MASK = 0x0002
         self.ext = self.ext & 0xfffd
         if bool:
@@ -191,13 +191,13 @@ class message_header:
         BLOCK_TYPE_MASK = 0x0f00
         return (self.ext & BLOCK_TYPE_MASK) >> 8
 
-    def set_block_type(self, block_type):
+    def set_block_type(self, block_type: int):
         assert(isinstance(block_type, int))
         block_type = block_type << 8
         self.ext = self.ext & 0xf0ff
         self.ext = self.ext | block_type
 
-    def set_item_count(self, count):
+    def set_item_count(self, count: int):
         assert(isinstance(count, int))
         count = count << 12
         self.ext = self.ext & 0x0fff
@@ -206,7 +206,7 @@ class message_header:
 
 
     @classmethod
-    def parse_header(cls, data):
+    def parse_header(cls, data: bytes):
         assert(len(data) == 8)
         if data[0] != ord('R'):
             raise ParseErrorBadMagicNumber()
@@ -274,7 +274,7 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class Peer:
-    def __init__(self, ip = ip_addr(), port = 0, score = -1, is_voting = False):
+    def __init__(self, ip: ip_addr = ip_addr(), port: int = 0, score: int = -1, is_voting: bool = False):
         assert isinstance(ip, ip_addr)
         self.ip = ip
         self.port = port
@@ -301,14 +301,14 @@ class Peer:
             return False
         return True
 
-    def deduct_score(self, score):
+    def deduct_score(self, score: int):
         if self.score - score < 0:
             self.score = 0
         else:
             self.score -= score
 
     @classmethod
-    def parse_peer(cls, data):
+    def parse_peer(cls, data: bytes):
         assert(len(data) == 18)
         ip = parse_ipv6(data[0:16])
         port = int.from_bytes(data[16:], "little")
@@ -328,7 +328,7 @@ class Peer:
 
 
 class message_keepalive:
-    def __init__(self, hdr, peers=None):
+    def __init__(self, hdr: message_header, peers: list[Peer] = None):
         self.header = hdr
         self.header.msg_type = message_type(message_type_enum.keepalive)
         if peers is None:
@@ -356,7 +356,7 @@ class message_keepalive:
         return False
 
     @classmethod
-    def parse_payload(cls, hdr, rawdata):
+    def parse_payload(cls, hdr: message_header, rawdata: bytes):
         assert(len(rawdata) % 18 == 0)
         no_of_peers = int(len(rawdata) / 18)
         start_index = 0
@@ -371,7 +371,7 @@ class message_keepalive:
 
 
 class message_bulk_pull:
-    def __init__(self, hdr, start, finish=None, count=None):
+    def __init__(self, hdr: message_header, start: str, finish: str = None, count: int = None):
         self.header = hdr
         self.count = count
         self.public_key = binascii.unhexlify(start)
@@ -391,7 +391,7 @@ class message_bulk_pull:
         return data
 
     @classmethod
-    def parse(cls, hdr, data):
+    def parse(cls, hdr: message_header, data: bytes):
         public_key = data[0:32]
         finish = data[32:64]
         bp = message_bulk_pull(hdr, public_key, finish)
@@ -409,7 +409,7 @@ class message_bulk_pull:
 
 
 class bulk_push:
-    def __init__(self, hdr, blocks):
+    def __init__(self, hdr: message_header, blocks: list):
         self.hdr = hdr
         self.blocks = blocks
 
@@ -465,7 +465,7 @@ class bulk_push:
 
 
 class block_manager:
-    def __init__(self, ctx, workdir, gitrepo):
+    def __init__(self, ctx: dict, workdir: str, gitrepo: git.Repo):
         self.ctx = ctx
         self.accounts = []
         self.processed_blocks = []
@@ -670,7 +670,7 @@ class block_manager:
         return True
 
     # find a block by hash that is part of the local ledger
-    def find_ledger_block_by_hash(self, hsh):
+    def find_ledger_block_by_hash(self, hsh: bytes):
         for acc in self.accounts:
             blk = acc.find_block_by_hash(hsh)
             if blk: return blk, acc
@@ -749,7 +749,7 @@ class block_manager:
                     return b.get_balance()
         return None
 
-    def account_exists(self, account):
+    def account_exists(self, account: bytes):
         for a in self.accounts:
             if a.account == account:
                 return True
@@ -827,7 +827,8 @@ class block_manager:
 
 
 class nano_account:
-    def __init__(self, blockman, open_block):
+   # open_block can also be a block_state object
+    def __init__(self, blockman: block_manager, open_block: block_open):
         self.first = open_block
         self.workdir = blockman.workdir
         self.gitrepo = blockman.gitrepo
@@ -839,7 +840,7 @@ class nano_account:
         self._add_block(open_block, None)
 
     # add a block to account, if previous is set then check for forks
-    def add_block(self, block, previous):
+    def add_block(self, block, previous: bytes):
         if block.hash() in self.blocks:
             if self.workdir:
                 merged_block = self.blocks[block.hash()]
@@ -872,6 +873,7 @@ class nano_account:
             self._add_block(block, prevblk)
             prevblk.ancillary['next'] = block.hash()
 
+    # block and prevblock are going to be one of the block objects
     def _add_block(self, block, prevblk):
         self.blocks[block.hash()] = block
         hashstr = hexlify(block.hash())
@@ -888,7 +890,7 @@ class nano_account:
             self.gitrepo.git.commit('-m', '.')
             print('git commit done')
 
-    def find_block_by_hash(self, hsh):
+    def find_block_by_hash(self, hsh: bytes):
         return self.blocks.get(hsh, None)
 
 #    # This method is used for debugging: checking order
@@ -975,7 +977,7 @@ class nano_account:
         return string
 
 
-def read_bulk_pull_response(s):
+def read_bulk_pull_response(s: socket.socket):
     blocks = []
     while True:
         block = Block.read_block_from_socket(s)
@@ -985,7 +987,7 @@ def read_bulk_pull_response(s):
     return blocks
 
 
-def readall(s):
+def readall(s: socket.socket):
     data = b''
     while True:
         recvd = s.recv(10000)
@@ -994,20 +996,7 @@ def readall(s):
         data += recvd
 
 
-def pow_validate(work, prev):
-    # It didn't want to create bytearrays with the raw bytes so I had to use the list()
-    work = bytearray(list(work))
-    prev = bytearray(list(prev))
-    h = blake2b(digest_size=8)
-    work.reverse()
-    h.update(work)
-    h.update(prev)
-    final = bytearray(h.digest())
-    final.reverse()
-    return final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
-
-
-def verify(data, signature, public_key):
+def verify(data: bytes, signature: bytes, public_key: bytes):
     try:
         ed25519_blake2.checkvalid(signature, data, public_key)
     except ed25519_blake2.SignatureMismatch:
@@ -1015,14 +1004,7 @@ def verify(data, signature, public_key):
     return True
 
 
-def verify_pow(block):
-    if isinstance(block, block_open):
-        return pow_validate(block.work, block.account)
-    else:
-        return pow_validate(block.work, block.root())
-
-
-def valid_block(ctx, block, post_v2=True):
+def valid_block(ctx, block, post_v2: bool = True):
     if isinstance(block, block_state):
         if block.is_epoch_v2_block():
             sig_valid = verify(block.hash(), block.signature, binascii.unhexlify(ctx["epoch_v2_signing_account"]))
@@ -1039,10 +1021,9 @@ def valid_block(ctx, block, post_v2=True):
     return work_valid and sig_valid
 
 
-
 # wait for the next message, parse the header but not the payload
 # the header is retruned as an object and the payload as raw bytes
-def get_next_hdr_payload(s):
+def get_next_hdr_payload(s: socket.socket):
     # read and parse header
     data = read_socket(s, 8)
     if data is None:
@@ -1057,7 +1038,7 @@ def get_next_hdr_payload(s):
     return header, data
 
 
-def get_account_blocks(ctx, s, account, no_of_blocks=None):
+def get_account_blocks(ctx: dict, s: socket.socket, account: bytes, no_of_blocks: int = None):
     if no_of_blocks is None:
         hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
     else:
@@ -1069,22 +1050,22 @@ def get_account_blocks(ctx, s, account, no_of_blocks=None):
     return read_bulk_pull_response(s)
 
 
-def extensions_to_count(extensions):
+def extensions_to_count(extensions: int):
     COUNT_MASK = 0xf000
     return (extensions & COUNT_MASK) >> 12
 
 
-def extensions_to_block_type(extensions):
+def extensions_to_block_type(extensions: int):
     BLOCK_TYPE_MASK = 0x0f00
     return (extensions & BLOCK_TYPE_MASK) >> 8
 
 
-def extensions_to_extented_params(extensions):
+def extensions_to_extented_params(extensions: int):
     EXTENDED_PARAM_MASK = 0x0001
     return extensions & EXTENDED_PARAM_MASK
 
 
-def node_id_handshake_size(is_query, is_response):
+def node_id_handshake_size(is_query: bool, is_response: bool):
     size = 0
     if is_query:
         size += 32
@@ -1093,7 +1074,7 @@ def node_id_handshake_size(is_query, is_response):
     return size
 
 
-def parse_endpoint(string, default_port=None):
+def parse_endpoint(string: str, default_port: int = None):
     # IPv6 with port
     if string[0] == '[':
         ip_end_index = string.index(']')
@@ -1132,7 +1113,7 @@ def parse_endpoint(string, default_port=None):
     return ip_address, port
 
 
-def non_digits_in_ip(string):
+def non_digits_in_ip(string: str):
     for s in string:
         if s == '.':
             continue
@@ -1141,11 +1122,11 @@ def non_digits_in_ip(string):
     return False
 
 
-def peer_from_endpoint(addr, port):
+def peer_from_endpoint(addr: str, port: int):
     return Peer(ip_addr(addr), port)
 
 
-def get_connected_socket_endpoint(addr, port, bind_endpoint=None):
+def get_connected_socket_endpoint(addr: str, port: int, bind_endpoint: tuple = None):
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
     s.settimeout(3)
