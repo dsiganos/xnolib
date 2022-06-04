@@ -82,9 +82,9 @@ class peer_manager:
     def count_peers(self):
         return len(self.get_peers_copy())
 
-    def listen_incoming(self):
+    def listen_incoming(self, port: int):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.bind(("::", 7075))
+            s.bind(("::", port))
             s.listen()
 
             while True:
