@@ -118,7 +118,9 @@ class peer_manager:
         header, payload = get_next_hdr_payload(connection)
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
-                raise CommsError()
+                self.logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")
+                connection.close()
+                return
 
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
