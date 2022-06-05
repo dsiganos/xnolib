@@ -31,18 +31,25 @@ def get_telemetry(ctx, s):
 
 
 class peer_manager:
-    def __init__(self, ctx, peers=[], verbosity=0, inactivity_threshold_seconds=0, logger: logging.Logger = None):
+    def __init__(self, ctx,
+                 logger: logging.Logger = None, verbosity=0,
+                 peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
+                 listen=True, port=7777):
         self.ctx = ctx
         self.verbosity = verbosity
-
         self.mutex = threading.Lock()
         self.peers: set[Peer] = set()
-        self.add_peers(peers)
+
+        if peers:
+            self.add_peers(peers)
 
         if logger:
             self.logger = logger
         else:
             self.logger = setup_logging("peercrawler")
+
+        if listen:
+            threading.Thread(target=self.listen_incoming, args=(port,), daemon=True).start()
 
         if inactivity_threshold_seconds > 0:
             thread = threading.Thread(target=self.run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
@@ -269,7 +276,7 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='run peer crawler as a service')
-    parser.add_argument('-l', '--listen', action='store_true', default=False,
+    parser.add_argument('-l', '--listen', action='store_true', default=True,
                         help='listen to incoming connections')
     parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')
@@ -553,9 +560,6 @@ def main():
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
         peerman = peer_manager(ctx, verbosity=verbosity)
-
-        if args.listen:
-            threading.Thread(target=peerman.listen_incoming, args=(args.port,), daemon=True).start()
 
         peerman.crawl(args.forever, args.delay)
 
