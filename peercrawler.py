@@ -278,7 +278,7 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='run peer crawler as a service')
-    parser.add_argument('-l', '--listen', action='store_true', default=True,
+    parser.add_argument('-l', '--nolisten', action='store_true', default=False,
                         help='listen to incoming connections')
     parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')
@@ -561,8 +561,7 @@ def main():
         run_peer_service_forever(crawler_thread.peerman, port=args.port)
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
-        peerman = peer_manager(ctx, verbosity=verbosity)
-
+        peerman = peer_manager(ctx, listen=(not args.nolisten), verbosity=verbosity)
         peerman.crawl(args.forever, args.delay)
 
 
