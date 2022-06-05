@@ -7,6 +7,7 @@ import logging
 import sys
 import argparse
 import threading
+from _thread import interrupt_main
 from ipaddress import IPv6Address
 import jsonpickle
 from functools import reduce
@@ -84,15 +85,19 @@ class peer_manager:
 
     def listen_incoming(self, port: int):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.bind(("::", port))
-            s.listen()
+            try:
+                s.bind(("::", port))
+                s.listen()
 
-            semaphore = threading.BoundedSemaphore(8)
+                semaphore = threading.BoundedSemaphore(8)
 
-            while True:
-                semaphore.acquire()
-                connection, address = s.accept()
-                threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address), daemon=True).start()
+                while True:
+                    semaphore.acquire()
+                    connection, address = s.accept()
+                    threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address), daemon=True).start()
+            except:
+                self.logger.exception("Error occurred in listener thread")
+                interrupt_main()
 
     def __handle_incoming_semaphore(self, semaphore: threading.BoundedSemaphore, connection: socket.socket, address):
         try:
