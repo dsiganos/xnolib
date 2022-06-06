@@ -7,16 +7,16 @@ from frontier_request import *
 from peercrawler import *
 
 
-def store_frontiers_handler(frontiers):
+def store_frontiers_handler(frontiers: list[frontier_entry]):
     assert isinstance(frontiers, list)
 
-    def add_frontier(counter, frontier, readtime):
+    def add_frontier(counter: int, frontier: frontier_entry, readtime: int):
         frontiers.append(frontier)
 
     return add_frontier
 
 
-def valid_account(acc):
+def valid_account(acc: bytes):
     # if acc == b"\x05\x9fh\xaa\xb2\x9d\xe0\xd3\xa2tCb\\~\xa9\xcd\xdbe\x17\xa8\xb7o\xe3w'\xefjMv\x83*\xd5":
     #     return False
     if acc == b'\x00' * 32:
