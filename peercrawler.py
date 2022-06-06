@@ -119,7 +119,10 @@ class peer_manager:
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
             handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
+            self.peers.add(Peer(ip_addr.from_string(address[0]), address[1], incoming=True))
+
             self.logger.debug(f"Successful handshake from from {address}")
+
         else:
             self.logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
             connection.close()
