@@ -5,13 +5,16 @@ from pynanocoin import Peer
 
 
 class peer_set(set):
-    def add(self, element: Peer) -> None:
-        assert isinstance(element, Peer)
+    def add(self, new_peer: Peer) -> None:
+        assert isinstance(new_peer, Peer)
 
-        if element in self:
-            self.find(element).last_seen = int(time())
+        if new_peer in self:
+            p = self.find(new_peer)
+            p.last_seen = int(time())
+            if not new_peer.incoming:  # the incoming property of a peer should never be set from False to True
+                p.incoming = False
         else:
-            super(peer_set, self).add(element)
+            super(peer_set, self).add(new_peer)
 
     def update(self, s: Iterable[Peer]) -> None:
         for p in s:
