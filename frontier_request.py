@@ -24,7 +24,8 @@ def iterate_frontiers_from_stdin():
 
 
 class frontier_request:
-    def __init__(self, hdr, start_account=b'\x00'*32, maxage=0xffffffff, maxacc=0xffffffff):
+    def __init__(self, hdr: message_header, start_account: bytes = b'\x00'*32, maxage: bytes = 0xffffffff,
+                 maxacc: bytes = 0xffffffff):
         assert (len(start_account) == 32)
         assert (isinstance(hdr, message_header))
         self.header = hdr
@@ -41,14 +42,14 @@ class frontier_request:
         return data
 
     @classmethod
-    def parse(cls, hdr, data):
+    def parse(cls, hdr: message_header, data: bytes):
         start_account = data[0:32]
         maxage = int.from_bytes(data[32:36], 'big')
         maxacc = int.from_bytes(data[36:], 'big')
         return frontier_request(hdr, start_account=start_account, maxage=maxage, maxacc=maxacc)
 
     @classmethod
-    def generate_header(cls, ctx, confirmed = True):
+    def generate_header(cls, ctx: dict, confirmed: bool = True):
         return message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
 
     def __str__(self):
@@ -74,7 +75,7 @@ class frontier_request:
 
 
 class frontier_entry:
-    def __init__(self, account, frontier_hash):
+    def __init__(self, account: bytes, frontier_hash: bytes):
         assert len(account) == 32
         self.account = account
         self.frontier_hash = frontier_hash
@@ -94,7 +95,7 @@ class frontier_entry:
         return string
 
 
-def read_frontier_response(s):
+def read_frontier_response(s: socket.socket):
     data = read_socket(s, 64)
     if data is None or len(data) < 64:
         raise PyNanoCoinException('failed to read frontier response, data=%s', data)
@@ -136,7 +137,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def read_all_frontiers(s, frontier_handler):
+def read_all_frontiers(s: socket.socket, frontier_handler):
     counter = 1
     while True:
         starttime = time.time()
@@ -150,20 +151,20 @@ def read_all_frontiers(s, frontier_handler):
         counter += 1
 
 
-def binary_print_handler(counter, frontier, readtime):
+def binary_print_handler(counter: int, frontier: frontier_entry, readtime: int):
     sys.stdout.buffer.write(frontier.serialise())
 
 
-def text_print_handler(counter, frontier, readtime):
+def text_print_handler(counter: int, frontier: frontier_entry, readtime: int):
     print(counter, hexlify(frontier.frontier_hash),
           hexlify(frontier.account), acctools.to_account_addr(frontier.account))
 
 
-def frontier_to_db(tx, counter, frontier):
+def frontier_to_db(tx: lmdb.Transaction, counter: int, frontier: frontier_entry):
     tx.put(frontier.account, frontier.frontier_hash)
 
 
-def get_frontiers_from_peer(peer, frontier_req, use_db, print_handler):
+def get_frontiers_from_peer(peer: Peer, frontier_req: frontier_request, use_db: str, print_handler):
     assert isinstance(frontier_req, frontier_request)
 
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
