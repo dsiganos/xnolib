@@ -11,7 +11,7 @@ class peer_set(set):
         if new_peer in self:
             p = self.find(new_peer)
             p.last_seen = int(time())
-            if not new_peer.incoming:  # the incoming property of a peer should never be set from False to True
+            if new_peer.incoming is False:  # the incoming property of a peer should never be set from False to True
                 p.incoming = False
         else:
             super(peer_set, self).add(new_peer)
