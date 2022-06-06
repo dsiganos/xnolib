@@ -54,6 +54,7 @@ def main_website():
                               filter(lambda n: isinstance(n, str), accounts),
                               peer.is_voting,
                               telemetry.sig_verified,
+                              peer.incoming,
                               node_id,
                               " // ".join(filter(lambda n: n is not None, weights)),
                               telemetry.block_count,
