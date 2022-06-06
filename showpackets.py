@@ -96,7 +96,9 @@ def set_functions(args):
     if not args.telemetry_ack:
         functions[message_type_enum.telemetry_ack] = None
 
-def make_telemetry_ack(ctx, signing_key, verifying_key):
+
+def make_telemetry_ack(ctx: dict, signing_key: ed25519_blake2b.keys.SigningKey,
+                                  verifying_key: ed25519_blake2b.keys.VerifyingKey):
     tel_ack_hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_ack), 202)
     telem_ack = telemetry_ack(
         hdr=tel_ack_hdr,
