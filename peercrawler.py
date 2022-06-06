@@ -107,7 +107,7 @@ class peer_manager:
             semaphore.release()
 
     def handle_incoming(self, connection: socket.socket, address):
-        self.logger.debug(f"Receiving connection from {address}")
+        self.logger.verbose(f"Receiving connection from {address}")
 
         header, payload = get_next_hdr_payload(connection)
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
