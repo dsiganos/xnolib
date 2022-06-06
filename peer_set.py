@@ -29,9 +29,6 @@ class peer_set(set):
 
     def cleanup_inactive(self, inactivity_threshold_seconds: int, verbosity: int):
         for peer in self.copy():
-            if peer.last_seen is None:
-                continue
-
             if time() - peer.last_seen > inactivity_threshold_seconds:
                 if verbosity >= 2:
                     print(f"Removing inactive peer {peer}")

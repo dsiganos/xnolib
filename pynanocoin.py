@@ -276,7 +276,7 @@ class message_header:
 # A class representing a peer, stores its address, port and provides the means to convert
 # it into a readable string format
 class Peer:
-    def __init__(self, ip=ip_addr(), port=0, score=-1, is_voting=False, last_seen=None, incoming=False):
+    def __init__(self, ip=ip_addr(), port=0, score=-1, is_voting=False, last_seen: int = None, incoming=False):
         assert isinstance(ip, ip_addr)
         self.ip = ip
         self.port = port
@@ -284,7 +284,7 @@ class Peer:
         self.is_voting = is_voting
         self.telemetry = None
         self.aux = {}
-        self.last_seen = last_seen
+        self.last_seen = last_seen if last_seen else int(time.time())
         self.incoming = incoming
 
         # sideband info, not used for equality and hashing
