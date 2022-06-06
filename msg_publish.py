@@ -23,7 +23,7 @@ from msg_handshake import node_handshake_id
 import block
 
 class msg_publish:
-    def __init__(self, hdr, block):
+    def __init__(self, hdr: message_header, block):
         assert(isinstance(hdr, message_header))
         self.hdr = hdr
         self.block = block
@@ -34,7 +34,7 @@ class msg_publish:
         return data
 
     @classmethod
-    def parse(cls, hdr, data):
+    def parse(cls, hdr: message_header, data: bytes):
         block = None
         blocktype = hdr.block_type()
         if blocktype == 2:
