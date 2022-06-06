@@ -11,7 +11,7 @@ import datetime
 
 
 class vote_common:
-    def __init__(self, account, sig, seq):
+    def __init__(self, account: bytes, sig: bytes, seq: int):
         assert len(account) == 32
         assert len(sig) == 64
         assert isinstance(seq, int)
@@ -20,7 +20,7 @@ class vote_common:
         self.seq = seq
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: bytes):
         assert (len(data) == 104)
         account = data[0:32]
         sig = data[32:96]
@@ -51,7 +51,7 @@ class vote_common:
 
 class confirm_ack:
     @classmethod
-    def parse(self, hdr, data):
+    def parse(self, hdr: message_header, data: bytes):
         assert isinstance(hdr, message_header)
         if hdr.block_type() == block_type_enum.not_a_block:
             return confirm_ack_hash.parse(hdr, data)
@@ -60,7 +60,7 @@ class confirm_ack:
 
 
 class confirm_ack_hash(confirm_ack):
-    def __init__(self, hdr, common, hashes):
+    def __init__(self, hdr: message_header, common: vote_common, hashes: list[bytes]):
         assert(isinstance(hdr, message_header))
         assert(isinstance(common, vote_common))
         self.hdr = hdr
@@ -72,7 +72,7 @@ class confirm_ack_hash(confirm_ack):
         hdr.set_block_type(block_type_enum.not_a_block)
 
     @classmethod
-    def parse(cls, hdr, data):
+    def parse(cls, hdr: message_header, data: bytes):
         assert(isinstance(hdr, message_header))
         common = vote_common.parse(data[0:104])
 
@@ -133,7 +133,7 @@ class confirm_ack_hash(confirm_ack):
 
 # TODO: This confirm ack also has a vote_common field
 class confirm_ack_block(confirm_ack):
-    def __init__(self, hdr, common, block):
+    def __init__(self, hdr: message_header, common: vote_common, block):
         assert(isinstance(hdr, message_header))
         assert(isinstance(common, vote_common))
         self.hdr = hdr
@@ -141,7 +141,7 @@ class confirm_ack_block(confirm_ack):
         self.block = block
 
     @classmethod
-    def parse(cls, hdr, data):
+    def parse(cls, hdr: message_header, data: bytes):
         common = vote_common.parse(data[0:104])
         assert(isinstance(hdr, message_header))
         block_type = hdr.block_type()
@@ -178,7 +178,7 @@ class confirm_ack_block(confirm_ack):
 
 
 class confirm_ack_thread(threading.Thread):
-    def __init__(self, ctx, peeraddr, peerport, data):
+    def __init__(self, ctx: dict, peeraddr: str, peerport: int, data: bytes):
         threading.Thread.__init__(self, daemon=True)
         self.ctx = ctx
         self.peeraddr = peeraddr
