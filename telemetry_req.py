@@ -9,7 +9,7 @@ import peercrawler
 
 
 class telemetry_req:
-    def __init__(self, ctx):
+    def __init__(self, ctx: dict):
         self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_req), 0)
 
     def serialise(self):
@@ -17,11 +17,11 @@ class telemetry_req:
 
 
 class telemetry_ack:
-    def __init__(self, hdr, signature, node_id, block_count, cemented_count,
-                 unchecked_count, account_count, bandwidth_cap,
-                 peer_count, protocol_ver, uptime, genesis_hash, major_ver,
-                 minor_ver, patch_ver, pre_release_ver, maker_ver,
-                 timestamp, active_difficulty):
+    def __init__(self, hdr: message_header, signature: bytes, node_id: bytes, block_count: int, cemented_count: int,
+                 unchecked_count: int, account_count: int, bandwidth_cap: int,
+                 peer_count: int, protocol_ver: int, uptime: int, genesis_hash: bytes, major_ver: int,
+                 minor_ver: int, patch_ver: int, pre_release_ver: int, maker_ver: int,
+                 timestamp: int, active_difficulty: bytes):
         self.hdr = hdr
         self.sig_verified = False
         self.sig = signature
@@ -96,11 +96,11 @@ class telemetry_ack:
         data += self.serialize_without_signature()
         return data
 
-    def sign(self, signing_key):
+    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey):
         self.sig = signing_key.sign(self.serialize_without_signature())
 
     @classmethod
-    def parse(self, hdr, data):
+    def parse(self, hdr: message_header, data: bytes):
         if len(data) != 202:
             raise BadTelemetryReply('message len not 202, data=%s', data)
         unpacked = struct.unpack('>64s32sQQQQQIBQ32sBBBBBQQ', data)
@@ -149,7 +149,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def do_telemetry_req(ctx, peeraddr, peerport):
+def do_telemetry_req(ctx: dict, peeraddr: str, peerport: int):
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
         signing_key, verifying_key = node_handshake_id.keypair()
         peer_id = node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
