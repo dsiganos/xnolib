@@ -35,7 +35,7 @@ accounts = {
 
 
 # this function expects account to be a 32 byte bytearray
-def to_account_addr(account, prefix='nano_'):
+def to_account_addr(account: bytes, prefix: str = 'nano_'):
     assert (len(account) == 32)
 
     RFC_3548 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
@@ -58,7 +58,7 @@ def to_account_addr(account, prefix='nano_'):
     return prefix + encode_account.decode()
 
 
-def account_key(account):
+def account_key(account: str):
     """Get the public key for account
     :param str account: account name e.g. nano_31fr1qtbrfnujcspx5xq61uxgjf9j6rzckdj1kdn61y3h53nxr7911dzetk3
     :return: 32 byte public key
@@ -84,7 +84,7 @@ def account_key(account):
     return key
 
 
-def to_friendly_name(acc):
+def to_friendly_name(acc: bytes):
     if len(acc) == 32:
         addr = to_account_addr(acc)
     elif len(acc) == 64:
