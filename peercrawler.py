@@ -121,7 +121,7 @@ class peer_manager:
             handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
             self.peers.add(Peer(ip_addr.from_string(address[0]), address[1], incoming=True))
 
-            self.logger.debug(f"Successful handshake from from {address}")
+            self.logger.debug(f"Successful handshake from {address}")
 
         else:
             self.logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
