@@ -16,7 +16,11 @@ def setup_logging(logger_name: str, level: int = VERBOSE) -> CustomLogger:
 
     logging.setLoggerClass(CustomLogger)
     logger = logging.getLogger(logger_name)
+    assert isinstance(logger, CustomLogger)
     logging.setLoggerClass(logging.Logger)
+
+    if logger.hasHandlers():
+        return logger
 
     logger.setLevel(level)
     formatter = logging.Formatter("%(levelname)s %(asctime)s: %(message)s")
@@ -31,5 +35,4 @@ def setup_logging(logger_name: str, level: int = VERBOSE) -> CustomLogger:
     f.setFormatter(formatter)
     logger.addHandler(f)
 
-    assert isinstance(logger, CustomLogger)
     return logger
