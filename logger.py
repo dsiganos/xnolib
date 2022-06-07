@@ -11,7 +11,7 @@ class CustomLogger(logging.Logger):
             self._log(VERBOSE, msg, args, **kwargs)
 
 
-def setup_logging(logger_name: str, level: int = VERBOSE) -> CustomLogger:
+def setup_logger(logger_name: str = "xnolib", level: int = VERBOSE) -> CustomLogger:
     logging.addLevelName(VERBOSE, "VERBOSE")
 
     logging.setLoggerClass(CustomLogger)
