@@ -39,6 +39,7 @@ class peer_manager:
         self.verbosity = verbosity
         self.mutex = threading.Lock()
         self.peers: set[Peer] = set()
+        self.port = port
 
         if peers:
             self.add_peers(peers)
@@ -49,7 +50,7 @@ class peer_manager:
             self.logger = setup_logging("peercrawler")
 
         if listen:
-            threading.Thread(target=self.listen_incoming, args=(port,), daemon=True).start()
+            threading.Thread(target=self.listen_incoming, daemon=True).start()
 
         if inactivity_threshold_seconds > 0:
             thread = threading.Thread(target=self.run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
@@ -90,12 +91,12 @@ class peer_manager:
     def count_peers(self):
         return len(self.get_peers_copy())
 
-    def listen_incoming(self, port: int):
+    def listen_incoming(self):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             try:
                 s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind(("::", port))
+                s.bind(("::", self.port))
                 s.listen()
 
                 semaphore = threading.BoundedSemaphore(8)
@@ -150,7 +151,7 @@ class peer_manager:
                 return
 
     def send_keepalive_packet(self, connection: socket):
-        local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), 7777)  # this should be changed manually
+        local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.port)  # this should be changed manually
         packet = message_keepalive.make_packet([local_peer], self.ctx["net_id"], 18)
         connection.send(packet)
 
