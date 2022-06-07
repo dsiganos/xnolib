@@ -34,12 +34,12 @@ class peer_manager:
     def __init__(self, ctx,
                  logger: logging.Logger = None, verbosity=0,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
-                 listen=True, port=7777):
+                 listen=True, listening_port=7777):
         self.ctx = ctx
         self.verbosity = verbosity
         self.mutex = threading.Lock()
         self.peers = peer_set()
-        self.port = port
+        self.listening_port = listening_port
 
         if peers:
             self.add_peers(peers)
@@ -87,7 +87,7 @@ class peer_manager:
             try:
                 s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind(("::", self.port))
+                s.bind(("::", self.listening_port))
                 s.listen()
 
                 semaphore = threading.BoundedSemaphore(8)
@@ -145,7 +145,7 @@ class peer_manager:
                 return
 
     def send_keepalive_packet(self, connection: socket):
-        local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.port)  # this should be changed manually
+        local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.listening_port)  # this should be changed manually
         packet = message_keepalive.make_packet([local_peer], self.ctx["net_id"], 18)
         connection.send(packet)
 
