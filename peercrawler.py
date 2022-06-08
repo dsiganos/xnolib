@@ -14,11 +14,14 @@ from functools import reduce
 
 from pydot import Dot, Node, Edge
 
+import _logger
 import confirm_req
 import telemetry_req
 from msg_handshake import *
-from logger import setup_logging
 from peer_set import peer_set
+
+
+logger = _logger.get_logger()
 
 
 def get_telemetry(ctx, s):
@@ -32,7 +35,7 @@ def get_telemetry(ctx, s):
 
 class peer_manager:
     def __init__(self, ctx,
-                 logger: logging.Logger = None, verbosity=0,
+                 verbosity=0,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
                  listen=True, listening_port=7777):
         self.ctx = ctx
@@ -43,11 +46,6 @@ class peer_manager:
 
         if peers:
             self.add_peers(peers)
-
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = setup_logging("peercrawler")
 
         if listen:
             threading.Thread(target=self.listen_incoming, daemon=True).start()
@@ -97,7 +95,7 @@ class peer_manager:
                     connection, address = s.accept()
                     threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address), daemon=True).start()
             except:
-                self.logger.exception("Error occurred in listener thread")
+                logger.exception("Error occurred in listener thread")
                 interrupt_main()
 
     def __handle_incoming_semaphore(self, semaphore: threading.BoundedSemaphore, connection: socket.socket, address):
@@ -107,12 +105,12 @@ class peer_manager:
             semaphore.release()
 
     def handle_incoming(self, connection: socket.socket, address):
-        self.logger.verbose(f"Receiving connection from {address}")
+        logger.log(_logger.VERBOSE, f"Receiving connection from {address}")
 
         header, payload = get_next_hdr_payload(connection)
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
-                self.logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")
+                logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")
                 connection.close()
                 return
 
@@ -120,18 +118,16 @@ class peer_manager:
             signing_key, verifying_key = node_handshake_id.keypair()
             handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
             self.peers.add(Peer(ip_addr.from_string(address[0]), address[1], incoming=True))
-
-            self.logger.debug(f"Successful handshake from {address}")
-
+            logger.debug(f"Successful handshake from from {address}")
         else:
-            self.logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
+            logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
             connection.close()
             return
 
         start_time = time.time()
         while True:
             if time.time() - start_time > 60:
-                self.logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
+                logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
                 connection.close()
                 return
 
@@ -140,7 +136,7 @@ class peer_manager:
                 keepalive = message_keepalive.parse_payload(header, payload)
                 self.add_peers(keepalive.peers)
 
-                self.logger.debug(f"Received peers from {address}, connection is now closing")
+                logger.debug(f"Received peers from {address}, connection is now closing")
                 connection.close()
                 return
 
@@ -160,8 +156,7 @@ class peer_manager:
                 s.settimeout(10)
             except OSError as error:
                 peer.score = 0
-                if self.verbosity >= 3:
-                    print('Failed to connect to peer %s, error: %s' % (peer, error))
+                logger.log(_logger.VERBOSE, f"Failed to connect to peer {peer}", exc_info=True)
                 return []
 
             # connected to peer, do handshake followed by listening for the first keepalive
@@ -172,11 +167,9 @@ class peer_manager:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 peer_id = node_handshake_id.perform_handshake_exchange(self.ctx, s, signing_key, verifying_key)
                 peer.peer_id = peer_id
+                logger.debug(f"ID: {hexlify(peer_id)}")
 
                 self.send_keepalive_packet(s)
-
-                if self.verbosity >= 2:
-                    print('  ID:%s' % hexlify(peer_id))
 
                 starttime = time.time()
                 while time.time() - starttime <= 10:
@@ -201,39 +194,33 @@ class peer_manager:
             return []
 
     def crawl_once(self):
-        if self.verbosity >= 1:
-            print('Starting a peer crawl')
+        logger.info("Starting a peer crawl")
 
         # it is important to take a copy of the peers so that it is not changing as we walk it
         peers_copy = self.get_peers_copy()
         assert len(peers_copy) > 0
 
         for p in peers_copy:
-            if self.verbosity >= 2:
-                print('Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score))
+            logger.debug("'Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score)")
 
             new_peers = self.get_peers_from_peer(p)
             self.add_peers(new_peers)
 
     def crawl(self, forever, delay):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
-
         self.add_peers(initial_peers)
-        if self.verbosity >= 1:
-            print(self)
 
         self.crawl_once()
-        if self.verbosity >= 1:
-            print(self)
+        logger.info(self)
 
         count = 1
         while forever:
-            # for a faster startup, do not delay the first 5 times
-            if count > 5:
+            if count > 5:  # for a faster startup, do not delay the first 5 times
                 time.sleep(delay)
+
             self.crawl_once()
-            if self.verbosity >= 1:
-                print(self)
+            logger.info(self)
+
             count += 1
 
     def __str__(self):
@@ -522,6 +509,7 @@ def get_dot_string(connections: dict[Peer, set[Peer]], only_voting: bool = False
 
 def main():
     args = parse_args()
+    _logger.setup_logger(logger, _logger.VERBOSE)
 
     ctx = livectx
     if args.beta: ctx = betactx
