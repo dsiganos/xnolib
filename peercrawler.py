@@ -133,8 +133,7 @@ class peer_manager:
         while True:
             if time.time() - start_time > 60:
                 logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
-                connection.close()
-                return
+                break
 
             header, payload = get_next_hdr_payload(connection)
             if header.msg_type == message_type(message_type_enum.telemetry_ack):
@@ -143,14 +142,13 @@ class peer_manager:
 
             elif header.msg_type == message_type(message_type_enum.keepalive):
                 keepalive = message_keepalive.parse_payload(header, payload)
-                self.add_peers(keepalive.peers)
-
                 logger.debug(f"Received peers from {address}, connection is now closing")
-                connection.close()
+                self.add_peers(keepalive.peers)
 
                 if incoming_peer.telemetry is not None:
                     break
 
+        connection.close()
         self.peers.add(incoming_peer)
 
     def send_keepalive_packet(self, connection: socket):
