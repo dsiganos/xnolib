@@ -12,9 +12,11 @@ import peercrawler
 import pynanocoin
 from acctools import to_account_addr
 from representative_mapping import representative_mapping
+from _logger import setup_logger, get_logger
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
+logger = get_logger()
 
 ctx = pynanocoin.livectx
 peerman = peercrawler.peer_manager(ctx, verbosity=1)
@@ -108,6 +110,8 @@ def logs():
 
 
 def main():
+    setup_logger(logger)
+
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, daemon=True).start()
 
