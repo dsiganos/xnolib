@@ -11,6 +11,7 @@ import dns.resolver
 import ed25519_blake2
 import ed25519_blake2b
 import git
+from typing import Optional
 
 import pow_validation
 
@@ -19,6 +20,7 @@ from exceptions import *
 from block import *
 from net import *
 from common import *
+from telemetry_req import telemetry_ack
 
 
 # return a list of ipv4 mapped ipv6 strings
@@ -282,7 +284,7 @@ class Peer:
         self.port = port
         self.peer_id = None
         self.is_voting = is_voting
-        self.telemetry = None
+        self.telemetry: Optional[telemetry_ack] = None
         self.aux = {}
         self.last_seen = last_seen
         self.incoming = incoming
@@ -298,6 +300,17 @@ class Peer:
 
     def deduct_score(self, score):
         self.score = max(0, self.score - score)
+
+    def merge(self, peer: "Peer") -> None:
+        assert self == peer
+
+        self.last_seen = peer.last_seen
+
+        if peer.telemetry is not None:
+            self.telemetry = peer.telemetry
+
+        if peer.incoming is False:
+            self.incoming = False
 
     @classmethod
     def parse_peer(cls, data):
