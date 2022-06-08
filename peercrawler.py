@@ -109,6 +109,7 @@ class peer_manager:
     def handle_incoming(self, connection: socket.socket, address):
         logger.log(_logger.VERBOSE, f"Receiving connection from {address}")
 
+        incoming_peer = None
         header, payload = get_next_hdr_payload(connection)
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
@@ -119,8 +120,10 @@ class peer_manager:
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
             handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
-            self.peers.add(Peer(ip_addr.from_string(address[0]), address[1], incoming=True))
             logger.debug(f"Successful handshake from from {address}")
+
+            incoming_peer = Peer(ip_addr.from_string(address[0]), address[1], incoming=True)
+
         else:
             logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
             connection.close()
@@ -134,13 +137,21 @@ class peer_manager:
                 return
 
             header, payload = get_next_hdr_payload(connection)
-            if header.msg_type == message_type(message_type_enum.keepalive):
+            if header.msg_type == message_type(message_type_enum.telemetry_ack):
+                incoming_peer.telemetry = telemetry_req.telemetry_ack.parse(header, payload)
+                logger.debug(f"Received telemetry from {address}")
+
+            elif header.msg_type == message_type(message_type_enum.keepalive):
                 keepalive = message_keepalive.parse_payload(header, payload)
                 self.add_peers(keepalive.peers)
 
                 logger.debug(f"Received peers from {address}, connection is now closing")
                 connection.close()
-                return
+
+                if incoming_peer.telemetry is not None:
+                    break
+
+        self.peers.add(incoming_peer)
 
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.listening_port)  # this should be changed manually
