@@ -62,7 +62,7 @@ class peer_manager:
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
             with self.mutex:
-                self.peers.cleanup_inactive(inactivity_threshold_seconds, self.verbosity)
+                self.peers.cleanup_inactive(inactivity_threshold_seconds)
 
             time.sleep(inactivity_threshold_seconds)
 
@@ -360,7 +360,7 @@ class network_connections():
 
             if self.inactivity_threshold_seconds > 0:
                 for _, peers in self.__connections.items():
-                    peers.cleanup_inactive(self.inactivity_threshold_seconds, self.verbosity)
+                    peers.cleanup_inactive(self.inactivity_threshold_seconds)
 
             time.sleep(interval_seconds)
 
@@ -463,7 +463,7 @@ def string_to_bytes(string, length):
 def do_connect(ctx, server):
     print('server =', server)
     _, peers = get_peers_from_service(ctx, addr=server)
-    peerman = peer_manager(ctx, peers, 2)
+    peerman = peer_manager(ctx, peers=peers, verbosity=2)
     print(peerman)
 
 

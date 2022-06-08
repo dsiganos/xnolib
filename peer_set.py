@@ -1,7 +1,11 @@
 from time import time
 from typing import Iterable, Optional
 
+import _logger
 from pynanocoin import Peer
+
+
+logger = _logger.get_logger()
 
 
 class peer_set(set):
@@ -27,10 +31,8 @@ class peer_set(set):
 
         return None
 
-    def cleanup_inactive(self, inactivity_threshold_seconds: int, verbosity: int):
+    def cleanup_inactive(self, inactivity_threshold_seconds: int):
         for peer in self.copy():
             if time() - peer.last_seen > inactivity_threshold_seconds:
-                if verbosity >= 2:
-                    print(f"Removing inactive peer {peer}")
-
+                logger.debug(f"Removing inactive peer {peer}")
                 self.remove(peer)
