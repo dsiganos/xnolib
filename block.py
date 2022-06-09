@@ -6,6 +6,9 @@ from binascii import unhexlify
 import base64
 import json
 import unittest
+
+import ed25519_blake2b
+
 import acctools
 from net import *
 from common import *
@@ -22,7 +25,7 @@ class block_type_enum:
     state = 6
 
 
-def block_length_by_type(blktype):
+def block_length_by_type(blktype: int):
     lengths = {
         2: 152,
         3: 136,
@@ -36,7 +39,7 @@ def block_length_by_type(blktype):
 class Block:
 
     @classmethod
-    def parse_from_json_string(cls, json_str):
+    def parse_from_json_string(cls, json_str: str):
         json_obj = json.loads(json_str)
         type_str = json_obj['type']
         if type_str == 'send':
@@ -677,7 +680,7 @@ class block_state:
             return True
         return False
 
-    def sign(self, signing_key):
+    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey):
         self.signature = signing_key.sign(self.hash())
 
     def generate_work(self, min_difficulty: int):
