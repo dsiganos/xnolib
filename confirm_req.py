@@ -3,6 +3,8 @@
 # Example usage on test network:
 # ./confirm_req.py -t -H 687CEA7076C43E914942E36A234F8A92A1D518239653D3B954FACF87D927F300:21C49DE85134375C96C695BB367F7A4444F517EC730116EAA1AA884B1CF7054E
 
+from __future__ import annotations
+
 import sys
 import time
 import argparse

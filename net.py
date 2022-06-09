@@ -5,7 +5,7 @@ from common import *
 from exceptions import *
 
 
-def read_socket(socket: socket.socket, numbytes: int):
+def read_socket(sock: socket.socket, byte_count: int):
     try:
         data = bytearray()
         while len(data) < byte_count:
