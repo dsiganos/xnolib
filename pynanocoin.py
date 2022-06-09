@@ -12,6 +12,7 @@ import ed25519_blake2
 import ed25519_blake2b
 import git
 from typing import Optional
+from _logger import get_logger, VERBOSE
 
 import pow_validation
 
@@ -21,6 +22,9 @@ from block import *
 from net import *
 from common import *
 from telemetry_req import telemetry_ack
+
+
+logger = get_logger()
 
 
 # return a list of ipv4 mapped ipv6 strings
@@ -311,6 +315,8 @@ class Peer:
 
         if peer.incoming is False:
             self.incoming = False
+
+        logger.log(VERBOSE, f"Merged peer {peer}")
 
     @classmethod
     def parse_peer(cls, data):
