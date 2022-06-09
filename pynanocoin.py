@@ -21,7 +21,6 @@ from exceptions import *
 from block import *
 from net import *
 from common import *
-from telemetry_req import telemetry_ack
 
 
 logger = get_logger()
@@ -288,7 +287,7 @@ class Peer:
         self.port = port
         self.peer_id = None
         self.is_voting = is_voting
-        self.telemetry: Optional[telemetry_ack] = None
+        self.telemetry = None
         self.aux = {}
         self.last_seen = last_seen
         self.incoming = incoming
