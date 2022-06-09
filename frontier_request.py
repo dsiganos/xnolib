@@ -24,8 +24,8 @@ def iterate_frontiers_from_stdin():
 
 
 class frontier_request:
-    def __init__(self, hdr: message_header, start_account: bytes = b'\x00'*32, maxage: bytes = 0xffffffff,
-                 maxacc: bytes = 0xffffffff):
+    def __init__(self, hdr: message_header, start_account: bytes = b'\x00'*32, maxage: int = 0xffffffff,
+                 maxacc: int = 0xffffffff):
         assert (len(start_account) == 32)
         assert (isinstance(hdr, message_header))
         self.header = hdr
