@@ -11,6 +11,8 @@ from _thread import interrupt_main
 from ipaddress import IPv6Address
 import jsonpickle
 from functools import reduce
+from typing import Iterable, Optional
+from concurrent.futures import ThreadPoolExecutor
 
 from pydot import Dot, Node, Edge
 
@@ -193,24 +195,28 @@ class peer_manager:
 
             return []
 
-    def crawl_once(self):
+    def crawl_once(self, max_workers=4):
         logger.info("Starting a peer crawl")
 
         # it is important to take a copy of the peers so that it is not changing as we walk it
         peers_copy = self.get_peers_copy()
         assert len(peers_copy) > 0
 
-        for p in peers_copy:
+        def crawl_peer(peer: Peer):
             logger.debug("'Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score)")
 
-            new_peers = self.get_peers_from_peer(p)
+            new_peers = self.get_peers_from_peer(peer)
             self.add_peers(new_peers)
 
-    def crawl(self, forever, delay):
+        with ThreadPoolExecutor(max_workers=max_workers) as t:
+            for p in peers_copy:
+                t.submit(crawl_peer, peer=p)
+
+    def crawl(self, forever, delay, max_workers=4):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
         self.add_peers(initial_peers)
 
-        self.crawl_once()
+        self.crawl_once(max_workers)
         logger.info(self)
 
         count = 1
@@ -218,9 +224,8 @@ class peer_manager:
             if count > 5:  # for a faster startup, do not delay the first 5 times
                 time.sleep(delay)
 
-            self.crawl_once()
+            self.crawl_once(max_workers)
             logger.info(self)
-
             count += 1
 
     def __str__(self):
