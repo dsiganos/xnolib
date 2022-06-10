@@ -1,11 +1,12 @@
 import binascii
 
-def writefile(filename, content):
+
+def writefile(filename, content) -> None:
     with open(filename, "w") as f:
         f.write(content)
 
 
-def hexlify(data):
+def hexlify(data) -> str:
     if data is None: return 'None'
     return binascii.hexlify(data).decode("utf-8").upper()
 
@@ -21,7 +22,7 @@ class hash_pair:
         string += "  Root: %s\n" % hexlify(self.root)
         return string
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         return self.hsh + self.root
 
     @classmethod
