@@ -102,7 +102,10 @@ class peer_manager:
 
     def __handle_incoming_semaphore(self, semaphore: threading.BoundedSemaphore, connection: socket.socket, address):
         try:
-            self.handle_incoming(connection, address, self.ctx)
+            result = self.handle_incoming(connection, address, self.ctx)
+            if result:
+                result[1].append(result[0])
+                self.add_peers(result[1])
         finally:
             semaphore.release()
 
