@@ -25,7 +25,7 @@ class block_type_enum:
     state = 6
 
 
-def block_length_by_type(blktype: int):
+def block_length_by_type(blktype: int) -> int:
     lengths = {
         2: 152,
         3: 136,
@@ -99,31 +99,31 @@ class block_send:
             "peers" : set(),
         }
 
-    def get_account(self):
+    def get_account(self) -> bytes:
         return self.ancillary["account"]
 
-    def get_previous(self):
+    def get_previous(self) -> bytes:
         return self.previous
 
-    def get_next(self):
+    def get_next(self) -> bytes:
         return self.ancillary['next']
 
-    def get_balance(self):
+    def get_balance(self) -> int:
         return self.balance
 
-    def root(self):
+    def root(self) -> bytes:
         return self.previous
 
-    def get_type_int(self):
+    def get_type_int(self) -> int:
         return block_type_enum.send
 
-    def get_amount_sent_str(self):
+    def get_amount_sent_str(self) -> str:
         if self.ancillary["amount_sent"] is not None:
             return str(self.ancillary["amount_sent"] / (10**30))
         else:
             return 'None'
 
-    def get_account_str(self):
+    def get_account_str(self) -> str:
         hexacc = None
         acc_id = None
         if self.ancillary["account"] is not None:
@@ -131,7 +131,7 @@ class block_send:
             acc_id = acctools.to_account_addr(self.ancillary["account"])
         return hexacc, acc_id
 
-    def hash(self):
+    def hash(self) -> bytes:
         data = b"".join([
             self.previous,
             self.destination,
@@ -139,7 +139,7 @@ class block_send:
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def serialise(self, include_block_type: bool):
+    def serialise(self, include_block_type: bool) -> bytes:
         data = b''
         if include_block_type:
             data += (2).to_bytes(1, "big")
@@ -228,33 +228,33 @@ class block_receive:
             "peers" : set(),
         }
 
-    def get_account(self):
+    def get_account(self) -> bytes:
         return self.ancillary["account"]
 
-    def get_previous(self):
+    def get_previous(self) -> bytes:
         return self.previous
 
-    def get_next(self):
+    def get_next(self) -> bytes:
         return self.ancillary['next']
 
-    def get_balance(self):
+    def get_balance(self) -> int:
         return self.ancillary["balance"]
 
-    def root(self):
+    def root(self) -> bytes:
         return self.previous
 
-    def get_type_int(self):
+    def get_type_int(self) -> int:
         return block_type_enum.receive
 
 # TODO: Remember to reverse the order of the work if you implement serialisation!
-    def hash(self):
+    def hash(self) -> bytes:
         data = b"".join([
             self.previous,
             self.source
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def str_ancillary_data(self):
+    def str_ancillary_data(self) -> str:
         if self.ancillary["account"] is not None:
             hexacc = hexlify(self.ancillary["account"])
             account = acctools.to_account_addr(self.ancillary["account"])
@@ -276,7 +276,7 @@ class block_receive:
         string += "Bal  : %f\n" % balance
         return string
 
-    def serialise(self, include_block_type: bool):
+    def serialise(self, include_block_type: bool) -> bytes:
         data = b''
         if include_block_type:
             data += (3).to_bytes(1, "big")
@@ -354,7 +354,7 @@ class block_open:
             "peers" : set(),
         }
 
-    def get_previous(self):
+    def get_previous(self) -> bytes:
         if self.source == self.account:
             # genesis block
             assert self.source == self.representative
@@ -364,22 +364,22 @@ class block_open:
             # it is a regular open block and it has a source
             return self.source
 
-    def get_next(self):
+    def get_next(self) -> bytes:
         return self.ancillary['next']
 
-    def get_account(self):
+    def get_account(self) -> bytes:
         return self.account
 
-    def get_balance(self):
+    def get_balance(self) -> bytes:
         return self.ancillary["balance"]
 
-    def root(self):
+    def root(self) -> bytes:
         return self.account
 
-    def get_type_int(self):
+    def get_type_int(self) -> int:
         return block_type_enum.open
 
-    def hash(self):
+    def hash(self) -> bytes:
         data = b"".join([
             self.source,
             self.representative,
@@ -387,7 +387,7 @@ class block_open:
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def str_ancillary_data(self):
+    def str_ancillary_data(self) -> str:
         if self.ancillary["previous"] is not None:
             previous = hexlify(self.ancillary["previous"])
         else:
@@ -405,7 +405,7 @@ class block_open:
         string += "Bal  : %f\n" % balance
         return string
 
-    def serialise(self, include_block_type: bool):
+    def serialise(self, include_block_type: bool) -> bytes:
         data = b''
         if include_block_type:
             data += (4).to_bytes(1, "big")
@@ -436,7 +436,6 @@ class block_open:
         sig = data[96:160]
         work = int.from_bytes(data[160:], "little")
         return block_open(source, rep, acc, sig, work)
-
 
     def __str__(self):
         hexacc = hexlify(self.account)
@@ -491,32 +490,32 @@ class block_change:
             "peers" : set(),
         }
 
-    def get_account(self):
+    def get_account(self) -> bytes:
         return self.ancillary["account"]
 
-    def get_previous(self):
+    def get_previous(self) -> bytes:
         return self.previous
 
-    def get_next(self):
+    def get_next(self) -> bytes:
         return self.ancillary['next']
 
-    def get_balance(self):
+    def get_balance(self) -> int:
         return self.ancillary["balance"]
 
-    def root(self):
+    def root(self) -> bytes:
         return self.previous
 
-    def get_type_int(self):
+    def get_type_int(self) -> int:
         return block_type_enum.change
 
-    def hash(self):
+    def hash(self) -> bytes:
         data = b"".join([
             self.previous,
             self.representative
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def str_ancillary_data(self):
+    def str_ancillary_data(self) -> str:
         if self.ancillary["account"] is not None:
             hexacc = hexlify(self.ancillary["account"])
             account = acctools.to_account_addr(self.ancillary["account"])
@@ -538,7 +537,7 @@ class block_change:
         string += "Bal  : %f" % balance
         return string
 
-    def serialise(self, include_block_type: bool):
+    def serialise(self, include_block_type: bool) -> bytes:
         data = b''
         if include_block_type:
             data += (5).to_bytes(1, "big")
@@ -617,32 +616,32 @@ class block_state:
             "type": block_type_enum.not_a_block
         }
 
-    def get_previous(self):
+    def get_previous(self) -> bytes:
         return self.previous
 
-    def get_next(self):
+    def get_next(self) -> bytes:
         return self.ancillary['next']
 
-    def get_account(self):
+    def get_account(self) -> bytes:
         return self.account
 
-    def get_balance(self):
+    def get_balance(self) -> int:
         return self.balance
 
-    def get_type_int(self):
+    def get_type_int(self) -> int:
         return block_type_enum.state
 
-    def root(self):
+    def root(self) -> bytes:
         if int.from_bytes(self.previous, "big") == 0:
             return self.account
         else:
             return self.previous
 
-    def set_type(self, block_type: int):
+    def set_type(self, block_type: int) -> None:
         assert block_type in range(block_type_enum.invalid, block_type_enum.state + 1)
         self.ancillary["type"] = block_type
 
-    def hash(self):
+    def hash(self) -> bytes:
         STATE_BLOCK_HEADER_BYTES = (b'\x00' * 31) + b'\x06'
         data = b"".join([
             STATE_BLOCK_HEADER_BYTES,
@@ -655,7 +654,7 @@ class block_state:
         ])
         return blake2b(data, digest_size=32).digest()
 
-    def serialise(self, include_block_type: bool):
+    def serialise(self, include_block_type: bool) -> bytes:
         data = b''
         if include_block_type:
             data += (6).to_bytes(1, "big")
@@ -670,20 +669,20 @@ class block_state:
         data += self.work.to_bytes(8, "big")
         return data
 
-    def is_epoch_v2_block(self):
+    def is_epoch_v2_block(self) -> bool:
         if self.link[0:14] == b'epoch v2 block':
             return True
         return False
 
-    def is_epoch_v1_block(self):
+    def is_epoch_v1_block(self) -> bool:
         if self.link[0:14] == b'epoch v1 block':
             return True
         return False
 
-    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey):
+    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey) -> None:
         self.signature = signing_key.sign(self.hash())
 
-    def generate_work(self, min_difficulty: int):
+    def generate_work(self, min_difficulty: int) -> None:
         root_int = int.from_bytes(self.root(), byteorder='big')
         self.work = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
 
@@ -715,7 +714,7 @@ class block_state:
         work = int.from_bytes(binascii.unhexlify(json_obj['work']), "big")
         return block_state(account, prev, rep, bal, link, sig, work)
 
-    def to_json(self):
+    def to_json(self) -> str:
         jsonblk = {
             'type'            : 'state',
             'account'         : acctools.to_account_addr(self.account),
@@ -729,7 +728,7 @@ class block_state:
         }
         return json.dumps(jsonblk, indent=4)
 
-    def link_to_string(self):
+    def link_to_string(self) -> str:
         if self.link.startswith(b'epoch'):
             return self.link.decode('ascii').replace('\x00', '')
         else:
