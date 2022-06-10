@@ -49,13 +49,13 @@ class confirm_req_hash(confirm_req):
 
         return confirm_req_hash(hdr, hash_pairs)
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = self.hdr.serialise_header()
         for h in self.hash_pairs:
             data += h.serialise()
         return data
 
-    def is_response(self, ack):
+    def is_response(self, ack) -> bool:
         assert(isinstance(ack, confirm_ack.confirm_ack_block) or isinstance(ack, confirm_ack.confirm_ack_hash))
         if isinstance(ack, confirm_ack.confirm_ack_hash):
             for h in self.hash_pairs:
@@ -89,7 +89,7 @@ class confirm_req_block(confirm_req):
         self.hdr.set_item_count(1)
         self.block = block
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         assert(self.hdr.block_type() in range(2, 7))
         data = self.hdr.serialise_header()
         data += self.block.serialise(False)
@@ -111,7 +111,7 @@ class confirm_req_block(confirm_req):
             block = block_state.parse(data)
         return confirm_ack.confirm_ack_block(hdr, block)
 
-    def is_response(self, ack):
+    def is_response(self, ack) -> bool:
         assert(isinstance(ack, confirm_ack.confirm_ack_block) or isinstance(ack, confirm_ack.confirm_ack_hash))
 
         if isinstance(ack, confirm_ack.confirm_ack_block):
@@ -130,14 +130,14 @@ class confirm_req_block(confirm_req):
         return string
 
 
-def get_next_confirm_ack(s: socket.socket):
+def get_next_confirm_ack(s: socket.socket) -> message_header and bytes:
     hdr, data = get_next_hdr_payload(s)
     while hdr.msg_type != message_type(5):
         hdr, data = get_next_hdr_payload(s)
     return hdr, data
 
 
-def send_confirm_req_block(ctx: dict, s: socket.socket):
+def send_confirm_req_block(ctx: dict, s: socket.socket) -> None:
     block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
                        ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
                        ctx['genesis_block']['work'])
@@ -152,7 +152,7 @@ def send_confirm_req_block(ctx: dict, s: socket.socket):
         print('block %s confirmed!' % hexlify(block.hash()))
 
 
-def send_example_confirm_req_hash(ctx: dict, s: socket.socket):
+def send_example_confirm_req_hash(ctx: dict, s: socket.socket) -> None:
     block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
                        ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
                        ctx['genesis_block']['work'])
@@ -167,7 +167,7 @@ def send_example_confirm_req_hash(ctx: dict, s: socket.socket):
         print('blocks confirmed')
 
 
-def search_for_response(s: socket.socket, req):
+def search_for_response(s: socket.socket, req) -> confirm_ack.confirm_ack or None:
     assert(isinstance(req, confirm_req_block) or isinstance(req, confirm_req_hash))
     starttime = time.time()
     while time.time() - starttime <= 10:
@@ -181,7 +181,7 @@ def search_for_response(s: socket.socket, req):
     return None
 
 
-def convert_blocks_to_hash_pairs(blocks: list):
+def convert_blocks_to_hash_pairs(blocks: list) -> list[common.hash_pair]:
     pairs = []
     for b in blocks:
         pair = common.hash_pair(b.hash(), b.root())
@@ -189,7 +189,7 @@ def convert_blocks_to_hash_pairs(blocks: list):
     return pairs
 
 
-def confirm_block(ctx: dict, block, s: socket.socket):
+def confirm_block(ctx: dict, block, s: socket.socket) -> bool:
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
     s.send(req.serialise())
@@ -203,7 +203,7 @@ def confirm_block(ctx: dict, block, s: socket.socket):
         return True
 
 
-def get_confirm_block_resp(ctx: dict, block, s: socket.socket):
+def get_confirm_block_resp(ctx: dict, block, s: socket.socket) -> confirm_ack.confirm_ack or None:
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
     s.send(req.serialise())
@@ -213,7 +213,7 @@ def get_confirm_block_resp(ctx: dict, block, s: socket.socket):
     return resp
 
 
-def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket):
+def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket) -> bool:
     assert(isinstance(pairs, list))
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_hash(hdr, pairs)
@@ -227,7 +227,7 @@ def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket):
     return resp is not None
 
 
-def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, peerport: int = None):
+def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, peerport: int = None) -> None:
     assert (pair is None if block is not None else pair is not None)
 
     s = get_connected_socket_endpoint(peeraddr, peerport)
@@ -248,7 +248,7 @@ def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, pe
             print('Finished with confirmed status: %s' % outcome)
 
 
-def main():
+def main() -> None:
     # Example hash pair:
     #   hash: 991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948
     #   root: E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA
