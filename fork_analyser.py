@@ -9,7 +9,7 @@ from pynanocoin import *
 from exceptions import *
 
 
-def frontier_req(ctx: dict, s: socket.socket, peer: Peer, acc_id: bytes):
+def frontier_req(ctx: dict, s: socket.socket, peer: Peer, acc_id: bytes) -> None:
     hdr = frontier_request.frontier_request.generate_header(ctx, True)
     frontier = frontier_request.frontier_request(hdr, start_account=acc_id, maxacc=1)
     s.send(frontier.serialise())
@@ -30,7 +30,7 @@ def frontier_req(ctx: dict, s: socket.socket, peer: Peer, acc_id: bytes):
         (peer.ip, peer.port, hexlify(peer.aux['confirmed_frontier']), hexlify(peer.aux['unconfirmed_frontier'])))
 
 
-def pull_blocks(ctx: dict, blockman: block_manager, peer: Peer, acc: bytes):
+def pull_blocks(ctx: dict, blockman: block_manager, peer: Peer, acc: bytes) -> int:
     print('pull blocks for account %s from peer %s' % (hexlify(acc), peer))
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -66,7 +66,7 @@ def pull_blocks(ctx: dict, blockman: block_manager, peer: Peer, acc: bytes):
         #    print(b)
 
 
-def once(ctx: dict, workdir: str, forkacc: bytes):
+def once(ctx: dict, workdir: str, forkacc: bytes) -> None:
     workdir = '%s/%s' % (workdir, hexlify(forkacc))
     print(workdir)
 
