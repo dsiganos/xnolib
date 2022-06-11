@@ -1,7 +1,8 @@
 from block import *
 import pow
 
-def validate_pow(block, post_v2=True):
+
+def validate_pow(block, post_v2: bool = True) -> bool:
     if not post_v2:
         difficulty = pow.epoch1_threshold
     else:
@@ -10,7 +11,7 @@ def validate_pow(block, post_v2=True):
     return digest >= difficulty
 
 
-def get_blocks_difficulty(block):
+def get_blocks_difficulty(block) -> int:
     difficulty_level = None
     if isinstance(block, block_state):
 
