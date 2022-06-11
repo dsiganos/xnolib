@@ -5,7 +5,7 @@ from common import *
 from exceptions import *
 
 
-def read_socket(sock: socket.socket, byte_count: int):
+def read_socket(sock: socket.socket, byte_count: int) -> bytes or None:
     try:
         data = bytearray()
         while len(data) < byte_count:
@@ -22,7 +22,7 @@ def read_socket(sock: socket.socket, byte_count: int):
         return None
 
 
-def parse_ipv6(data: bytes):
+def parse_ipv6(data: bytes) -> ipaddress.IPv6Address:
     if len(data) != 16:
         raise ParseErrorBadIPv6()
     return ipaddress.IPv6Address(data)
