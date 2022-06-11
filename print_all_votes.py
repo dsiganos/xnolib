@@ -7,7 +7,7 @@ from frontier_request import *
 from pull_n_accounts import store_frontiers_handler
 
 
-def frontier_iter_with_retries(ctx, peeraddr, peerport, start_acc = b'\x00' * 32):
+def frontier_iter_with_retries(ctx: dict, peeraddr: str, peerport: int, start_acc: bytes = b'\x00' * 32):
     while True:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -54,7 +54,7 @@ def frontier_iter_with_retries(ctx, peeraddr, peerport, start_acc = b'\x00' * 32
 #     "signature": "073C1A87469F79A55A94EC94F587D463DB617BB235EC00796EEACCFAD6C19E4D7524B0D236E46A2766E68FD813E29F0CB1B76656B94A3ED646CE2AE30F904905",
 #     "work": "27f60f8a95403ae1"
 # }
-def blocks_stdin_iterator():
+def blocks_stdin_iterator() -> None:
     reading_json = False
     for line in sys.stdin:
         line = line.rstrip()
@@ -84,7 +84,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     ctx = livectx
