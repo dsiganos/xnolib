@@ -128,6 +128,9 @@ class peer_manager:
             handshake_exchange_server(ctx, connection, query, signing_key, verifying_key)
             logger.debug(f"Successful handshake from from {address}")
 
+            telemetry_request = telemetry_req.telemetry_req(ctx)
+            connection.sendall(telemetry_request.serialise())
+
         else:
             logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
             return
