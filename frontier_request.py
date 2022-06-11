@@ -14,15 +14,6 @@ from exceptions import *
 from pynanocoin import *
 
 
-def iterate_frontiers_from_stdin():
-    while True:
-        data = sys.stdin.buffer.read(64)
-        if data is None or len(data) < 64:
-            #raise PyNanoCoinException('failed to read frontier response, data=%s', data)
-            return
-        yield frontier_entry(data[0:32], data[32:])
-
-
 class frontier_request:
     def __init__(self, hdr: message_header, start_account: bytes = b'\x00'*32, maxage: int = 0xffffffff,
                  maxacc: int = 0xffffffff):
@@ -34,7 +25,7 @@ class frontier_request:
         self.maxacc = maxacc
         self.confirmed = True if self.header.ext == 2 else False
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = self.header.serialise_header()
         data += self.start_account
         data += self.maxage.to_bytes(4, 'little')
@@ -49,7 +40,7 @@ class frontier_request:
         return frontier_request(hdr, start_account=start_account, maxage=maxage, maxacc=maxacc)
 
     @classmethod
-    def generate_header(cls, ctx: dict, confirmed: bool = True):
+    def generate_header(cls, ctx: dict, confirmed: bool = True) -> message_header:
         return message_header(ctx['net_id'], [18, 18, 18], message_type(8), 2 if confirmed else 0)
 
     def __str__(self):
@@ -80,10 +71,10 @@ class frontier_entry:
         self.account = account
         self.frontier_hash = frontier_hash
 
-    def is_end_marker(self):
+    def is_end_marker(self) -> bool:
         return self.account == (b'\x00' * 32) and self.frontier_hash == (b'\x00' * 32)
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = b''
         data += self.account
         data += self.frontier_hash
@@ -95,7 +86,16 @@ class frontier_entry:
         return string
 
 
-def read_frontier_response(s: socket.socket):
+def iterate_frontiers_from_stdin() -> frontier_entry:
+    while True:
+        data = sys.stdin.buffer.read(64)
+        if data is None or len(data) < 64:
+            #raise PyNanoCoinException('failed to read frontier response, data=%s', data)
+            return
+        yield frontier_entry(data[0:32], data[32:])
+
+
+def read_frontier_response(s: socket.socket) -> frontier_entry:
     data = read_socket(s, 64)
     if data is None or len(data) < 64:
         raise PyNanoCoinException('failed to read frontier response, data=%s', data)
@@ -137,7 +137,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def read_all_frontiers(s: socket.socket, frontier_handler):
+def read_all_frontiers(s: socket.socket, frontier_handler) -> None:
     counter = 1
     while True:
         starttime = time.time()
@@ -151,20 +151,20 @@ def read_all_frontiers(s: socket.socket, frontier_handler):
         counter += 1
 
 
-def binary_print_handler(counter: int, frontier: frontier_entry, readtime: int):
+def binary_print_handler(counter: int, frontier: frontier_entry, readtime: int) -> None:
     sys.stdout.buffer.write(frontier.serialise())
 
 
-def text_print_handler(counter: int, frontier: frontier_entry, readtime: int):
+def text_print_handler(counter: int, frontier: frontier_entry, readtime: int) -> None:
     print(counter, hexlify(frontier.frontier_hash),
           hexlify(frontier.account), acctools.to_account_addr(frontier.account))
 
 
-def frontier_to_db(tx: lmdb.Transaction, counter: int, frontier: frontier_entry):
+def frontier_to_db(tx: lmdb.Transaction, counter: int, frontier: frontier_entry) -> None:
     tx.put(frontier.account, frontier.frontier_hash)
 
 
-def get_frontiers_from_peer(peer: Peer, frontier_req: frontier_request, use_db: str, print_handler):
+def get_frontiers_from_peer(peer: Peer, frontier_req: frontier_request, use_db: str, print_handler) -> None:
     assert isinstance(frontier_req, frontier_request)
 
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -188,7 +188,7 @@ def get_frontiers_from_peer(peer: Peer, frontier_req: frontier_request, use_db: 
             read_all_frontiers(s, print_handler)
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     ctx = livectx
