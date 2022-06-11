@@ -138,7 +138,7 @@ class peer_manager:
         start_time = time.time()
         while incoming_peer.telemetry is None or incoming_peer_peers is None:
             if time.time() - start_time > 60:
-                logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
+                logger.info(f"The time limit for receiving a keepalive and telemetry has been exceeded for {address}, connection is now closing")
                 return
 
             header, payload = get_next_hdr_payload(connection)
@@ -215,7 +215,7 @@ class peer_manager:
         assert len(peers_copy) > 0
 
         def crawl_peer(peer: Peer):
-            logger.debug("'Query %41s:%5s (score:%4s)' % ('[%s]' % p.ip, p.port, p.score)")
+            logger.debug("Query %41s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
 
             new_peers = self.get_peers_from_peer(peer)
             self.add_peers(new_peers)
