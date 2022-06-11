@@ -24,7 +24,7 @@ class frontier_service:
         self.blacklist = blacklist_manager(Peer, 1800)
         self.threads = []
 
-    def start_service(self, addr = '::1', port = 7080):
+    def start_service(self, addr = '::1', port = 7080) -> None:
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -41,7 +41,7 @@ class frontier_service:
                 self.threads.append(thread2)
                 self.join_finished_threads()
 
-    def comm_thread(self, s):
+    def comm_thread(self, s) -> None:
         with s:
             s.settimeout(10)
 
@@ -58,7 +58,7 @@ class frontier_service:
                 s_packet = server_packet([frontier])
                 s.send(s_packet.serialise())
 
-    def join_finished_threads(self):
+    def join_finished_threads(self) -> None:
         remove_threads = []
         for t in self.threads:
             if not t.is_alive():
@@ -68,11 +68,11 @@ class frontier_service:
         for t in remove_threads:
             self.threads.remove(t)
 
-    def run(self):
+    def run(self) -> None:
         while True:
             self.single_pass()
 
-    def single_pass(self):
+    def single_pass(self) -> None:
         hdr, peers = peercrawler.get_peers_from_service(self.ctx)
         peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
         assert peers
@@ -90,7 +90,7 @@ class frontier_service:
                     print(ex)
                 continue
 
-    def manage_peer_frontiers(self, p):
+    def manage_peer_frontiers(self, p) -> None:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.settimeout(15)
@@ -105,7 +105,7 @@ class frontier_service:
             front_iter = frontier_read_iter(s)
             self.add_fronts_from_iter(front_iter, p)
 
-    def add_fronts_from_iter(self, front_iter, peer):
+    def add_fronts_from_iter(self, front_iter, peer) -> None:
         while True:
             try:
                 front = next(front_iter)
@@ -137,7 +137,7 @@ class frontier_service:
     #     result = self.cursor.fetchall()
     #     return result[0]
 
-    def merge_peers(self, peers):
+    def merge_peers(self, peers) -> None:
         for p in peers:
             if self.blacklist.is_blacklisted(p):
                 continue
@@ -157,10 +157,10 @@ class client_packet:
         account = data[1:]
         return client_packet(account)
 
-    def is_all_zero(self):
+    def is_all_zero(self) -> bool:
         return self.account == b'\x00' * 32
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = b''
         data += ord('K').to_bytes(1, 'big')
         data += self.account
@@ -171,7 +171,7 @@ class server_packet_header:
     def __init__(self, no_of_frontiers):
         self.no_of_frontiers = no_of_frontiers
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = b''
         data += ord('K').to_bytes(1, 'big')
         data += self.no_of_frontiers.to_bytes(8, 'big')
@@ -194,7 +194,7 @@ class server_packet:
         self.frontiers = frontiers
         self.header = server_packet_header(len(frontiers))
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = b''
         data += self.header.serialise()
         for f in self.frontiers:
@@ -229,16 +229,16 @@ class frontier_database:
         self.ctx = ctx
         self.verbosity = verbosity
 
-    def add_frontier(self, frontier, peer):
+    def add_frontier(self, frontier, peer) -> None:
         assert False
 
-    def remove_frontier(self, frontier, peer):
+    def remove_frontier(self, frontier, peer) -> None:
         assert False
 
-    def get_frontier(self, account):
+    def get_frontier(self, account) -> None:
         assert False
 
-    def get_all(self):
+    def get_all(self) -> None:
         assert False
 
 
@@ -251,7 +251,7 @@ class my_sql_db(frontier_database):
         self.db = db
         self.peers_stored = []
 
-    def add_frontier(self, frontier, peer):
+    def add_frontier(self, frontier, peer) -> None:
         if peer not in self.peers_stored:
             self.add_peer_to_db(peer)
             self.peers_stored.append(peer)
@@ -266,22 +266,22 @@ class my_sql_db(frontier_database):
         self.cursor.execute(query)
         self.db.commit()
 
-    def get_frontier(self, account):
+    def get_frontier(self, account) -> tuple[str, str]:
         query = 'SELECT (account_hash, frontier_hash) FROM Frontiers WHERE account_hash = "%s"' % hexlify(account)
         self.cursor.execute(query)
         return self.cursor.fetchone()
 
-    def remove_frontier(self, frontier, peer):
+    def remove_frontier(self, frontier, peer) -> None:
         self.remove_peer_data(peer)
 
         self.cursor.execute("DELETE FROM Frontiers WHERE account  = '%s'")
 
-    def remove_peer_data(self, p):
+    def remove_peer_data(self, p) -> None:
         self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
         self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
         self.db.commit()
 
-    def add_peer_to_db(self, peer):
+    def add_peer_to_db(self, peer) -> None:
         query = "INSERT INTO Peers(peer_id, ip_address, port, score) "
         query += "VALUES('%s', '%s', %d, %d) " % (hexlify(peer.serialise()), str(peer.ip), peer.port, peer.score)
         query += "ON DUPLICATE KEY UPDATE port = port"
@@ -298,7 +298,7 @@ class store_in_ram_interface(frontier_database):
         self.verbosity = verbosity
         self.frontiers = []
 
-    def add_frontier(self, frontier, peer):
+    def add_frontier(self, frontier, peer) -> None:
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             existing_front.frontier_hash = frontier.frontier_hash
@@ -312,7 +312,7 @@ class store_in_ram_interface(frontier_database):
                 print("Added %s accounts frontier %s " %
                       (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
-    def remove_frontier(self, frontier, peer):
+    def remove_frontier(self, frontier, peer) -> None:
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             self.frontiers.remove(existing_front)
