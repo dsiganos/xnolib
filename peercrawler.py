@@ -151,8 +151,7 @@ class peer_manager:
                 logger.debug(f"Received peers from {address}")
                 incoming_peer_peers = keepalive.peers
 
-        if incoming_peer and incoming_peer_peers:
-            return incoming_peer, incoming_peer_peers
+        return incoming_peer, incoming_peer_peers
 
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.listening_port)  # this should be changed manually
