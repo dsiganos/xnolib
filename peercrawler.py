@@ -102,45 +102,57 @@ class peer_manager:
 
     def __handle_incoming_semaphore(self, semaphore: threading.BoundedSemaphore, connection: socket.socket, address):
         try:
-            self.handle_incoming(connection, address)
+            result = self.handle_incoming(connection, address, self.ctx)
+            if result:
+                result[1].append(result[0])
+                self.add_peers(result[1])
         finally:
             semaphore.release()
+            connection.close()
 
-    def handle_incoming(self, connection: socket.socket, address):
+    @staticmethod
+    def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer]]]:
         logger.log(_logger.VERBOSE, f"Receiving connection from {address}")
+
+        incoming_peer = Peer(ip_addr.from_string(address[0]), address[1], incoming=True)
+        incoming_peer_peers = None
 
         header, payload = get_next_hdr_payload(connection)
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
                 logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")
-                connection.close()
                 return
 
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
-            handshake_exchange_server(self.ctx, connection, query, signing_key, verifying_key)
-            self.peers.add(Peer(ip_addr.from_string(address[0]), address[1], incoming=True))
+            handshake_exchange_server(ctx, connection, query, signing_key, verifying_key)
             logger.debug(f"Successful handshake from from {address}")
+
+            telemetry_request = telemetry_req.telemetry_req(ctx)
+            connection.sendall(telemetry_request.serialise())
+
         else:
             logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
-            connection.close()
             return
 
         start_time = time.time()
-        while True:
+        while incoming_peer.telemetry is None or incoming_peer_peers is None:
             if time.time() - start_time > 60:
                 logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
-                connection.close()
                 return
 
             header, payload = get_next_hdr_payload(connection)
-            if header.msg_type == message_type(message_type_enum.keepalive):
-                keepalive = message_keepalive.parse_payload(header, payload)
-                self.add_peers(keepalive.peers)
+            if header.msg_type == message_type(message_type_enum.telemetry_ack):
+                incoming_peer.telemetry = telemetry_req.telemetry_ack.parse(header, payload)
+                logger.debug(f"Received telemetry from {address}")
 
-                logger.debug(f"Received peers from {address}, connection is now closing")
-                connection.close()
-                return
+            elif header.msg_type == message_type(message_type_enum.keepalive):
+                keepalive = message_keepalive.parse_payload(header, payload)
+                logger.debug(f"Received peers from {address}")
+                incoming_peer_peers = keepalive.peers
+
+        if incoming_peer and incoming_peer_peers:
+            return incoming_peer, incoming_peer_peers
 
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.listening_port)  # this should be changed manually

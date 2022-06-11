@@ -13,10 +13,7 @@ class peer_set(set):
         assert isinstance(new_peer, Peer)
 
         if new_peer in self:
-            p = self.find(new_peer)
-            p.last_seen = int(time())
-            if new_peer.incoming is False:  # the incoming property of a peer should never be set from False to True
-                p.incoming = False
+            self.find(new_peer).merge(new_peer)
         else:
             super(peer_set, self).add(new_peer)
 
