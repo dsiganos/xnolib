@@ -108,6 +108,7 @@ class peer_manager:
                 self.add_peers(result[1])
         finally:
             semaphore.release()
+            connection.close()
 
     @staticmethod
     def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer]]]:
@@ -120,7 +121,6 @@ class peer_manager:
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
                 logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")
-                connection.close()
                 return
 
             query = handshake_query.parse_query(header, payload)
@@ -130,14 +130,12 @@ class peer_manager:
 
         else:
             logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
-            connection.close()
             return
 
         start_time = time.time()
         while incoming_peer.telemetry is None or incoming_peer_peers is None:
             if time.time() - start_time > 60:
                 logger.debug(f"The time limit for receiving a keepalive has been exceeded for {address}, connection is now closing")
-                connection.close()
                 return
 
             header, payload = get_next_hdr_payload(connection)
@@ -150,7 +148,6 @@ class peer_manager:
                 logger.debug(f"Received peers from {address}")
                 incoming_peer_peers = keepalive.peers
 
-        connection.close()
         if incoming_peer and incoming_peer_peers:
             return incoming_peer, incoming_peer_peers
 
