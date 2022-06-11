@@ -6,7 +6,7 @@ from peercrawler import *
 
 
 class bulk_pull_account:
-    def __init__(self, hdr: message_header, account: bytes, flag: int, min_amount: int = 0) -> str:
+    def __init__(self, hdr: message_header, account: bytes, flag: int, min_amount: int = 0):
         assert (flag in [0, 1, 2])
         assert(hdr.msg_type == message_type(11))
         assert(isinstance(account, bytes))
