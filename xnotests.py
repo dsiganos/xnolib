@@ -549,6 +549,7 @@ class TestComms(unittest.TestCase):
     def handshake_server(self):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.settimeout(1000)
             s.bind(('::1', 6060))
             s.listen()
