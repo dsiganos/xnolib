@@ -54,7 +54,7 @@ def frontier_iter_with_retries(ctx: dict, peeraddr: str, peerport: int, start_ac
 #     "signature": "073C1A87469F79A55A94EC94F587D463DB617BB235EC00796EEACCFAD6C19E4D7524B0D236E46A2766E68FD813E29F0CB1B76656B94A3ED646CE2AE30F904905",
 #     "work": "27f60f8a95403ae1"
 # }
-def blocks_stdin_iterator() -> None:
+def blocks_stdin_iterator() -> str or None:
     reading_json = False
     for line in sys.stdin:
         line = line.rstrip()
