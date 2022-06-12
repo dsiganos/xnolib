@@ -7,7 +7,8 @@ from frontier_request import *
 from pull_n_accounts import store_frontiers_handler
 
 
-def frontier_iter_with_retries(ctx: dict, peeraddr: str, peerport: int, start_acc: bytes = b'\x00' * 32):
+def frontier_iter_with_retries(ctx: dict, peeraddr: str, peerport: int, start_acc: bytes = b'\x00' * 32) \
+        -> frontier_entry or None:
     while True:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
