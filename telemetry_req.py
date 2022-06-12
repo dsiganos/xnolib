@@ -12,7 +12,7 @@ class telemetry_req:
     def __init__(self, ctx: dict):
         self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_req), 0)
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         return self.header.serialise_header()
 
 
@@ -66,10 +66,10 @@ class telemetry_ack:
         string += '%s signature' % 'Valid' if self.sig_verified else 'INVALID'
         return string
 
-    def get_sw_version(self):
+    def get_sw_version(self) -> str:
         return '%s.%s.%s.%s' % (self.major_ver, self.minor_ver, self.patch_ver, self.pre_release_ver)
 
-    def serialize_without_signature(self):
+    def serialize_without_signature(self) -> bytes:
         data = struct.pack('>32sQQQQQIBQ32sBBBBBQQ', \
             self.node_id, \
             self.block_count, \
@@ -90,13 +90,13 @@ class telemetry_ack:
             self.active_difficulty)
         return data
 
-    def serialize(self):
+    def serialize(self) -> bytes:
         data = self.hdr.serialise_header()
         data += struct.pack('64s', self.sig)
         data += self.serialize_without_signature()
         return data
 
-    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey):
+    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey) -> None:
         self.sig = signing_key.sign(self.serialize_without_signature())
 
     @classmethod
@@ -149,7 +149,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def do_telemetry_req(ctx: dict, peeraddr: str, peerport: int):
+def do_telemetry_req(ctx: dict, peeraddr: str, peerport: int) -> None:
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
         signing_key, verifying_key = node_handshake_id.keypair()
         peer_id = node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
@@ -168,7 +168,7 @@ def do_telemetry_req(ctx: dict, peeraddr: str, peerport: int):
         print(resp)
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     ctx = livectx
