@@ -23,7 +23,7 @@ class Representative:
         self.protover = None
         self.voting = None
 
-    def set_weight(self, weight: int):
+    def set_weight(self, weight: int) -> None:
         assert isinstance(weight, int)
         self.weight      = weight
         self.weight_perc = weight_to_percentage(weight)
@@ -53,7 +53,7 @@ class Quorum:
         self.peers_stake_total            = None
         self.trended_stake_total          = None
 
-    def set_delta(self, delta: int):
+    def set_delta(self, delta: int) -> None:
         self.delta = delta
         self.online_weight = int(delta * (100 / self.online_weight_quorum_percent))
 
@@ -69,13 +69,13 @@ class Quorum:
         return s
 
 
-def weight_to_percentage(weight: int):
+def weight_to_percentage(weight: int) -> float:
     return weight * 100 / constants.max_nano_supply
 
 
 # return the rep object if endpoint is a rep and has at least 'weight' raw weight
 # return None otherwise
-def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int):
+def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int) -> Representative:
     if isinstance(reps, list):
         for rep in reps:
             if endpoint == rep.endpoint:
@@ -90,7 +90,7 @@ def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int):
         assert 0
 
 
-def get_reps_with_weights():
+def get_reps_with_weights() -> list[Representative]:
     reps = []
     for acc, rep in get_representatives().items():
         #if isinstance(rep, str):
@@ -102,12 +102,12 @@ def get_reps_with_weights():
     return reps
 
 
-def post(session, params, timeout=5):
+def post(session, params, timeout=5) -> str:
     resp = session.post(RPC_URL, json=params, timeout=5)
     return resp.json()
 
 
-def rpc_confirmation_quorum(session: requests.Session):
+def rpc_confirmation_quorum(session: requests.Session) -> str:
     params = {
       'action': 'confirmation_quorum',
       'peer_details': 'true',
@@ -116,7 +116,7 @@ def rpc_confirmation_quorum(session: requests.Session):
     return result
 
 
-def rpc_peers(session: requests.Session):
+def rpc_peers(session: requests.Session) -> str:
     params = {
       'action': 'peers',
       'peer_details': 'true',
@@ -125,7 +125,7 @@ def rpc_peers(session: requests.Session):
     return result
 
 
-def rpc_representatives(session: requests.Session):
+def rpc_representatives(session: requests.Session) -> str:
     params = {
       'action': 'representatives',
     }
@@ -133,7 +133,7 @@ def rpc_representatives(session: requests.Session):
     return result
 
 
-def get_representatives():
+def get_representatives() -> list[Representative]:
     session = requests.Session()
 
     quorum_reply = rpc_confirmation_quorum(session)
@@ -219,7 +219,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     reps = get_representatives()
