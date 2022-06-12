@@ -15,7 +15,7 @@ class bulk_pull_account:
         self.flag = flag
         self.min_amount = min_amount
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = self.header.serialise_header()
         data += self.account
         data += self.min_amount.to_bytes(16, "big")
@@ -70,7 +70,7 @@ class bulk_pull_account_response:
         self.balance = balance
         self.account_entries = account_entries
 
-    def add_entry(self, entry: bulk_pull_account_entry):
+    def add_entry(self, entry: bulk_pull_account_entry) -> None:
         assert(isinstance(entry, bulk_pull_account_entry))
         self.account_entries.append(entry)
 
@@ -86,7 +86,7 @@ class bulk_pull_account_response:
         return string
 
 
-def read_account_entries(s: socket.socket, flag: int):
+def read_account_entries(s: socket.socket, flag: int) -> list[bulk_pull_account_entry]:
     assert(flag in [0, 1, 2])
     if flag == 0:
         return read_account_entries_hash_amount(s)
@@ -97,7 +97,7 @@ def read_account_entries(s: socket.socket, flag: int):
 
 
 # Reads entries if flags is not an instance of pending_address_only or pending_include_address (flag == 0)
-def read_account_entries_hash_amount(s: socket.socket):
+def read_account_entries_hash_amount(s: socket.socket) -> list[bulk_pull_account_entry]:
     hash = read_socket(s, 32)
     amount = int.from_bytes(read_socket(s, 16), "big")
     entries = []
@@ -110,7 +110,7 @@ def read_account_entries_hash_amount(s: socket.socket):
 
 
 # Reads entries if flags instance: pending_address_only (flag == 1)
-def read_account_entries_addr_only(s: socket.socket):
+def read_account_entries_addr_only(s: socket.socket) -> list[bulk_pull_account_entry]:
     source = read_socket(s, 32)
     entries = []
     while int.from_bytes(source, "big") != 0:
@@ -121,7 +121,7 @@ def read_account_entries_addr_only(s: socket.socket):
 
 
 # Reads the entries if flags instance: pending_include_address (flag == 2)
-def read_account_entries_hash_amount_addr(s: socket.socket):
+def read_account_entries_hash_amount_addr(s: socket.socket) -> list[bulk_pull_account_entry]:
     hash = read_socket(s, 32)
     amount = int.from_bytes(read_socket(s, 16), "big")
     source = read_socket(s, 32)

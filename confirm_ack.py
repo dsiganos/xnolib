@@ -29,7 +29,7 @@ class vote_common:
         seq = int.from_bytes(data[96:], 'little')
         return vote_common(account, sig, seq)
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = self.account
         data += self.sig
         data += self.seq.to_bytes(8, 'little')
@@ -90,7 +90,7 @@ class confirm_ack_hash(confirm_ack):
 
         return confirm_ack_hash(hdr, common, hashes)
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         data = self.hdr.serialise_header()
         data += self.common.serialise()
         for h in self.hashes:
@@ -98,7 +98,7 @@ class confirm_ack_hash(confirm_ack):
             data += h
         return data
 
-    def hash(self):
+    def hash(self) -> bytes:
         hasher = blake2b(digest_size=32)
         hasher.update('vote '.encode('ascii'))
 
@@ -108,7 +108,7 @@ class confirm_ack_hash(confirm_ack):
         hasher.update(self.common.seq.to_bytes(8, 'little'))
         return hasher.digest()
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         hasher = blake2b(digest_size=32)
         hasher.update('vote '.encode('ascii'))
 
@@ -162,7 +162,7 @@ class confirm_ack_block(confirm_ack):
             block = block_state.parse(data[104:])
         return confirm_ack_block(hdr, common, block)
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         hasher = blake2b(digest_size=32)
         hasher.update('vote '.encode('ascii'))
 
@@ -187,7 +187,7 @@ class confirm_ack_thread(threading.Thread):
         self.peerport = peerport
         self.data = data
 
-    def run(self):
+    def run(self) -> None:
         print('Starting confirm ack thread')
         print('Connecting to [%s]:%s' % (self.peeraddr, self.peerport))
         with get_connected_socket_endpoint(self.peeraddr, self.peerport) as s:
