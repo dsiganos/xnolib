@@ -21,6 +21,7 @@ import confirm_req
 import telemetry_req
 from msg_handshake import *
 from peer_set import peer_set
+from confirm_ack import confirm_ack
 
 
 logger = _logger.get_logger()
@@ -131,6 +132,7 @@ class peer_manager:
 
         incoming_peer = Peer(ip_addr.from_string(address[0]), address[1], incoming=True)
         incoming_peer_peers = None
+        is_voting = False
 
         header, payload = get_next_hdr_payload(connection)
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
@@ -145,6 +147,12 @@ class peer_manager:
 
             telemetry_request = telemetry_req.telemetry_req(ctx)
             connection.sendall(telemetry_request.serialise())
+
+            block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
+                               ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
+                               ctx["genesis_block"]["work"])
+            confirm_request = confirm_req.confirm_req_block(message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0), block)
+            connection.sendall(confirm_request.serialise())
 
         else:
             logger.debug(f"First message from {address} was {header.msg_type}, connection is now closing")
