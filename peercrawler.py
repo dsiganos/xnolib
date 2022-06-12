@@ -80,7 +80,7 @@ class peer_manager:
 
             time.sleep(inactivity_threshold_seconds)
 
-    def get_peers_copy(self) -> Collection[Peer]:
+    def get_peers_as_list(self) -> Collection[Peer]:
         with self.mutex:
             return self.__connections_graph.keys()
 
@@ -90,13 +90,13 @@ class peer_manager:
 
     def count_good_peers(self):
         counter = 0
-        for p in self.get_peers_copy():
+        for p in self.get_peers_as_list():
             if p.score >= 1000:
                 counter += 1
         return counter
 
     def count_peers(self):
-        return len(self.get_peers_copy())
+        return len(self.get_peers_as_list())
 
     def listen_incoming(self):
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -225,7 +225,7 @@ class peer_manager:
         logger.info("Starting a peer crawl")
 
         # it is important to take a copy of the peers so that it is not changing as we walk it
-        peers_copy = self.get_peers_copy()
+        peers_copy = self.get_peers_as_list()
         assert len(peers_copy) > 0
 
         def crawl_peer(peer: Peer):
@@ -257,7 +257,7 @@ class peer_manager:
             count += 1
 
     def __str__(self):
-        peers = self.get_peers_copy()
+        peers = self.get_peers_as_list()
 
         good = reduce(lambda c, p: c + int(p.score >= 1000), peers, 0)
         s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(peers), good)
@@ -381,7 +381,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
                 conn.settimeout(10)
                 hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
                 data = hdr.serialise()
-                json_list = jsonpickle.encode(peerman.get_peers_copy())
+                json_list = jsonpickle.encode(peerman.get_peers_as_list())
                 data += json_list.encode()
                 conn.sendall(data)
 

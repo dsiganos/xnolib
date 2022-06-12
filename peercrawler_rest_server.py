@@ -17,7 +17,7 @@ peerman = peercrawler.peer_manager(ctx, verbosity=1)
 def main_route():
     global app, peerman
 
-    peers = peerman.get_peers_copy()
+    peers = peerman.get_peers_as_list()
     js = jsonencoder.to_json(list(peers))
     return flask.Response(js, status=200, mimetype='application/json')
 
