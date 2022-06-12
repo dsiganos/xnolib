@@ -70,7 +70,8 @@ functions = {
     message_type_enum.not_a_block: lambda hdr, payload: hdr
 }
 
-def set_functions(args):
+
+def set_functions(args) -> None:
     if args.all:
         return
     if not args.keepalive:
@@ -98,7 +99,7 @@ def set_functions(args):
 
 
 def make_telemetry_ack(ctx: dict, signing_key: ed25519_blake2b.keys.SigningKey,
-                                  verifying_key: ed25519_blake2b.keys.VerifyingKey):
+                                  verifying_key: ed25519_blake2b.keys.VerifyingKey) -> telemetry_ack:
     tel_ack_hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_ack), 202)
     telem_ack = telemetry_ack(
         hdr=tel_ack_hdr,
@@ -125,7 +126,7 @@ def make_telemetry_ack(ctx: dict, signing_key: ed25519_blake2b.keys.SigningKey,
     return telem_ack
 
 
-def main():
+def main() -> None:
     args = parse_args()
     set_functions(args)
 
