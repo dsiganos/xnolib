@@ -60,6 +60,9 @@ class peer_manager:
 
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
         with self.mutex:
+            if from_peer not in self.__connections_graph:
+                self.__connections_graph[from_peer] = peer_set()
+
             for new_peer in new_peers:
                 if new_peer.ip.ipv6.is_unspecified:
                     continue
