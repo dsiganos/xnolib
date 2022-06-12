@@ -47,8 +47,9 @@ class peer_manager:
 
         self.__connections_graph: dict[Peer, peer_set] = {}
 
-        for peer in peers:
-            self.__connections_graph[peer] = peer_set()
+        if peers:
+            for peer in peers:
+                self.__connections_graph[peer] = peer_set()
 
         if listen:
             threading.Thread(target=self.listen_incoming, daemon=True).start()
