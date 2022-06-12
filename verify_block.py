@@ -9,7 +9,7 @@ import block
 import pynanocoin
 
 
-def to_pass_fail(status: bool):
+def to_pass_fail(status: bool) -> str:
     return 'PASS' if status == True else 'FAIL'
 
 json_block = sys.stdin.read()
