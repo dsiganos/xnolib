@@ -839,7 +839,7 @@ class TestBlock(unittest.TestCase):
         assert block.balance == 999999999999998367700000
         assert block.link == unhexlify('DD573D46AD23730FF0557F59247C92CEE695D5DA347D2AA592DC08716B580DA8')
         assert block.signature == unhexlify('073C1A87469F79A55A94EC94F587D463DB617BB235EC00796EEACCFAD6C19E4D7524B0D236E46A2766E68FD813E29F0CB1B76656B94A3ED646CE2AE30F904905')
-        assert block.work == unhexlify('27f60f8a95403ae1')
+        assert block.work == int.from_bytes(unhexlify('27f60f8a95403ae1'), "big")
 
     def test_parse_block_open_from_json_string(self):
         json_str = '''{
@@ -855,7 +855,7 @@ class TestBlock(unittest.TestCase):
         assert block.source == unhexlify('BAB41488D29BC00DBA3A00988CC6B9F57AE416F2C9EE140AC703EBE26403CE3F')
         assert block.representative == unhexlify('1243b4275d7cff63e3229c7c40aeae8c53d6f3233d439af3177865751e9885f1')
         assert block.signature == unhexlify('13BFC64C86388B9494CDDCCAF6727A0399C1B73EDD22509F01D3BBD2800C23F346BA71B050F5F28B52B43077663F23E48EAE883E82038686BFC3FBA72C77E00E')
-        assert block.work == unhexlify('42d4cb97af728160')
+        assert block.work == int.from_bytes(unhexlify('42d4cb97af728160'), "big")
 
     def test_parse_block_send_from_json_string(self):
         json_str = '''{
@@ -871,7 +871,7 @@ class TestBlock(unittest.TestCase):
         assert block.destination == unhexlify('8103048616afe89952fc3a02490b6f1ea5e5821c31407c0b227c1ccb9e6aa1d7')
         assert block.balance == 0x33B2E3C9FD0803CE7FFFFFD
         assert block.signature == unhexlify('9C8380DF84EFA599E4BBD989862C20EEA40B2E7DE5327C41A38B7869EAB598FB5786658F45176FC1973E7D0DE40AEF10FB6961D54D0DD7CDBE9A6122266C1907')
-        assert block.work == unhexlify('5c4ec550bde046ad')
+        assert block.work == int.from_bytes(unhexlify('5c4ec550bde046ad'), "big")
 
     def test_parse_block_receive_from_json_string(self):
         json_str = '''{
@@ -885,7 +885,7 @@ class TestBlock(unittest.TestCase):
         assert block.previous == unhexlify('B758785AD694E5EF4F379FB07EB12F709970D7082F5860340FC9D925C7BA490F')
         assert block.source == unhexlify('EA58282857C97856AE0A05396C0AA4708520304546A032E57C79D3A5B4BD0B47')
         assert block.signature == unhexlify('A0D84921B7843C2C74103B5637EB7D3AB669F6143183626413CDD9F219B66C1542401B89E34F2F5A68FD6C1ADEA753F8FCF76071711C8B1944F7ECBBCE2B0501')
-        assert block.work == unhexlify('8994d174f087691b')
+        assert block.work == int.from_bytes(unhexlify('8994d174f087691b'), "big")
         assert block.hash() == unhexlify('00000197D6E981AB3EC5469BFBFFDF20F43CC6E955C0A38F295501AD64B86B0D')
 
     def test_parse_block_change_from_json_string(self):
@@ -900,7 +900,7 @@ class TestBlock(unittest.TestCase):
         assert block.previous == unhexlify('E0FCC51E9DCED5631E52CEA35FF47B88FC4A741C43B9B739030E1C594F06F17C')
         assert block.representative == unhexlify('1243b4275d7cff63e3229c7c40aeae8c53d6f3233d439af3177865751e9885f1')
         assert block.signature == unhexlify('60A88EAECB32EDC1B5120F1B0A4C4342B661761C379404FF24D6F43998D080E0214BCBC60434A1A7DC353FF44D16D9942912123F9FA7EC99FE1467E8F854ED0D')
-        assert block.work == unhexlify('c751c45e591dd7a7')
+        assert block.work == int.from_bytes(unhexlify('c751c45e591dd7a7'), "big")
         assert block.hash() == unhexlify('000255E568174DBBEAFF997BF31E0344F4EEA52FC22197825C5574E13296CA00')
 
 
