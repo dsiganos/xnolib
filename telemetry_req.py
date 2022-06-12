@@ -21,7 +21,7 @@ class telemetry_ack:
                  unchecked_count: int, account_count: int, bandwidth_cap: int,
                  peer_count: int, protocol_ver: int, uptime: int, genesis_hash: bytes, major_ver: int,
                  minor_ver: int, patch_ver: int, pre_release_ver: int, maker_ver: int,
-                 timestamp: int, active_difficulty: bytes):
+                 timestamp: int, active_difficulty: int):
         self.hdr = hdr
         self.sig_verified = False
         self.sig = signature
