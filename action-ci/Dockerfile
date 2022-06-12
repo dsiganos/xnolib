@@ -2,7 +2,8 @@ FROM ubuntu:20.04
 
 RUN apt-get update && apt-get install -y python3
 
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN apt-get install python-pip && \
+    pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 
