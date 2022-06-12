@@ -49,7 +49,7 @@ class peer_manager:
 
         if peers:
             for peer in peers:
-                self.__connections_graph[peer] = peer_set()
+                self.add_peers(peer, [])
 
         if listen:
             threading.Thread(target=self.listen_incoming, daemon=True).start()
@@ -240,9 +240,8 @@ class peer_manager:
 
     def crawl(self, forever, delay, max_workers=4):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
-        with self.mutex:
-            for peer in initial_peers:
-                self.__connections_graph[peer] = peer_set()
+        for peer in initial_peers:
+            self.add_peers(peer, [])
 
         self.crawl_once(max_workers)
         logger.info(self)
