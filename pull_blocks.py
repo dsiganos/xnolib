@@ -77,6 +77,7 @@ class TestPullBlocks(unittest.TestCase):
         self.assertEqual(blocks_pulled, 44)
         self.assertEqual(len(blockman.accounts[0].blocks), 44)
         self.assertEqual(len(blockman.accounts), 1)
+        self.assertEqual(len(blockman.processed_blocks), 44)
 
 
 if __name__ == "__main__":
