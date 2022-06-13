@@ -1,7 +1,8 @@
 FROM ubuntu:20.04
 
 RUN apt-get update && apt-get install -y python3 python3-pip
-RUN pwd && ls && pip3 install -r requirements.txt
+RUN pwd && ls && echo $GITHUB_WORKSPACE
+RUN pip3 install -r $GITHUB_WORKSPACE/requirements.txt
 
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
