@@ -13,7 +13,7 @@ import dns.resolver
 import ed25519_blake2
 import ed25519_blake2b
 import git
-from typing import Optional
+from typing import Optional, Union
 from _logger import get_logger, VERBOSE
 
 import pow_validation
@@ -54,7 +54,7 @@ def confirm_ack_size(block_type: int, i_count: int) -> int:
 
 
 class ip_addr:
-    def __init__(self, ipv6: str = ipaddress.IPv6Address(0)):
+    def __init__(self, ipv6: Union[str, ipaddress.IPv6Address] = ipaddress.IPv6Address(0)):
         if isinstance(ipv6, str):
             self.ipv6 = ipaddress.IPv6Address(ipv6)
         else:
