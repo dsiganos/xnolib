@@ -4,4 +4,4 @@ author: "dimitris@siganos.org"
 
 runs:
   using: "docker"
-  image: "Dockerfile"
+  image: "action-ci/Dockerfile"
