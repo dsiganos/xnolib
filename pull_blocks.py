@@ -56,5 +56,28 @@ def main():
         print(blockman)
         print("blocks pulled: %d" % blocks_pulled)
 
+
+class TestPullBlocks(unittest.TestCase):
+    def test_pull_blocks(self):
+        ctx = livectx
+        account = ctx["genesis_pub"]
+        peer = get_random_peer(ctx, lambda p: p.score == 1000)
+        with get_connected_socket_endpoint(str(peer.ip), peer.port) as s:
+            blocks = get_account_blocks(ctx, s, account)
+
+            blockman = block_manager(ctx, None, None)
+            blocks_pulled = len(blocks)
+            while len(blocks) != 0:
+                block = blocks.pop()
+                blockman.process(block)
+
+            print(blockman)
+            print("blocks pulled: %d" % blocks_pulled)
+
+        self.assertEqual(blocks_pulled, 44)
+        self.assertEqual(len(blockman.accounts[0].blocks), 44)
+        self.assertEqual(len(blockman.accounts), 1)
+
+
 if __name__ == "__main__":
     main()

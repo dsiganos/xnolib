@@ -678,13 +678,6 @@ class TestComms(unittest.TestCase):
         s_packet = get_all_frontiers_packet_from_service()
         self.assertTrue(len(s_packet.frontiers) > 0)
 
-    def test_pull_blocks(self):
-        ctx = livectx
-        s, _ = get_initial_connected_socket(ctx)
-        blocks = get_account_blocks(ctx, s, ctx["genesis_pub"])
-        print(blocks[0])
-
-
 
 if __name__ == '__main__':
     unittest.main()
