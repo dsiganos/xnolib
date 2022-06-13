@@ -1,5 +1,5 @@
-name: "pynanocoin ci action"
-description: "pynanocoin ci action"
+name: "xnolib ci action"
+description: "xnolib ci action"
 author: "dimitris@siganos.org"
 
 runs:
