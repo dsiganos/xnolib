@@ -1,10 +1,8 @@
 FROM ubuntu:20.04
 
 RUN apt-get update && apt-get install -y python3
-RUN sudo apt-get install python3-pip
+RUN pip3 install -r requirements.txt
 
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
 
 
 ADD entrypoint.sh /entrypoint.sh
