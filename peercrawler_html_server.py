@@ -12,7 +12,7 @@ import peercrawler
 import pynanocoin
 from acctools import to_account_addr
 from representative_mapping import representative_mapping
-from _logger import setup_logger, get_logger
+from _logger import setup_logger, get_logger, get_logging_level_from_int
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
@@ -26,10 +26,10 @@ representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func():
+def bg_thread_func(forever: bool, delay: int):
     global peerman
     # look for peers forever
-    peerman.crawl(forever=True, delay=60)
+    peerman.crawl(forever=forever, delay=delay)
 
 
 @app.route("/peercrawler")
@@ -110,10 +110,12 @@ def logs():
 
 
 def main():
-    setup_logger(logger)
+    args = peercrawler.parse_args()
+
+    setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func, daemon=True).start()
+    threading.Thread(target=bg_thread_func, args=(args.forever, args.delay), daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground

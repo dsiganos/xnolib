@@ -302,7 +302,7 @@ def parse_args():
     parser.add_argument('-c', '--connect', nargs='?', const='::ffff:78.46.80.199',
                         help='connect to peercrawler service given by arg and get list of peers')
 
-    parser.add_argument('-v', '--verbosity', type=int,
+    parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help='verbosity level')
     parser.add_argument('-f', '--forever', action='store_true', default=False,
                         help='loop forever looking for new peers')
@@ -510,7 +510,7 @@ def get_dot_string(connections: dict[Peer, set[Peer]], only_voting: bool = False
 
 def main():
     args = parse_args()
-    _logger.setup_logger(logger, _logger.VERBOSE)
+    _logger.setup_logger(logger, _logger.get_logging_level_from_int(args.verbosity))
 
     ctx = livectx
     if args.beta: ctx = betactx
