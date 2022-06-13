@@ -36,7 +36,7 @@ def bg_thread_func():
 def main_website():
     global app, peerman, representatives
 
-    peers_copy = list(peerman.get_peers_copy())
+    peers_copy = list(peerman.get_peers_as_list())
 
     peer_list = []
     for peer in peers_copy:
@@ -85,7 +85,7 @@ def main_website():
 def json():
     global app, peerman
 
-    peers = peerman.get_peers_copy()
+    peers = peerman.get_peers_as_list()
     js = jsonencoder.to_json(list(peers))
     return Response(js, status=200, mimetype="application/json")
 
