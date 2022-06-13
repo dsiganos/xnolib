@@ -230,7 +230,7 @@ class TestBulkPullAccount(unittest.TestCase):
             for e in entries:
                 resp.add_entry(e)
             print(resp)
-            self.assertEqual(len(resp.account_entries), 21)
+            self.assertTrue(len(resp.account_entries) >= 21)
             self.assertEqual(resp.frontier_hash,
                              binascii.unhexlify("023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C"))
 
@@ -250,7 +250,7 @@ class TestBulkPullAccount(unittest.TestCase):
             for e in entries:
                 resp.add_entry(e)
             print(resp)
-            self.assertEqual(len(resp.account_entries), 42)
+            self.assertTrue(len(resp.account_entries) >= 42)
             self.assertEqual(resp.frontier_hash,
                              binascii.unhexlify("023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C"))
 
@@ -270,7 +270,7 @@ class TestBulkPullAccount(unittest.TestCase):
             for e in entries:
                 resp.add_entry(e)
             print(resp)
-            self.assertEqual(len(resp.account_entries), 63)
+            self.assertTrue(len(resp.account_entries) >= 63)
             self.assertEqual(resp.frontier_hash,
                              binascii.unhexlify("023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C"))
 if __name__ == "__main__":
