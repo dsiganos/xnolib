@@ -207,9 +207,11 @@ def main():
 
 class TestBulkPullAccount(unittest.TestCase):
     def setUp(self) -> None:
+        # Good peer: ::ffff:94.130.12.236:7075
+
         self.ctx = livectx
-        peer = get_random_peer(self.ctx, lambda p: p.score >= 1000)
-        peeraddr, peerport = str(peer.ip), peer.port
+        peeraddr = '::ffff:94.130.12.236'
+        peerport = 7075
         self.s = get_connected_socket_endpoint(peeraddr, peerport)
         self.account = binascii.unhexlify(self.ctx['genesis_pub'])
         self.hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
@@ -228,13 +230,17 @@ class TestBulkPullAccount(unittest.TestCase):
             resp = bulk_pull_account_response(front_hash, balance)
             entries = read_account_entries(s, flag)
             for e in entries:
+                self.assertTrue(e.hash is not None)
+                self.assertTrue(e.amount != -1)
+                self.assertTrue(e.source is None)
+
+
                 resp.add_entry(e)
             print(resp)
-            self.assertTrue(len(resp.account_entries) >= 21)
 
     def test_script_flag_1(self):
         with self.s as s:
-            flag = 0
+            flag = 1
             msg = bulk_pull_account(self.hdr, self.account, flag)
             s.send(msg.serialise())
 
@@ -246,13 +252,17 @@ class TestBulkPullAccount(unittest.TestCase):
             resp = bulk_pull_account_response(front_hash, balance)
             entries = read_account_entries(s, flag)
             for e in entries:
+
+                self.assertEqual(e.hash, None)
+                self.assertEqual(e.amount, -1)
+                self.assertTrue(e.source is not None)
+
                 resp.add_entry(e)
             print(resp)
-            self.assertTrue(len(resp.account_entries) >= 42)
 
     def test_script_flag_2(self):
         with self.s as s:
-            flag = 0
+            flag = 2
             msg = bulk_pull_account(self.hdr, self.account, flag)
             s.send(msg.serialise())
 
@@ -264,9 +274,13 @@ class TestBulkPullAccount(unittest.TestCase):
             resp = bulk_pull_account_response(front_hash, balance)
             entries = read_account_entries(s, flag)
             for e in entries:
+
+                self.assertTrue(e.hash is not None)
+                self.assertTrue(e.amount != -1)
+                self.assertTrue(e.source is not None)
+
                 resp.add_entry(e)
             print(resp)
-            self.assertTrue(len(resp.account_entries) >= 63)
 
 
 if __name__ == "__main__":
