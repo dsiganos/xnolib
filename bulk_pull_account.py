@@ -205,6 +205,73 @@ def main():
     # print(data)
     # print(len(data))
 
+class TestBulkPullAccount(unittest.TestCase):
+    def setUp(self) -> None:
+        self.ctx = livectx
+        peer = get_random_peer(self.ctx, lambda p: p.score >= 1000)
+        peeraddr, peerport = str(peer.ip), peer.port
+        self.s = get_connected_socket_endpoint(peeraddr, peerport)
+        self.account = binascii.unhexlify(self.ctx['genesis_pub'])
+        self.hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
 
+    def test_script_flag_0(self):
+        with self.s as s:
+            flag = 0
+            msg = bulk_pull_account(self.hdr, self.account, flag)
+            s.send(msg.serialise())
+
+            # All entries start with a frontier_balance_entry
+            front_hash = read_socket(s, 32)
+            balance = int.from_bytes(read_socket(s, 16), "big")
+
+            print("flag: %d" % flag)
+            resp = bulk_pull_account_response(front_hash, balance)
+            entries = read_account_entries(s, flag)
+            for e in entries:
+                resp.add_entry(e)
+            print(resp)
+            self.assertEqual(len(resp.account_entries), 21)
+            self.assertEqual(resp.frontier_hash,
+                             binascii.unhexlify("023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C"))
+
+    def test_script_flag_1(self):
+        with self.s as s:
+            flag = 0
+            msg = bulk_pull_account(self.hdr, self.account, flag)
+            s.send(msg.serialise())
+
+            # All entries start with a frontier_balance_entry
+            front_hash = read_socket(s, 32)
+            balance = int.from_bytes(read_socket(s, 16), "big")
+
+            print("flag: %d" % flag)
+            resp = bulk_pull_account_response(front_hash, balance)
+            entries = read_account_entries(s, flag)
+            for e in entries:
+                resp.add_entry(e)
+            print(resp)
+            self.assertEqual(len(resp.account_entries), 42)
+            self.assertEqual(resp.frontier_hash,
+                             binascii.unhexlify("023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C"))
+
+    def test_script_flag_2(self):
+        with self.s as s:
+            flag = 0
+            msg = bulk_pull_account(self.hdr, self.account, flag)
+            s.send(msg.serialise())
+
+            # All entries start with a frontier_balance_entry
+            front_hash = read_socket(s, 32)
+            balance = int.from_bytes(read_socket(s, 16), "big")
+
+            print("flag: %d" % flag)
+            resp = bulk_pull_account_response(front_hash, balance)
+            entries = read_account_entries(s, flag)
+            for e in entries:
+                resp.add_entry(e)
+            print(resp)
+            self.assertEqual(len(resp.account_entries), 63)
+            self.assertEqual(resp.frontier_hash,
+                             binascii.unhexlify("023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C"))
 if __name__ == "__main__":
     main()
