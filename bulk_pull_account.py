@@ -67,7 +67,7 @@ class bulk_pull_account_entry:
 
 
 class bulk_pull_account_response:
-    def __init__(self, frontier_hash: bytes, balance: int, account_entries: list[bulk_pull_account_entry] = []):
+    def __init__(self, frontier_hash: bytes, balance: float, account_entries: list[bulk_pull_account_entry] = []):
         assert(isinstance(balance, int))
         self.frontier_hash = frontier_hash
         self.balance = balance
