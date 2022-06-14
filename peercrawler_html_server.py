@@ -125,20 +125,22 @@ def parse_args():
     parser.add_argument("-d", "--delay", type=int, default=300,
                         help="delay between crawls in seconds")
     parser.add_argument("-l", "--nolisten", action="store_true", default=False,
-                        help="listen to incoming connections")
+                        help="disable incoming connection listener")
     parser.add_argument("-p", "--port", type=int, default=5001,
                         help="port to listen on for incoming requests")
+
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
 
-    ctx = livectx
     if args.beta:
         ctx = betactx
-    if args.test:
+    elif args.test:
         ctx = testctx
+    else:
+        ctx = livectx
 
     setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
