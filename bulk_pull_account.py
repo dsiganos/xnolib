@@ -205,6 +205,83 @@ def main():
     # print(data)
     # print(len(data))
 
+class TestBulkPullAccount(unittest.TestCase):
+    def setUp(self) -> None:
+        # Good peer: ::ffff:94.130.12.236:7075
+
+        self.ctx = livectx
+        peeraddr = '::ffff:94.130.12.236'
+        peerport = 7075
+        self.s = get_connected_socket_endpoint(peeraddr, peerport)
+        self.account = binascii.unhexlify(self.ctx['genesis_pub'])
+        self.hdr = message_header(self.ctx["net_id"], [18, 18, 18], message_type(message_type_enum.bulk_pull_account), 0)
+
+    def test_script_flag_0(self):
+        with self.s as s:
+            flag = 0
+            msg = bulk_pull_account(self.hdr, self.account, flag)
+            s.send(msg.serialise())
+
+            # All entries start with a frontier_balance_entry
+            front_hash = read_socket(s, 32)
+            balance = int.from_bytes(read_socket(s, 16), "big")
+
+            print("flag: %d" % flag)
+            resp = bulk_pull_account_response(front_hash, balance)
+            entries = read_account_entries(s, flag)
+            for e in entries:
+                self.assertTrue(e.hash is not None)
+                self.assertTrue(e.amount != -1)
+                self.assertTrue(e.source is None)
+
+
+                resp.add_entry(e)
+            print(resp)
+
+    def test_script_flag_1(self):
+        with self.s as s:
+            flag = 1
+            msg = bulk_pull_account(self.hdr, self.account, flag)
+            s.send(msg.serialise())
+
+            # All entries start with a frontier_balance_entry
+            front_hash = read_socket(s, 32)
+            balance = int.from_bytes(read_socket(s, 16), "big")
+
+            print("flag: %d" % flag)
+            resp = bulk_pull_account_response(front_hash, balance)
+            entries = read_account_entries(s, flag)
+            for e in entries:
+
+                self.assertEqual(e.hash, None)
+                self.assertEqual(e.amount, -1)
+                self.assertTrue(e.source is not None)
+
+                resp.add_entry(e)
+            print(resp)
+
+    def test_script_flag_2(self):
+        with self.s as s:
+            flag = 2
+            msg = bulk_pull_account(self.hdr, self.account, flag)
+            s.send(msg.serialise())
+
+            # All entries start with a frontier_balance_entry
+            front_hash = read_socket(s, 32)
+            balance = int.from_bytes(read_socket(s, 16), "big")
+
+            print("flag: %d" % flag)
+            resp = bulk_pull_account_response(front_hash, balance)
+            entries = read_account_entries(s, flag)
+            for e in entries:
+
+                self.assertTrue(e.hash is not None)
+                self.assertTrue(e.amount != -1)
+                self.assertTrue(e.source is not None)
+
+                resp.add_entry(e)
+            print(resp)
+
 
 if __name__ == "__main__":
     main()
