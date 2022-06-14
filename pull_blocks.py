@@ -86,8 +86,9 @@ class TestPullBlocks(unittest.TestCase):
                         open_block['work'])
 
         account = ctx["genesis_pub"]
-        peer = get_random_peer(ctx, lambda p: p.score == 1000)
-        with get_connected_socket_endpoint(str(peer.ip), peer.port) as s:
+        peeraddr = '::ffff:94.130.12.236'
+        peerport = 7075
+        with get_connected_socket_endpoint(peeraddr, peerport) as s:
             blocks = get_account_blocks(ctx, s, account)
             self.assertEqual(ev2, blocks[0])
             self.assertEqual(ob, blocks[43])
