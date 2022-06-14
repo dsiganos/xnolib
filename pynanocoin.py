@@ -535,6 +535,7 @@ class block_manager:
     def process(self, block) -> bool:
         success = self.process_one(block)
         if success:
+            self.processed_blocks.append(block)
             self.process_unprocessed_blocks()
         return success
 
