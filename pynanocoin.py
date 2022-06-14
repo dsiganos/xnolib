@@ -306,9 +306,10 @@ class Peer:
 
         if peer.telemetry is not None:
             self.telemetry = peer.telemetry
-
         if peer.incoming is False:
             self.incoming = False
+        if peer.is_voting is True:
+            self.is_voting = True
 
         logger.log(VERBOSE, f"Merged peer {peer}")
 
