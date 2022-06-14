@@ -127,7 +127,7 @@ class peer_manager:
             connection.close()
 
     @staticmethod
-    def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer]]]:
+    def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer], bool]]:
         logger.log(_logger.VERBOSE, f"Receiving connection from {address}")
 
         incoming_peer = Peer(ip_addr.from_string(address[0]), address[1], incoming=True)
@@ -179,7 +179,7 @@ class peer_manager:
                 if confirm_request.is_response(confirm_response):
                     is_voting = True
 
-        return incoming_peer, incoming_peer_peers
+        return incoming_peer, incoming_peer_peers, is_voting
 
     def send_keepalive_packet(self, connection: socket):
         local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.listening_port)  # this should be changed manually
