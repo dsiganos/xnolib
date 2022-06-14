@@ -227,7 +227,7 @@ def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket) 
     return resp is not None
 
 
-def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, peerport: int = None) -> None:
+def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, peerport: int = None) -> bool:
     assert (pair is None if block is not None else pair is not None)
 
     s = get_connected_socket_endpoint(peeraddr, peerport)
@@ -246,6 +246,8 @@ def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, pe
             print('Confirm Hash')
             outcome = confirm_blocks_by_hash(ctx, [pair], s)
             print('Finished with confirmed status: %s' % outcome)
+
+        return outcome
 
 
 def main() -> None:
@@ -305,6 +307,18 @@ def parse_args():
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
 
     return parser.parse_args()
+
+
+class TestConfirmReq(unittest.TestCase):
+    def test_confirm_req(self):
+        ctx = livectx
+        peeraddr = '::ffff:94.130.12.236'
+        peerport = 7075
+        pair = common.hash_pair(
+            binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
+            binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'))
+
+        self.assertTrue(confirm_req_peer(ctx, None, pair, peeraddr=peeraddr, peerport=peerport))
 
 
 if __name__ == '__main__':
