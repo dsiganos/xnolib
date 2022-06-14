@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import threading
+import argparse
 
 from flask import Flask, Response, render_template
 
@@ -13,20 +14,20 @@ import pynanocoin
 from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
+from pynanocoin import livectx, betactx, testctx
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
 logger = get_logger()
 
-ctx = pynanocoin.livectx
-peerman = None
+peerman: peercrawler.peer_manager = None
 
 representatives = representative_mapping()
 representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func(listen: bool, delay: int):
+def bg_thread_func(ctx: dict, listen: bool, delay: int):
     global peerman
 
     peerman = peercrawler.peer_manager(ctx, listen=listen, verbosity=1)
@@ -110,17 +111,43 @@ def logs():
     return Response(log_1 + log_2, status=200, mimetype="text/plain")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-b", "--beta", action="store_true", default=False,
+                       help="use beta network")
+    group.add_argument("-t", "--test", action="store_true", default=False,
+                       help="use test network")
+
+    parser.add_argument("-v", "--verbosity", type=int, default=0,
+                        help="verbosity level")
+    parser.add_argument("-d", "--delay", type=int, default=300,
+                        help="delay between crawls in seconds")
+    parser.add_argument("-l", "--nolisten", action="store_true", default=False,
+                        help="listen to incoming connections")
+    parser.add_argument("-p", "--port", type=int, default=5001,
+                        help="port to listen on for incoming requests")
+    return parser.parse_args()
+
+
 def main():
-    args = peercrawler.parse_args()
+    args = parse_args()
+
+    ctx = livectx
+    if args.beta:
+        ctx = betactx
+    if args.test:
+        ctx = testctx
 
     setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func, args=(not args.nolisten, args.delay), daemon=True).start()
+    threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.delay), daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
-    app.run(host='0.0.0.0', port=5001, debug=False)
+    app.run(host='0.0.0.0', port=args.port, debug=False)
 
 
 if __name__ == "__main__":
