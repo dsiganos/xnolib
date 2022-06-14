@@ -159,7 +159,7 @@ class peer_manager:
             return
 
         start_time = time.time()
-        while incoming_peer.telemetry is None or incoming_peer_peers is None:
+        while incoming_peer.telemetry is None or incoming_peer_peers is None or is_voting is False:
             if time.time() - start_time > 60:
                 logger.info(f"The time limit for receiving a keepalive and telemetry has been exceeded for {address}, connection is now closing")
                 return
@@ -173,6 +173,11 @@ class peer_manager:
                 keepalive = message_keepalive.parse_payload(header, payload)
                 logger.debug(f"Received peers from {address}")
                 incoming_peer_peers = keepalive.peers
+
+            elif header.msg_type == message_type(message_type_enum.confirm_ack):
+                confirm_response = confirm_ack.parse(header, payload)
+                if confirm_request.is_response(confirm_response):
+                    is_voting = True
 
         return incoming_peer, incoming_peer_peers
 
