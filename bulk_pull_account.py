@@ -214,7 +214,7 @@ class TestBulkPullAccount(unittest.TestCase):
         peerport = 7075
         self.s = get_connected_socket_endpoint(peeraddr, peerport)
         self.account = binascii.unhexlify(self.ctx['genesis_pub'])
-        self.hdr = message_header(network_id(67), [18, 18, 18], message_type(11), 0)
+        self.hdr = message_header(self.ctx["net_id"], [18, 18, 18], message_type(message_type_enum.bulk_pull_account), 0)
 
     def test_script_flag_0(self):
         with self.s as s:
