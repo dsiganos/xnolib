@@ -178,6 +178,7 @@ class peer_manager:
                 confirm_response = confirm_ack.parse(header, payload)
                 if confirm_request.is_response(confirm_response):
                     is_voting = True
+                    logger.debug(f"Received confirm_ack message from {address}")
 
         return incoming_peer, incoming_peer_peers, is_voting
 
