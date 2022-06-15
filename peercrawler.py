@@ -160,7 +160,7 @@ class peer_manager:
 
         start_time = time.time()
         while incoming_peer.telemetry is None or incoming_peer_peers is None or is_voting is False:
-            if time.time() - start_time > 60:
+            if time.time() - start_time > 15:
                 logger.info(f"The time limit for receiving a keepalive and telemetry has been exceeded for {address}, connection is now closing")
                 return
 
