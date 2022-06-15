@@ -29,3 +29,14 @@ def setup_logger(logger: logging.Logger, level: int = VERBOSE) -> None:
     f.setLevel(level)
     f.setFormatter(formatter)
     logger.addHandler(f)
+
+
+def get_logging_level_from_int(level: int) -> int:
+    if level == 0:
+        return logging.WARNING
+    elif level == 1:
+        return logging.INFO
+    elif level == 2:
+        return logging.DEBUG
+    else:
+        return VERBOSE
