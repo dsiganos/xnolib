@@ -125,9 +125,9 @@ def parse_args():
     parser.add_argument("-d", "--delay", type=int, default=300,
                         help="delay between crawls in seconds")
     parser.add_argument("-l", "--nolisten", action="store_true", default=False,
-                        help="disable incoming connection listener")
+                        help="disable incoming connection listener for other peers in the network")
     parser.add_argument("-p", "--port", type=int, default=5001,
-                        help="port to listen on for incoming requests")
+                        help="port to listen on for incoming HTTP requests")
 
     return parser.parse_args()
 
