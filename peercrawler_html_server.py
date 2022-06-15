@@ -27,10 +27,10 @@ representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func(ctx: dict, listen: bool, delay: int, verbosity: int):
+def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbosity: int):
     global peerman
 
-    peerman = peercrawler.peer_manager(ctx, listen=listen, verbosity=verbosity)
+    peerman = peercrawler.peer_manager(ctx, listen=listen, listening_port=listen_port, verbosity=verbosity)
     peerman.crawl(forever=True, delay=delay)  # look for peers forever
 
 
@@ -126,7 +126,9 @@ def parse_args():
                         help="delay between crawls in seconds")
     parser.add_argument("-l", "--nolisten", action="store_true", default=False,
                         help="disable incoming connection listener for other peers in the network")
-    parser.add_argument("-p", "--port", type=int, default=5001,
+    parser.add_argument("-p", "--port", type=int, default=7777,
+                        help="port to listen on for incoming requests from other peers in the network")
+    parser.add_argument("--http-port", type=int, default=5001,
                         help="port to listen on for incoming HTTP requests")
 
     return parser.parse_args()
@@ -145,11 +147,11 @@ def main():
     setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.delay, args.verbosity), daemon=True).start()
+    threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.port, args.delay, args.verbosity), daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
-    app.run(host='0.0.0.0', port=args.port, debug=False)
+    app.run(host='0.0.0.0', port=args.http_port, debug=False)
 
 
 if __name__ == "__main__":
