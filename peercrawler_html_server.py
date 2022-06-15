@@ -27,10 +27,10 @@ representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func(ctx: dict, listen: bool, delay: int):
+def bg_thread_func(ctx: dict, listen: bool, delay: int, verbosity: int):
     global peerman
 
-    peerman = peercrawler.peer_manager(ctx, listen=listen, verbosity=1)
+    peerman = peercrawler.peer_manager(ctx, listen=listen, verbosity=verbosity)
     peerman.crawl(forever=True, delay=delay)  # look for peers forever
 
 
@@ -145,7 +145,7 @@ def main():
     setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.delay), daemon=True).start()
+    threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.delay, args.verbosity), daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
