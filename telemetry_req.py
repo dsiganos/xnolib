@@ -129,6 +129,29 @@ class telemetry_ack:
         tack.sig_verified = verify(data[64:], data[0:64], node_id)
         return tack
 
+    @classmethod
+    def from_json(self, json_tel: dict):
+        return telemetry_ack(message_header.from_json(json_tel['hdr']),
+                             binascii.unhexlify(json_tel['sig']),
+                             binascii.unhexlify(json_tel['node_id']),
+                             json_tel['block_count'],
+                             json_tel['cemented_count'],
+                             json_tel['unchecked_count'],
+                             json_tel['account_count'],
+                             json_tel['bandwidth_cap'],
+                             json_tel['peer_count'],
+                             json_tel['protocol_ver'],
+                             json_tel['uptime'],
+                             binascii.unhexlify(json_tel['genesis_hash']),
+                             json_tel['major_ver'],
+                             json_tel['minor_ver'],
+                             json_tel['patch_ver'],
+                             json_tel['pre_release_ver'],
+                             json_tel['maker_ver'],
+                             json_tel['timestamp'],
+                             json_tel['active_difficulty']
+                             )
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -195,6 +218,62 @@ def main() -> None:
             print('Exception %s: %s' % (type(e), e))
             if (not args.allpeers):
                 raise
+
+
+class TestTelemetry(unittest.TestCase):
+    def test_telemetry_ack_from_json(self):
+        example_json = """
+{
+    "hdr": {
+        "ext": 202,
+        "net_id": 67,
+        "ver_max": 18,
+        "ver_using": 18,
+        "ver_min": 18,
+        "msg_type": 13
+    },
+    "sig_verified": true,
+    "sig": "C019739E66E763FE1673BFE850867972E73F896D5F7B452FB259A0281A2D7168BC1CF7894B7BA7BD6DF97BA5FB5000D97A192AAF0D455B3CFFC7819CC936280B",
+    "node_id": "F3D02EFA6F40123FD2B787B1CB5982F39A4485CC25A222C416FE6B9B61515707",
+    "block_count": 158979360,
+    "cemented_count": 158658193,
+    "unchecked_count": 7,
+    "account_count": 29645164,
+    "bandwidth_cap": 0,
+    "peer_count": 228,
+    "protocol_ver": 18,
+    "uptime": 884,
+    "genesis_hash": "991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948",
+    "major_ver": 23,
+    "minor_ver": 4,
+    "patch_ver": 0,
+    "pre_release_ver": 99,
+    "maker_ver": 111,
+    "timestamp": 1655358225428,
+    "active_difficulty": 18446744039349813248
+}"""
+        tel = telemetry_ack.from_json(json.loads(example_json))
+
+        self.assertEqual(tel.sig,
+                         binascii.unhexlify("C019739E66E763FE1673BFE850867972E73F896D5F7B452FB259A0281A2D7168BC1CF7894B7BA7BD6DF97BA5FB5000D97A192AAF0D455B3CFFC7819CC936280B"))
+        self.assertEqual(tel.node_id, binascii.unhexlify("F3D02EFA6F40123FD2B787B1CB5982F39A4485CC25A222C416FE6B9B61515707"))
+        self.assertEqual(tel.block_count, 158979360)
+        self.assertEqual(tel.cemented_count, 158658193)
+        self.assertEqual(tel.unchecked_count, 7)
+        self.assertEqual(tel.account_count, 29645164)
+        self.assertEqual(tel.bandwidth_cap, 0)
+        self.assertEqual(tel.peer_count, 228)
+        self.assertEqual(tel.protocol_ver, 18)
+        self.assertEqual(tel.uptime, 884)
+        self.assertEqual(tel.genesis_hash,
+                         binascii.unhexlify("991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948"))
+        self.assertEqual(tel.major_ver, 23)
+        self.assertEqual(tel.minor_ver, 4)
+        self.assertEqual(tel.patch_ver, 0)
+        self.assertEqual(tel.pre_release_ver, 99)
+        self.assertEqual(tel.maker_ver, 111)
+        self.assertEqual(tel.timestamp, 1655358225428)
+        self.assertEqual(tel.active_difficulty, 18446744039349813248)
 
 
 if __name__ == '__main__':

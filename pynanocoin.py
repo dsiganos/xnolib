@@ -221,6 +221,12 @@ class message_header:
         telemetry_size_mask = 0x3ff
         return self.ext & telemetry_size_mask
 
+    @classmethod
+    def from_json(self, json_hdr: dict):
+        return message_header(network_id(json_hdr['net_id']),
+                              [json_hdr['ver_max'], json_hdr['ver_using'], json_hdr["ver_min"]],
+                              message_type(json_hdr['msg_type']), json_hdr['ext'])
+
     def payload_length_bytes(self) -> int:
         if self.msg_type == message_type(message_type_enum.bulk_pull):
             print('we do not yet support a bulk pull')
@@ -1227,3 +1233,23 @@ testctx = {
     'genesis_block': test_genesis_block
 }
 
+
+class TestPynanocoin(unittest.TestCase):
+    def test_header_deserialization(self):
+        example_hdr = """
+        {
+        "ext": 202,
+        "net_id": 67,
+        "ver_max": 18,
+        "ver_using": 18,
+        "ver_min": 18,
+        "msg_type": 13
+        }"""
+        json_hdr = json.loads(example_hdr)
+        hdr = message_header.from_json(json_hdr)
+        self.assertEqual(hdr.msg_type, message_type(13))
+        self.assertEqual(hdr.net_id, network_id(67))
+        self.assertEqual(hdr.ver_max, 18)
+        self.assertEqual(hdr.ver_using, 18)
+        self.assertEqual(hdr.ver_min, 18)
+        self.assertEqual(hdr.ext, 202)
