@@ -60,6 +60,11 @@ class peer_manager:
             thread.start()
 
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
+        def find_existing_peer(peer: Peer):
+            for p in self.__connections_graph:
+                if p == peer:
+                    return peer
+
         with self.mutex:
             if from_peer not in self.__connections_graph:
                 self.__connections_graph[from_peer] = peer_set()
@@ -68,7 +73,11 @@ class peer_manager:
                 if new_peer.ip.ipv6.is_unspecified:
                     continue
 
-                if new_peer not in self.__connections_graph:
+                # if there's already a peer object in the graph representing the same peer as new_peer,
+                # the existing one should be used
+                if new_peer in self.__connections_graph:
+                    new_peer = find_existing_peer(new_peer)
+                else:
                     self.__connections_graph[new_peer] = peer_set()
 
                 self.__connections_graph[from_peer].add(new_peer)
