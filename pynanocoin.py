@@ -320,6 +320,15 @@ class Peer:
         port = int.from_bytes(data[16:], "little")
         return Peer(ip_addr(ip), port)
 
+    @classmethod
+    def from_json(cls, json_peer):
+        peer =  Peer(ip_addr(json_peer['ip']), json_peer['port'], json_peer['score'], json_peer['is_voting'],
+                     json_peer['last_seen'])
+        # peer.telemetry = json_peer['telemetry']
+        peer.aux = json_peer['aux']
+        peer.peer_id = json_peer['peer_id']
+        return peer
+
     def __str__(self):
         sw_ver = ''
         if self.telemetry:
