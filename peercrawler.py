@@ -96,7 +96,7 @@ class peer_manager:
 
     def get_connections_graph(self) -> dict[Peer, set[Peer]]:
         with self.mutex:
-            return copy.deepcopy(self.__connections_graph)
+            return self.__connections_graph.copy()
 
     def count_good_peers(self):
         counter = 0
