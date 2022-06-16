@@ -129,6 +129,29 @@ class telemetry_ack:
         tack.sig_verified = verify(data[64:], data[0:64], node_id)
         return tack
 
+    @classmethod
+    def from_json(self, json_tel: dict):
+        return telemetry_ack(message_header.from_json(json_tel['hdr']),
+                             binascii.unhexlify(json_tel['sig']),
+                             binascii.unhexlify(json_tel['node_id']),
+                             json_tel['block_count'],
+                             json_tel['cemented_count'],
+                             json_tel['unchecked_count'],
+                             json_tel['account_count'],
+                             json_tel['bandwidth_cap'],
+                             json_tel['peer_count'],
+                             json_tel['protocol_ver'],
+                             json_tel['uptime'],
+                             binascii.unhexlify(json_tel['genesis_hash']),
+                             json_tel['major_ver'],
+                             json_tel['minor_ver'],
+                             json_tel['patch_ver'],
+                             json_tel['pre_release_ver'],
+                             json_tel['maker_ver'],
+                             json_tel['timestamp'],
+                             json_tel['active_difficulty']
+                             )
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
