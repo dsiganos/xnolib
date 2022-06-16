@@ -63,7 +63,7 @@ class peer_manager:
         def find_existing_peer(peer: Peer):
             for p in self.__connections_graph:
                 if p == peer:
-                    return peer
+                    return p
 
         with self.mutex:
             if from_peer not in self.__connections_graph:
