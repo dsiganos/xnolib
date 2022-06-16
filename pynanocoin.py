@@ -1233,3 +1233,23 @@ testctx = {
     'genesis_block': test_genesis_block
 }
 
+
+class TestPynanocoin(unittest.TestCase):
+    def test_header_deserialization(self):
+        example_hdr = """
+        {
+        "ext": 202,
+        "net_id": 67,
+        "ver_max": 18,
+        "ver_using": 18,
+        "ver_min": 18,
+        "msg_type": 13
+        }"""
+        json_hdr = json.loads(example_hdr)
+        hdr = message_header.from_json(json_hdr)
+        self.assertEqual(hdr.msg_type, message_type(13))
+        self.assertEqual(hdr.net_id, network_id(67))
+        self.assertEqual(hdr.ver_max, 18)
+        self.assertEqual(hdr.ver_using, 18)
+        self.assertEqual(hdr.ver_min, 18)
+        self.assertEqual(hdr.ext, 202)
