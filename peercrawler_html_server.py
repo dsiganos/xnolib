@@ -113,6 +113,9 @@ def logs():
 
 @app.route("/peercrawler/graph")
 def graph():
+    if not app.config["args"].enable_graph:
+        return Response(status=404)
+
     dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
     png = run(["circo", "-Tpng"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
 
@@ -121,6 +124,9 @@ def graph():
 
 @app.route("/peercrawler/graph/raw")
 def graph_raw():
+    if not app.config["args"].enable_graph:
+        return Response(status=404)
+
     dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
     return Response(dot, status=200, mimetype="text/plain")
 
@@ -144,12 +150,15 @@ def parse_args():
                         help="port to listen on for incoming requests from other peers in the network")
     parser.add_argument("--http-port", type=int, default=5001,
                         help="port to listen on for incoming HTTP requests")
+    parser.add_argument("-g", "--enable-graph", action="store_true", default=False,
+                        help="enables the graph endpoints; the graphviz binaries need to be in the PATH for the script to access them")
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    app.config["args"] = args
 
     if args.beta:
         ctx = betactx
