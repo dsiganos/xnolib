@@ -1,5 +1,6 @@
 import json
 
+import pynanocoin
 from pynanocoin import *
 import telemetry_req
 
@@ -16,7 +17,7 @@ class NanoJSONEncoder(json.JSONEncoder):
             return obj.id
         if isinstance(obj, message_type):
             return obj.type
-        if isinstance(obj, telemetry_req.telemetry_ack):
+        if isinstance(obj, pynanocoin.telemetry_ack):
             return obj.__dict__
         if isinstance(obj, Peer):
             return obj.__dict__

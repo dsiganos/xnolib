@@ -4,6 +4,7 @@ import ipaddress
 import os
 import random
 import socket
+import struct
 from typing import Iterable
 import time
 from hashlib import blake2b
@@ -336,6 +337,143 @@ class Peer:
 
     def __hash__(self):
         return hash((self.ip, self.port))
+
+
+class telemetry_ack:
+    def __init__(self, hdr: message_header, signature: bytes, node_id: bytes, block_count: int, cemented_count: int,
+                 unchecked_count: int, account_count: int, bandwidth_cap: int,
+                 peer_count: int, protocol_ver: int, uptime: int, genesis_hash: bytes, major_ver: int,
+                 minor_ver: int, patch_ver: int, pre_release_ver: int, maker_ver: int,
+                 timestamp: int, active_difficulty: int):
+        self.hdr = hdr
+        self.sig_verified = False
+        self.sig = signature
+        self.node_id = node_id
+        self.block_count = block_count
+        self.cemented_count = cemented_count
+        self.unchecked_count = unchecked_count
+        self.account_count = account_count
+        self.bandwidth_cap = bandwidth_cap
+        self.peer_count = peer_count
+        self.protocol_ver = protocol_ver
+        self.uptime = uptime
+        self.genesis_hash = genesis_hash
+        self.major_ver = major_ver
+        self.minor_ver = minor_ver
+        self.patch_ver = patch_ver
+        self.pre_release_ver = pre_release_ver
+        self.maker_ver = maker_ver
+        self.timestamp = timestamp
+        self.active_difficulty = active_difficulty
+
+    def __str__(self):
+        string =  'Signature: %s\n' % hexlify(self.sig)
+        string += 'Node ID: %s\n' % hexlify(self.node_id)
+        string += '         %s\n' % acctools.to_account_addr(self.node_id, 'node_')
+        string += 'Block Count: %d\n' % self.block_count
+        string += 'Cemented Count: %d\n' % self.cemented_count
+        string += 'Unchecked Count: %d\n' % self.unchecked_count
+        string += 'Account Count: %d\n' % self.account_count
+        string += 'Bandwidth Cap: %d\n' % self.bandwidth_cap
+        string += 'Peer Count: %d\n' % self.peer_count
+        string += 'Protocol Version: %d\n' % self.protocol_ver
+        string += 'Uptime: %d s\n' % self.uptime
+        string += 'Genesis Hash: %s\n' % hexlify(self.genesis_hash)
+        string += 'Major Version: %d\n' % self.major_ver
+        string += 'Minor Version: %d\n' % self.minor_ver
+        string += 'Patch Version: %d\n' % self.patch_ver
+        string += 'Pre-release Version: %d\n' % self.pre_release_ver
+        string += 'Maker Version: %d\n' % self.maker_ver
+        string += 'Timestamp: %d ms\n' % self.timestamp
+        string += 'Active Difficulty: %s (%s)\n' % (self.active_difficulty, hex(self.active_difficulty))
+        string += '%s signature' % 'Valid' if self.sig_verified else 'INVALID'
+        return string
+
+    def get_sw_version(self) -> str:
+        return '%s.%s.%s.%s' % (self.major_ver, self.minor_ver, self.patch_ver, self.pre_release_ver)
+
+    def serialize_without_signature(self) -> bytes:
+        data = struct.pack('>32sQQQQQIBQ32sBBBBBQQ', \
+            self.node_id, \
+            self.block_count, \
+            self.cemented_count, \
+            self.unchecked_count, \
+            self.account_count, \
+            self.bandwidth_cap, \
+            self.peer_count, \
+            self.protocol_ver, \
+            self.uptime, \
+            self.genesis_hash, \
+            self.major_ver, \
+            self.minor_ver, \
+            self.patch_ver, \
+            self.pre_release_ver, \
+            self.maker_ver, \
+            self.timestamp, \
+            self.active_difficulty)
+        return data
+
+    def serialize(self) -> bytes:
+        data = self.hdr.serialise_header()
+        data += struct.pack('64s', self.sig)
+        data += self.serialize_without_signature()
+        return data
+
+    def sign(self, signing_key: ed25519_blake2b.keys.SigningKey) -> None:
+        self.sig = signing_key.sign(self.serialize_without_signature())
+
+    @classmethod
+    def parse(self, hdr: message_header, data: bytes):
+        if len(data) != 202:
+            raise BadTelemetryReply('message len not 202, data=%s', data)
+        unpacked = struct.unpack('>64s32sQQQQQIBQ32sBBBBBQQ', data)
+        sig                 = unpacked[0]
+        node_id             = unpacked[1]
+        block_count         = unpacked[2]
+        cemented_count      = unpacked[3]
+        unchecked_count     = unpacked[4]
+        account_count       = unpacked[5]
+        bandwidth_cap       = unpacked[6]
+        peer_count          = unpacked[7]
+        protocol_ver        = unpacked[8]
+        uptime              = unpacked[9]
+        genesis_hash        = unpacked[10]
+        major_ver           = unpacked[11]
+        minor_ver           = unpacked[12]
+        patch_ver           = unpacked[13]
+        pre_release_ver     = unpacked[14]
+        maker_ver           = unpacked[15]
+        timestamp           = unpacked[16]
+        active_difficulty   = unpacked[17]
+        tack = telemetry_ack(hdr, sig, node_id, block_count, cemented_count, unchecked_count,
+                             account_count, bandwidth_cap, peer_count, protocol_ver, uptime,
+                             genesis_hash, major_ver, minor_ver, patch_ver, pre_release_ver, maker_ver,
+                             timestamp, active_difficulty)
+        tack.sig_verified = verify(data[64:], data[0:64], node_id)
+        return tack
+
+    @classmethod
+    def from_json(self, json_tel: dict):
+        return telemetry_ack(message_header.from_json(json_tel['hdr']),
+                             binascii.unhexlify(json_tel['sig']),
+                             binascii.unhexlify(json_tel['node_id']),
+                             json_tel['block_count'],
+                             json_tel['cemented_count'],
+                             json_tel['unchecked_count'],
+                             json_tel['account_count'],
+                             json_tel['bandwidth_cap'],
+                             json_tel['peer_count'],
+                             json_tel['protocol_ver'],
+                             json_tel['uptime'],
+                             binascii.unhexlify(json_tel['genesis_hash']),
+                             json_tel['major_ver'],
+                             json_tel['minor_ver'],
+                             json_tel['patch_ver'],
+                             json_tel['pre_release_ver'],
+                             json_tel['maker_ver'],
+                             json_tel['timestamp'],
+                             json_tel['active_difficulty']
+                             )
 
 
 class message_keepalive:
@@ -1254,3 +1392,4 @@ class TestPynanocoin(unittest.TestCase):
         self.assertEqual(hdr.ver_using, 18)
         self.assertEqual(hdr.ver_min, 18)
         self.assertEqual(hdr.ext, 202)
+

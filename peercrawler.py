@@ -18,6 +18,7 @@ from pydot import Dot, Node, Edge
 
 import _logger
 import confirm_req
+import pynanocoin
 import telemetry_req
 from msg_handshake import *
 from peer_set import peer_set
@@ -33,7 +34,7 @@ def get_telemetry(ctx, s):
     hdr, data = get_next_hdr_payload(s)
     while hdr.msg_type != message_type(message_type_enum.telemetry_ack):
         hdr, data = get_next_hdr_payload(s)
-    return telemetry_req.telemetry_ack.parse(hdr, data)
+    return pynanocoin.telemetry_ack.parse(hdr, data)
 
 
 class peer_manager:
@@ -175,7 +176,7 @@ class peer_manager:
 
             header, payload = get_next_hdr_payload(connection)
             if header.msg_type == message_type(message_type_enum.telemetry_ack):
-                incoming_peer.telemetry = telemetry_req.telemetry_ack.parse(header, payload)
+                incoming_peer.telemetry = pynanocoin.telemetry_ack.parse(header, payload)
                 logger.debug(f"Received telemetry from {address}")
 
             elif header.msg_type == message_type(message_type_enum.keepalive):
