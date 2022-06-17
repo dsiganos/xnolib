@@ -117,9 +117,9 @@ def graph():
         return Response(status=404)
 
     dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
-    png = run(["circo", "-Tpng"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+    png = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
 
-    return Response(png, status=200, mimetype="image/png")
+    return Response(png, status=200, mimetype="image/svg+xml")
 
 
 @app.route("/peercrawler/graph/raw")
