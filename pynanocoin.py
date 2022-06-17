@@ -326,6 +326,17 @@ class Peer:
         port = int.from_bytes(data[16:], "little")
         return Peer(ip_addr(ip), port)
 
+    @classmethod
+    def from_json(self, json_peer):
+        # Add 'incoming' argument when peer service code gets updated
+        peer = Peer(ip_addr(json_peer['ip']), json_peer['port'], json_peer['score'], json_peer['is_voting'],
+                    json_peer['last_seen'])
+        if json_peer['telemetry'] is not None:
+            peer.telemetry = telemetry_ack.from_json(json_peer['telemetry'])
+        if json_peer['peer_id']:
+            peer.peer_id = binascii.unhexlify(json_peer['peer_id'])
+        return peer
+
     def __str__(self):
         sw_ver = ''
         if self.telemetry:
