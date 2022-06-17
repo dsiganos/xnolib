@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 import threading
 import argparse
+from subprocess import run
 
 from flask import Flask, Response, render_template
 
@@ -85,10 +86,9 @@ def main_website():
 
 @app.route("/peercrawler/json")
 def json():
-    global app, peerman
-
     peers = peerman.get_peers_as_list()
     js = jsonencoder.to_json(list(peers))
+
     return Response(js, status=200, mimetype="application/json")
 
 
@@ -109,6 +109,14 @@ def logs():
         log_2 = ""
 
     return Response(log_1 + log_2, status=200, mimetype="text/plain")
+
+
+@app.route("/peercrawler/graph")
+def graph():
+    dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
+    png = run(["circo", "-Tpng"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+
+    return Response(png, status=200, mimetype="image/png")
 
 
 def parse_args():
