@@ -119,6 +119,12 @@ def graph():
     return Response(png, status=200, mimetype="image/png")
 
 
+@app.route("/peercrawler/graph/raw")
+def graph_raw():
+    dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
+    return Response(dot, status=200, mimetype="text/plain")
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
