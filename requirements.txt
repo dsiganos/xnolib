@@ -7,4 +7,5 @@ jsonpickle
 mysql-connector-python
 flask
 requests
+Flask-Caching
 pydot==1.4.2

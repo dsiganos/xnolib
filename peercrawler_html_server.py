@@ -8,6 +8,7 @@ import argparse
 from subprocess import run
 
 from flask import Flask, Response, render_template
+from flask_caching import Cache
 
 import jsonencoder
 import peercrawler
@@ -19,6 +20,8 @@ from pynanocoin import livectx, betactx, testctx
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+
 logger = get_logger()
 
 peerman: peercrawler.peer_manager = None
@@ -36,6 +39,7 @@ def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbos
 
 
 @app.route("/peercrawler")
+@cache.cached(timeout=5)
 def main_website():
     global app, peerman, representatives
 
@@ -112,6 +116,7 @@ def logs():
 
 
 @app.route("/peercrawler/graph")
+@cache.cached(timeout=10)
 def graph():
     if not app.config["args"].enable_graph:
         return Response(status=404)
@@ -123,6 +128,7 @@ def graph():
 
 
 @app.route("/peercrawler/graph/raw")
+@cache.cached(timeout=10)
 def graph_raw():
     if not app.config["args"].enable_graph:
         return Response(status=404)
