@@ -390,24 +390,6 @@ def spawn_peer_crawler_thread(ctx, forever, delay, verbosity):
     return t
 
 
-def run_peer_service_forever(peerman, addr='', port=7070):
-    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind((addr, port))
-        s.listen()
-
-        while True:
-            conn, addr = s.accept()
-            with conn:
-                conn.settimeout(10)
-                hdr = peer_service_header(peerman.ctx["net_id"], peerman.count_good_peers(), peerman.count_peers())
-                data = hdr.serialise()
-                json_list = jsonpickle.encode(peerman.get_peers_as_list())
-                data += json_list.encode()
-                conn.sendall(data)
-
-
 def get_peers_from_service(ctx, addr='::ffff:78.46.80.199'):
     with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -532,7 +514,7 @@ def main():
     if args.service:
         verbosity = args.verbosity if (args.verbosity is not None) else 0
         crawler_thread = spawn_peer_crawler_thread(ctx, True, args.delay, verbosity)
-        run_peer_service_forever(crawler_thread.peerman, port=args.port)
+        crawler_thread.join()
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
         peerman = peer_manager(ctx, listen=(not args.nolisten), verbosity=verbosity)
