@@ -137,12 +137,26 @@ def graph_raw():
     return Response(dot, status=200, mimetype="text/plain")
 
 
+@app.route("/peercrawler/graph/uncached")
+def graph_uncached():
+    if not app.config["args"].enable_graph or not app.config["args"].graph_uncached:
+        return Response(status=404)
+
+    svg = render_graph_svg(peerman.get_connections_graph(), True)
+    return Response(svg, status=200, mimetype="image/svg+xml")
+
+
+def render_graph_svg(connections: dict, only_voting: bool = True) -> bytes:
+    dot = peercrawler.get_dot_string(connections, only_voting)
+    svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+    return svg
+
+
 def render_graph_thread(interval_seconds: int):
     time.sleep(10)
 
     while True:
-        dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
-        svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+        svg = render_graph_svg(peerman.get_connections_graph(), True)
         with open("peers.svg", "wb") as file:
             file.write(svg)
 
@@ -172,6 +186,8 @@ def parse_args():
                         help="enables the graph endpoints; the graphviz binaries need to be in the PATH for the script to access them")
     parser.add_argument("--graph-interval", type=int, default=3600,
                         help="how many seconds to wait between rendering the graph; this has no effect if the graph generation feature is not enabled")
+    parser.add_argument("--graph-uncached", action="store_true", default=False,
+                        help="enables the graph endpoint which serves rendered graphs on demand; this has no effect if the graph generation feature is not enabled")
 
     return parser.parse_args()
 
