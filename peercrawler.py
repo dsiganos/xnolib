@@ -321,8 +321,6 @@ def parse_args():
                         help='run peer crawler as a service')
     parser.add_argument('-l', '--nolisten', action='store_true', default=False,
                         help='listen to incoming connections')
-    parser.add_argument('-p', '--port', type=int, default=7070,
-                        help='tcp port number to listen on in service mode')
     return parser.parse_args()
 
 
