@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timedelta
 import threading
 import argparse
+from subprocess import run
 
 from flask import Flask, Response, render_template
+from flask_caching import Cache
 
 import jsonencoder
 import peercrawler
@@ -18,6 +21,8 @@ from pynanocoin import livectx, betactx, testctx
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+
 logger = get_logger()
 
 peerman: peercrawler.peer_manager = None
@@ -35,6 +40,7 @@ def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbos
 
 
 @app.route("/peercrawler")
+@cache.cached(timeout=5)
 def main_website():
     global app, peerman, representatives
 
@@ -85,10 +91,9 @@ def main_website():
 
 @app.route("/peercrawler/json")
 def json():
-    global app, peerman
-
     peers = peerman.get_peers_as_list()
     js = jsonencoder.to_json(list(peers))
+
     return Response(js, status=200, mimetype="application/json")
 
 
@@ -111,6 +116,39 @@ def logs():
     return Response(log_1 + log_2, status=200, mimetype="text/plain")
 
 
+@app.route("/peercrawler/graph")
+def graph():
+    if not app.config["args"].enable_graph:
+        return Response(status=404)
+
+    with open("peers.svg", "rb") as file:
+        svg = file.read()
+
+    return Response(svg, status=200, mimetype="image/svg+xml")
+
+
+@app.route("/peercrawler/graph/raw")
+@cache.cached(timeout=10)
+def graph_raw():
+    if not app.config["args"].enable_graph:
+        return Response(status=404)
+
+    dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
+    return Response(dot, status=200, mimetype="text/plain")
+
+
+def render_graph_thread(interval_seconds: int):
+    time.sleep(10)
+
+    while True:
+        dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
+        svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+        with open("peers.svg", "wb") as file:
+            file.write(svg)
+
+        time.sleep(interval_seconds)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -130,12 +168,17 @@ def parse_args():
                         help="port to listen on for incoming requests from other peers in the network")
     parser.add_argument("--http-port", type=int, default=5001,
                         help="port to listen on for incoming HTTP requests")
+    parser.add_argument("-g", "--enable-graph", action="store_true", default=False,
+                        help="enables the graph endpoints; the graphviz binaries need to be in the PATH for the script to access them")
+    parser.add_argument("--graph-interval", type=int, default=3600,
+                        help="how many seconds to wait between rendering the graph; this has no effect if the graph generation feature is not enabled")
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    app.config["args"] = args
 
     if args.beta:
         ctx = betactx
@@ -148,6 +191,9 @@ def main():
 
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.port, args.delay, args.verbosity), daemon=True).start()
+
+    if args.enable_graph:
+        threading.Thread(target=render_graph_thread, args=(args.graph_interval,), daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
