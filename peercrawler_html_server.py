@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timedelta
 import threading
 import argparse
@@ -116,15 +117,12 @@ def logs():
 
 
 @app.route("/peercrawler/graph")
-@cache.cached(timeout=60)
 def graph():
     if not app.config["args"].enable_graph:
         return Response(status=404)
 
-    dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
-    svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
-    with open("peers.dot", "w") as file:
-        file.write(svg.decode("utf8"))
+    with open("peers.svg", "rb") as file:
+        svg = file.read()
 
     return Response(svg, status=200, mimetype="image/svg+xml")
 
@@ -137,6 +135,16 @@ def graph_raw():
 
     dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
     return Response(dot, status=200, mimetype="text/plain")
+
+
+def render_graph_thread():
+    while True:
+        dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
+        svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+        with open("peers.svg", "wb") as file:
+            file.write(svg)
+
+        time.sleep(3600)
 
 
 def parse_args():
@@ -179,6 +187,9 @@ def main():
 
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.port, args.delay, args.verbosity), daemon=True).start()
+
+    if args.enable_graph:
+        threading.Thread(target=render_graph_thread, daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
