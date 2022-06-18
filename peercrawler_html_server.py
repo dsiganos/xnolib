@@ -137,7 +137,7 @@ def graph_raw():
     return Response(dot, status=200, mimetype="text/plain")
 
 
-def render_graph_thread():
+def render_graph_thread(interval_seconds: int):
     time.sleep(10)
 
     while True:
@@ -146,7 +146,7 @@ def render_graph_thread():
         with open("peers.svg", "wb") as file:
             file.write(svg)
 
-        time.sleep(3600)
+        time.sleep(interval_seconds)
 
 
 def parse_args():
@@ -170,6 +170,8 @@ def parse_args():
                         help="port to listen on for incoming HTTP requests")
     parser.add_argument("-g", "--enable-graph", action="store_true", default=False,
                         help="enables the graph endpoints; the graphviz binaries need to be in the PATH for the script to access them")
+    parser.add_argument("--graph-interval", type=int, default=3600,
+                        help="how many seconds to wait between rendering the graph; this has no effect if the graph generation feature is not enabled")
 
     return parser.parse_args()
 
@@ -191,7 +193,7 @@ def main():
     threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.port, args.delay, args.verbosity), daemon=True).start()
 
     if args.enable_graph:
-        threading.Thread(target=render_graph_thread, daemon=True).start()
+        threading.Thread(target=render_graph_thread, args=(args.graph_interval,), daemon=True).start()
 
     # start flash server in the foreground or debug=True cannot be used otherwise
     # flask expects to be in the foreground
