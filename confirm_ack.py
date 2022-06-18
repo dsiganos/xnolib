@@ -6,8 +6,6 @@ import sys
 import time
 import argparse
 
-from pynanocoin import *
-from msg_handshake import node_handshake_id
 from peercrawler import *
 import datetime
 

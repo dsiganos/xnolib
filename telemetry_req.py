@@ -2,22 +2,22 @@
 
 import struct
 import argparse
+import pynanocoin
 
-from pynanocoin import *
 from msg_handshake import *
 import peercrawler
 
 
 class telemetry_req:
     def __init__(self, ctx: dict):
-        self.header = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_req), 0)
+        self.header = pynanocoin.message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.telemetry_req), 0)
 
     def serialise(self) -> bytes:
         return self.header.serialise_header()
 
 
 class telemetry_ack:
-    def __init__(self, hdr: message_header, signature: bytes, node_id: bytes, block_count: int, cemented_count: int,
+    def __init__(self, hdr: pynanocoin.message_header, signature: bytes, node_id: bytes, block_count: int, cemented_count: int,
                  unchecked_count: int, account_count: int, bandwidth_cap: int,
                  peer_count: int, protocol_ver: int, uptime: int, genesis_hash: bytes, major_ver: int,
                  minor_ver: int, patch_ver: int, pre_release_ver: int, maker_ver: int,
@@ -100,7 +100,7 @@ class telemetry_ack:
         self.sig = signing_key.sign(self.serialize_without_signature())
 
     @classmethod
-    def parse(self, hdr: message_header, data: bytes):
+    def parse(self, hdr: pynanocoin.message_header, data: bytes):
         if len(data) != 202:
             raise BadTelemetryReply('message len not 202, data=%s', data)
         unpacked = struct.unpack('>64s32sQQQQQIBQ32sBBBBBQQ', data)
@@ -131,7 +131,7 @@ class telemetry_ack:
 
     @classmethod
     def from_json(self, json_tel: dict):
-        return telemetry_ack(message_header.from_json(json_tel['hdr']),
+        return telemetry_ack(pynanocoin.message_header.from_json(json_tel['hdr']),
                              binascii.unhexlify(json_tel['sig']),
                              binascii.unhexlify(json_tel['node_id']),
                              json_tel['block_count'],

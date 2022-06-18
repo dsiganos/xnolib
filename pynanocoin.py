@@ -19,11 +19,12 @@ from _logger import get_logger, VERBOSE
 import pow_validation
 
 import acctools
+import peer
 from exceptions import *
 from block import *
 from net import *
 from common import *
-from peer import Peer, ip_addr
+# from peer import Peer, ip_addr
 
 logger = get_logger()
 
@@ -241,13 +242,13 @@ class message_header:
 
 
 class message_keepalive:
-    def __init__(self, hdr: message_header, peers: list[Peer] = None):
+    def __init__(self, hdr: message_header, peers: list[peer.Peer] = None):
         self.header = hdr
         self.header.msg_type = message_type(message_type_enum.keepalive)
         if peers is None:
             self.peers = []
             for i in range(0, 8):
-                self.peers.append(Peer())
+                self.peers.append(peer.Peer())
         else:
             assert len(peers) == 8
             self.peers = peers
@@ -278,7 +279,7 @@ class message_keepalive:
         end_index = 18
         peers_list = []
         for i in range(0, no_of_peers):
-            p = Peer.parse_peer(rawdata[start_index:end_index])
+            p = peer.Peer.parse_peer(rawdata[start_index:end_index])
             p.last_seen = int(time.time())
             peers_list.append(p)
             start_index = end_index
@@ -286,10 +287,10 @@ class message_keepalive:
         return message_keepalive(hdr, peers_list)
 
     @classmethod
-    def make_packet(cls, peers: Iterable[Peer], net_id, version: int) -> bytes:
+    def make_packet(cls, peers: Iterable[peer.Peer], net_id, version: int) -> bytes:
         peers = list(peers)
         for i in range(len(peers), 8):
-            peers.append(Peer())
+            peers.append(peer.Peer())
 
         hdr = message_header(net_id, [version, version, version], message_type(message_type_enum.keepalive), 0)
         keepalive = message_keepalive(hdr, list(peers))
@@ -905,9 +906,9 @@ class nano_account:
 
 
 # return DNS adresses as Peer objects
-def get_all_dns_addresses_as_peers(addr: str, peerport: int, score: int) -> list[Peer]:
+def get_all_dns_addresses_as_peers(addr: str, peerport: int, score: int) -> list[peer.Peer]:
     addresses = get_all_dns_addresses(addr)
-    return [ Peer(ip_addr(ipaddress.IPv6Address(a)), peerport, score) for a in addresses ]
+    return [ peer.Peer(peer.ip_addr(ipaddress.IPv6Address(a)), peerport, score) for a in addresses ]
 
 
 def read_bulk_pull_response(s: socket.socket) -> list:
@@ -1057,8 +1058,8 @@ def non_digits_in_ip(string: str) -> bool:
     return False
 
 
-def peer_from_endpoint(addr: str, port: int) -> Peer:
-    return Peer(ip_addr(addr), port)
+def peer_from_endpoint(addr: str, port: int) -> peer.Peer:
+    return peer.Peer(peer.ip_addr(addr), port)
 
 
 def get_connected_socket_endpoint(addr: str, port: int, bind_endpoint: tuple = None) -> socket.socket:

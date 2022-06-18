@@ -9,10 +9,9 @@ import sys
 import time
 import argparse
 import datetime
+import unittest
 
 import common
-from pynanocoin import *
-from msg_handshake import node_handshake_id
 from peercrawler import *
 import confirm_ack
 
