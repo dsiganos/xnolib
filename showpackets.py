@@ -8,6 +8,7 @@ from pynanocoin import *
 from msg_handshake import *
 from peercrawler import *
 from confirm_req import *
+from confirm_ack import confirm_ack
 from msg_publish import *
 from frontier_request import *
 from bulk_pull_account import *
@@ -59,7 +60,7 @@ functions = {
     message_type_enum.keepalive: message_keepalive.parse_payload,
     message_type_enum.publish: msg_publish.parse,
     message_type_enum.confirm_req: confirm_req.confirm_req.parse,
-    message_type_enum.confirm_ack: confirm_ack.confirm_ack.parse,
+    message_type_enum.confirm_ack: confirm_ack.parse,
     message_type_enum.bulk_pull: message_bulk_pull.parse,
     message_type_enum.bulk_push: bulk_push.parse,
     message_type_enum.frontier_req: frontier_request.parse,
