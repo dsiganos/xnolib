@@ -496,16 +496,14 @@ def send_confirm_req_genesis(ctx, peer, s):
 def get_dot_string(connections: dict[Peer, set[Peer]], only_voting: bool = False) -> str:
     def get_label(p: Peer) -> str:
         if p.ip.ipv6.ipv4_mapped is None:
-            ip = f"[{p.ip.ipv6}]"
+            address = f"{p.ip.ipv6}"
         else:
-            ip = f"[{p.ip.ipv6.ipv4_mapped}]"
+            address = f"{p.ip.ipv6.ipv4_mapped}"
 
-        if p.port == 7075:
-            port = ""
-        else:
-            port = f":{p.port}"
+        if p.port != 7075:
+            address = f"[{address}]:{p.port}"
 
-        return ip + port
+        return address
 
     graph = Dot("network_connections", graph_type="digraph")
     for node, peers in connections.items():
