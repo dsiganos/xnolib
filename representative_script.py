@@ -12,6 +12,7 @@ import threading
 import random
 import tracemalloc
 from exceptions import *
+from peer import Peer
 
 
 class thread_manager:

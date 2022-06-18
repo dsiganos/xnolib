@@ -39,6 +39,7 @@ from frontier_service import *
 from peercrawler import send_confirm_req_genesis, get_peers_from_service
 from frontier_request import *
 from bulk_pull_account import *
+from peer import Peer, ip_addr
 
 
 class TestComms(unittest.TestCase):

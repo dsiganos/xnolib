@@ -14,7 +14,7 @@ import mysql.connector
 
 from sql_utils import *
 from pynanocoin import *
-
+from peer import Peer
 
 class frontier_service:
     def __init__(self, ctx, interface, verbosity = 0):

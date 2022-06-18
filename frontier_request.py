@@ -14,6 +14,7 @@ import peercrawler
 import acctools
 from exceptions import *
 from pynanocoin import *
+from peer import Peer
 
 
 class frontier_request:

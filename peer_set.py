@@ -2,7 +2,7 @@ from time import time
 from typing import Iterable, Optional
 
 import _logger
-from pynanocoin import Peer
+from peer import Peer
 
 
 logger = _logger.get_logger()
