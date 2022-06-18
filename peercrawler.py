@@ -324,50 +324,6 @@ def parse_args():
     return parser.parse_args()
 
 
-class peer_service_header:
-    size = 124
-
-    def __init__(self, net_id, good_peers, total_peers, software_ver="devel", protocol_ver=3):
-        self.magic = b'PEER'
-        assert (isinstance(net_id, network_id))
-        assert (isinstance(software_ver, str))
-        self.net_id = net_id
-        self.good_peers = good_peers
-        self.total_peers = total_peers
-        self.software_ver = software_ver
-        self.protocol_ver = protocol_ver
-
-    def serialise(self):
-        data = self.magic
-        data += self.net_id.id.to_bytes(1, "big")
-        data += self.protocol_ver.to_bytes(3, "big")
-        data += self.good_peers.to_bytes(8, "big")
-        data += self.total_peers.to_bytes(8, "big")
-        data += string_to_bytes(self.software_ver, 100)
-        return data
-
-    @classmethod
-    def parse(cls, data):
-        assert (len(data) == peer_service_header.size)
-        assert (data[0:4] == b'PEER')
-        return peer_service_header(
-            net_id=network_id(data[4]),
-            protocol_ver=int.from_bytes(data[5:8], "big"),
-            good_peers=int.from_bytes(data[8:16], "big"),
-            total_peers=int.from_bytes(data[16:24], "big"),
-            software_ver=data[24:].decode("utf-8")
-        )
-
-    def __str__(self):
-        s = ''
-        s += 'NetID:      %s\n' % self.net_id
-        s += 'GoodPeers:  %s\n' % self.good_peers
-        s += 'TotalPeers: %s\n' % self.total_peers
-        s += 'ProtoVers:  %s\n' % self.protocol_ver
-        s += 'SwVers:     %s' % self.software_ver
-        return s
-
-
 class peer_crawler_thread(threading.Thread):
     def __init__(self, ctx, forever, delay, verbosity=0):
         threading.Thread.__init__(self, daemon=True)
