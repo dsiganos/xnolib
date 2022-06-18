@@ -1,6 +1,8 @@
 import binascii
 import ipaddress
+import json
 import time
+import unittest
 from typing import Union
 
 from _logger import VERBOSE, get_logger
@@ -116,3 +118,55 @@ class Peer:
 
     def __hash__(self):
         return hash((self.ip, self.port))
+
+
+class TestPeer(unittest.TestCase):
+    def test_peer_from_json(self):
+        example_json = """{
+    "ip": "::ffff:135.181.141.91",
+    "port": 7075,
+    "peer_id": "F3D02EFA6F40123FD2B787B1CB5982F39A4485CC25A222C416FE6B9B61515707",
+    "is_voting": false,
+    "telemetry": {
+        "hdr": {
+            "ext": 202,
+            "net_id": 67,
+            "ver_max": 18,
+            "ver_using": 18,
+            "ver_min": 18,
+            "msg_type": 13
+        },
+        "sig_verified": true,
+        "sig": "C019739E66E763FE1673BFE850867972E73F896D5F7B452FB259A0281A2D7168BC1CF7894B7BA7BD6DF97BA5FB5000D97A192AAF0D455B3CFFC7819CC936280B",
+        "node_id": "F3D02EFA6F40123FD2B787B1CB5982F39A4485CC25A222C416FE6B9B61515707",
+        "block_count": 158979360,
+        "cemented_count": 158658193,
+        "unchecked_count": 7,
+        "account_count": 29645164,
+        "bandwidth_cap": 0,
+        "peer_count": 228,
+        "protocol_ver": 18,
+        "uptime": 884,
+        "genesis_hash": "991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948",
+        "major_ver": 23,
+        "minor_ver": 4,
+        "patch_ver": 0,
+        "pre_release_ver": 99,
+        "maker_ver": 111,
+        "timestamp": 1655358225428,
+        "active_difficulty": 18446744039349813248
+    },
+    "aux": {},
+    "last_seen": 1655358541,
+    "score": 1000
+}
+"""
+        json_peer = json.loads(example_json)
+        peer = Peer.from_json(json_peer)
+
+        self.assertEqual(peer.ip, ip_addr("::ffff:135.181.141.91"))
+        self.assertEqual(peer.port, 7075)
+        self.assertEqual(peer.is_voting, False)
+        self.assertEqual(peer.aux, {})
+        self.assertEqual(peer.last_seen, 1655358541)
+        self.assertEqual(peer.score, 1000)
