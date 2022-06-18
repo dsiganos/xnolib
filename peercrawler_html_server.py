@@ -138,6 +138,8 @@ def graph_raw():
 
 
 def render_graph_thread():
+    time.sleep(10)
+
     while True:
         dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
         svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
