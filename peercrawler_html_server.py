@@ -116,15 +116,17 @@ def logs():
 
 
 @app.route("/peercrawler/graph")
-@cache.cached(timeout=10)
+@cache.cached(timeout=60)
 def graph():
     if not app.config["args"].enable_graph:
         return Response(status=404)
 
     dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
-    png = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+    svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
+    with open("peers.dot", "w") as file:
+        file.write(svg.decode("utf8"))
 
-    return Response(png, status=200, mimetype="image/svg+xml")
+    return Response(svg, status=200, mimetype="image/svg+xml")
 
 
 @app.route("/peercrawler/graph/raw")
