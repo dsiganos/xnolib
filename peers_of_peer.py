@@ -8,6 +8,8 @@ import argparse
 
 import peercrawler
 from pynanocoin import *
+from peer import Peer
+
 
 def parse_args():
     parser = argparse.ArgumentParser()

@@ -22,6 +22,7 @@ import telemetry_req
 from msg_handshake import *
 from peer_set import peer_set
 from confirm_ack import confirm_ack
+from peer import Peer
 
 
 logger = _logger.get_logger()

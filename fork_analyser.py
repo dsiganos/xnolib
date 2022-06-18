@@ -7,6 +7,7 @@ import peercrawler
 import frontier_request
 from pynanocoin import *
 from exceptions import *
+from peer import Peer
 
 
 def frontier_req(ctx: dict, s: socket.socket, peer: Peer, acc_id: bytes) -> None:
