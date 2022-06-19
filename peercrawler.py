@@ -279,6 +279,29 @@ class peer_manager:
             logger.info(self)
             count += 1
 
+    # noinspection PyUnresolvedReferences
+    def get_dot_string(self, only_voting: bool = False) -> str:
+        def get_label(p: Peer) -> str:
+            if p.ip.ipv6.ipv4_mapped is None:
+                address = f"{p.ip.ipv6}"
+            else:
+                address = f"{p.ip.ipv6.ipv4_mapped}"
+
+            if p.port != self.ctx["peerport"]:
+                address = f"[{address}]:{p.port}"
+
+            return address
+
+        graph = Dot("network_connections", graph_type="digraph")
+        for node, peers in self.get_connections_graph().items():
+            for peer in peers:
+                if only_voting and not (node.is_voting and peer.is_voting):
+                    continue
+
+                graph.add_edge(Edge(get_label(node), get_label(peer)))
+
+        return graph.to_string()
+
     def peer_to_string(self, p: Peer) -> str:
         s = '%39s:%5s score=%-4s' % (p.ip, p.port, p.score)
 
@@ -490,30 +513,6 @@ def send_confirm_req_genesis(ctx, peer, s):
         outcome = False
 
     return outcome
-
-
-# noinspection PyUnresolvedReferences
-def get_dot_string(connections: dict[Peer, set[Peer]], only_voting: bool = False) -> str:
-    def get_label(p: Peer) -> str:
-        if p.ip.ipv6.ipv4_mapped is None:
-            address = f"{p.ip.ipv6}"
-        else:
-            address = f"{p.ip.ipv6.ipv4_mapped}"
-
-        if p.port != 7075:
-            address = f"[{address}]:{p.port}"
-
-        return address
-
-    graph = Dot("network_connections", graph_type="digraph")
-    for node, peers in connections.items():
-        for peer in peers:
-            if only_voting and not (node.is_voting and peer.is_voting):
-                continue
-
-            graph.add_edge(Edge(get_label(node), get_label(peer)))
-
-    return graph.to_string()
 
 
 def main():
