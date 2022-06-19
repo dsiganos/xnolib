@@ -8,12 +8,13 @@ import threading
 import argparse
 from subprocess import run
 
-from flask import Flask, Response, render_template
+from flask import Flask, Response, render_template, request
 from flask_caching import Cache
 
 import jsonencoder
 import peercrawler
-import pynanocoin
+from typing import Callable
+from pynanocoin import Peer
 from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
@@ -142,12 +143,16 @@ def graph_uncached():
     if not app.config["args"].enable_graph or not app.config["args"].graph_uncached:
         return Response(status=404)
 
-    svg = render_graph_svg(True)
+    score = request.args.get("score", default=0, type=int)
+    voting = request.args.get("voting", default=True, type=bool)
+    filter_function = lambda p: p.is_voting is voting and p.score > score
+
+    svg = render_graph_svg(filter_function)
     return Response(svg, status=200, mimetype="image/svg+xml")
 
 
-def render_graph_svg(only_voting: bool = True) -> bytes:
-    dot = peerman.get_dot_string(only_voting)
+def render_graph_svg(filter_function: Callable[[Peer], bool] = None) -> bytes:
+    dot = peerman.get_dot_string(filter_function)
     svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
     return svg
 
