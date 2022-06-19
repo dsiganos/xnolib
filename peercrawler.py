@@ -279,22 +279,22 @@ class peer_manager:
             logger.info(self)
             count += 1
 
+    def peer_to_string(self, p: Peer) -> str:
+        s = '%39s:%5s score=%-4s' % (p.ip, p.port, p.score)
+
+        if p.telemetry:
+            s += ' v%-10s' % p.telemetry.get_sw_version()
+            s += ' cc=%11s' % format(p.telemetry.cemented_count, ',')
+
+        s += ' (voting)\n' if p.is_voting else '\n'
+        return s
+
     def __str__(self):
         peers = self.get_peers_as_list()
-
         good = reduce(lambda c, p: c + int(p.score >= 1000), peers, 0)
         s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(peers), good)
         for p in peers:
-            voting_str = ' (voting)' if p.is_voting else ''
-            sw_ver = ''
-            cemented_count = ''
-            if p.telemetry:
-                sw_ver = ' v' + p.telemetry.get_sw_version()
-                cemented_count = ' cc=%s' % p.telemetry.cemented_count
-            s += '%41s:%5s (score:%4s)%s%s%s\n' % \
-                 ('[%s]' % p.ip, p.port, p.score, sw_ver, cemented_count, voting_str)
-            # if p.score >= 1000:
-            #    s += 'ID: %s, voting:%s\n' % (acctools.to_account_addr(p.peer_id, prefix='node_'), p.is_voting)
+            s += self.peer_to_string(p)
         s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(peers), good)
 
         return s
