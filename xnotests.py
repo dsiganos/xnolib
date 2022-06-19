@@ -679,6 +679,11 @@ class TestComms(unittest.TestCase):
         s_packet = get_all_frontiers_packet_from_service()
         self.assertTrue(len(s_packet.frontiers) > 0)
 
+    def test_get_peers_from_service(self):
+        ctx = livectx
+        peers = get_peers_from_service(ctx)
+        self.assertTrue(len(peers) > 0)
+
 
 if __name__ == '__main__':
     unittest.main()
