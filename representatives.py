@@ -191,7 +191,7 @@ def get_representatives() -> list[Representative]:
                 rep.protover = peers[endpoint]['protocol_version']
 
     # merge in voting capabilities from peercrawler
-    _, peers = peercrawler.get_peers_from_service(pynanocoin.livectx)
+    peers = peercrawler.get_peers_from_service(pynanocoin.livectx)
     for peer in peers:
         if peer.peer_id:
             for acc, rep in reps.items():

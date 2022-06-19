@@ -14,6 +14,7 @@ from functools import reduce
 from typing import Collection, Iterable, Optional
 from concurrent.futures import ThreadPoolExecutor
 
+import requests
 from pydot import Dot, Node, Edge
 
 import _logger
@@ -432,29 +433,17 @@ def run_peer_service_forever(peerman, addr='', port=7070):
                 conn.sendall(data)
 
 
-def get_peers_from_service(ctx, addr='::ffff:78.46.80.199'):
-    with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        s.settimeout(10)
-        try:
-            s.connect((addr, ctx['peercrawlerport']))
-            response = readall(s)
-            hdr = peer_service_header.parse(response[0:peer_service_header.size])
-            assert (hdr.protocol_ver == 3)
-            if hdr.net_id != ctx['net_id']:
-                raise PeerServiceUnavailable("Peer service for the given network is unavailable")
-        except (PyNanoCoinException, OSError, TypeError) as e:
-            print("Error getting peers: %s" % str(e))
-            raise PeerServiceUnavailable("Peer service is unavailable")
+def get_peers_from_service(ctx: dict, url: str ='http://hetzner1.siganos.xyz:5001/peercrawler/json'):
+    session = requests.Session()
+    resp = session.get(url, timeout=5)
+    json_resp = resp.json()
 
-        json_peers = response[peer_service_header.size:]
-        peers = jsonpickle.decode(json_peers)
-    return hdr, peers
+    return [ Peer.from_json(r) for r in json_resp ]
 
 
 def get_initial_connected_socket(ctx, peers=None):
     if peers is None or len(peers) == 0:
-        _, peers = get_peers_from_service(ctx)
+        peers = get_peers_from_service(ctx)
         peers = list(peers)
         random.shuffle(peers)
     for peer in peers:
@@ -479,7 +468,7 @@ def get_random_peer(ctx, filter_func=None):
         applies the filter function, if given
         and return a random peer from the filtered set
     '''
-    hdr, peers = get_peers_from_service(ctx)
+    peers = get_peers_from_service(ctx)
     if filter_func is not None:
         peers = list(filter(filter_func, peers))
     return random.choice(peers)
@@ -496,7 +485,7 @@ def string_to_bytes(string, length):
 
 def do_connect(ctx, server):
     print('server =', server)
-    _, peers = get_peers_from_service(ctx, addr=server)
+    peers = get_peers_from_service(ctx, addr=server)
     peerman = peer_manager(ctx, peers=peers, verbosity=2, listen=False)
     print(peerman)
 

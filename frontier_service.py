@@ -76,7 +76,7 @@ class frontier_service:
             self.single_pass()
 
     def single_pass(self) -> None:
-        hdr, peers = peercrawler.get_peers_from_service(self.ctx)
+        peers = peercrawler.get_peers_from_service(self.ctx)
         peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
         assert peers
         self.merge_peers(peers)
@@ -609,7 +609,7 @@ def main():
 
     # This will run forever
     if args.service:
-        hdr, _ = peercrawler.get_peers_from_service(ctx)
+        peercrawler.get_peers_from_service(ctx)
         if args.forever:
             frontserv.start_service()
 

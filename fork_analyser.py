@@ -71,7 +71,7 @@ def once(ctx: dict, workdir: str, forkacc: bytes) -> None:
     workdir = '%s/%s' % (workdir, hexlify(forkacc))
     print(workdir)
 
-    hdr, peers = peercrawler.get_peers_from_service(ctx, addr='::ffff:46.101.61.203')
+    peers = peercrawler.get_peers_from_service(ctx)
     print('Starting a round of pulling blocks with %s peers' % len(peers))
 
     # initialise a git project in the temporary work directory
