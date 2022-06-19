@@ -16,9 +16,7 @@ def read_socket(sock: socket.socket, byte_count: int) -> bytes or None:
         return bytes(data)
 
     except OSError as msg:
-        print('read_socket] Error whilst reading %d bytes' % byte_count)
-        print('  %s bytes in buffer: %s "%s"' % (len(data), hexlify(data), data))
-        print(msg)
+        print('read_socket] Error reading %d bytes, data=%s, msg=%s' % (byte_count, hexlify(data), msg))
         return None
 
 
