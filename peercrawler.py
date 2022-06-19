@@ -257,8 +257,8 @@ class peer_manager:
             try:
                 logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
                 self.add_peers(peer, self.get_peers_from_peer(peer))
-            except Exception as e:
-                logger.error('Unexpected exception in crawl_peer()\n' + traceback.format_exc())
+            except:
+                logger.error(f"Unexpected exception while crawling peer [{peer.ip}]:{peer.port}", exc_info=True, stack_info=True)
 
         with ThreadPoolExecutor(max_workers=max_workers) as t:
             for p in peers_copy:
