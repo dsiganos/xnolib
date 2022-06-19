@@ -148,10 +148,18 @@ def graph_uncached():
 
 
 def make_filter_from_query_parameters() -> Callable[[Peer], bool]:
-    score = request.args.get("score", default=0, type=int)
-    voting = request.args.get("voting", default=True, type=lambda q: q.lower() == "true")
+    minimum_score = request.args.get("score", default=0, type=int)
+    only_voting = request.args.get("only-voting", default=True, type=lambda q: q.lower() == "true")
 
-    return lambda p: p.is_voting is voting and p.score >= score
+    def peer_filter(p: Peer) -> bool:
+        if only_voting is True and p.is_voting is False:
+            return False
+        if p.score < minimum_score:
+            return False
+
+        return True
+
+    return peer_filter
 
 
 def render_graph_svg(filter_function: Callable[[Peer], bool] = None) -> bytes:
