@@ -253,7 +253,7 @@ class peer_manager:
         assert len(peers_copy) > 0
 
         def crawl_peer(peer: Peer):
-            logger.debug("Query %41s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
+            logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
 
             new_peers = self.get_peers_from_peer(peer)
             self.add_peers(peer, new_peers)
