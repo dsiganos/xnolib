@@ -133,7 +133,7 @@ def graph_raw():
     if not app.config["args"].enable_graph:
         return Response(status=404)
 
-    dot = peercrawler.get_dot_string(peerman.get_connections_graph(), True)
+    dot = peerman.get_dot_string(True)
     return Response(dot, status=200, mimetype="text/plain")
 
 
@@ -142,12 +142,12 @@ def graph_uncached():
     if not app.config["args"].enable_graph or not app.config["args"].graph_uncached:
         return Response(status=404)
 
-    svg = render_graph_svg(peerman.get_connections_graph(), True)
+    svg = render_graph_svg(True)
     return Response(svg, status=200, mimetype="image/svg+xml")
 
 
-def render_graph_svg(connections: dict, only_voting: bool = True) -> bytes:
-    dot = peercrawler.get_dot_string(connections, only_voting)
+def render_graph_svg(only_voting: bool = True) -> bytes:
+    dot = peerman.get_dot_string(only_voting)
     svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
     return svg
 
@@ -156,7 +156,7 @@ def render_graph_thread(interval_seconds: int):
     time.sleep(10)
 
     while True:
-        svg = render_graph_svg(peerman.get_connections_graph(), True)
+        svg = render_graph_svg(True)
         with open("peers.svg", "wb") as file:
             file.write(svg)
 
