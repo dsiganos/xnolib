@@ -161,7 +161,7 @@ def render_graph_thread(interval_seconds: int):
     time.sleep(10)
 
     while True:
-        svg = render_graph_svg(True)
+        svg = render_graph_svg()
         with open("peers.svg", "wb") as file:
             file.write(svg)
 
