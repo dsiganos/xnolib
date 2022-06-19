@@ -134,7 +134,7 @@ def graph_raw():
     if not app.config["args"].enable_graph:
         return Response(status=404)
 
-    dot = peerman.get_dot_string(True)
+    dot = peerman.get_dot_string(make_filter_from_query_parameters())
     return Response(dot, status=200, mimetype="text/plain")
 
 
@@ -143,12 +143,15 @@ def graph_uncached():
     if not app.config["args"].enable_graph or not app.config["args"].graph_uncached:
         return Response(status=404)
 
+    svg = render_graph_svg(make_filter_from_query_parameters())
+    return Response(svg, status=200, mimetype="image/svg+xml")
+
+
+def make_filter_from_query_parameters() -> Callable[[Peer], bool]:
     score = request.args.get("score", default=0, type=int)
     voting = request.args.get("voting", default=True, type=bool)
-    filter_function = lambda p: p.is_voting is voting and p.score > score
 
-    svg = render_graph_svg(filter_function)
-    return Response(svg, status=200, mimetype="image/svg+xml")
+    return lambda p: p.is_voting is voting and p.score > score
 
 
 def render_graph_svg(filter_function: Callable[[Peer], bool] = None) -> bytes:
