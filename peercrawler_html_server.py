@@ -149,9 +149,9 @@ def graph_uncached():
 
 def make_filter_from_query_parameters() -> Callable[[Peer], bool]:
     score = request.args.get("score", default=0, type=int)
-    voting = request.args.get("voting", default=True, type=bool)
+    voting = request.args.get("voting", default=True, type=lambda q: q.lower() == "true")
 
-    return lambda p: p.is_voting is voting and p.score > score
+    return lambda p: p.is_voting is voting and p.score >= score
 
 
 def render_graph_svg(filter_function: Callable[[Peer], bool] = None) -> bytes:
