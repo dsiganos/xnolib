@@ -443,7 +443,7 @@ def get_peers_from_service(ctx: dict, url: str):
 
 def get_initial_connected_socket(ctx, peers=None):
     if peers is None or len(peers) == 0:
-        peers = get_peers_from_service(ctx, 'http://hetzner1.siganos.xyz:5001/peercrawler/json')
+        peers = get_peers_from_service(ctx, ctx['peerserviceurl'])
         peers = list(peers)
         random.shuffle(peers)
     for peer in peers:
@@ -468,7 +468,7 @@ def get_random_peer(ctx, filter_func=None):
         applies the filter function, if given
         and return a random peer from the filtered set
     '''
-    peers = get_peers_from_service(ctx, 'http://hetzner1.siganos.xyz:5001/peercrawler/json')
+    peers = get_peers_from_service(ctx, ctx['peerserviceurl'])
     if filter_func is not None:
         peers = list(filter(filter_func, peers))
     return random.choice(peers)

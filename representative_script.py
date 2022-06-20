@@ -404,7 +404,7 @@ def main() -> None:
     if args.test: ctx = testctx
     elif args.beta: ctx = betactx
 
-    peers = get_peers_from_service(ctx)
+    peers = get_peers_from_service(ctx, ctx['peerserviceurl'])
     peers = list(filter(lambda p: p.score == 1000, peers))
 
     if args.ipv4:
