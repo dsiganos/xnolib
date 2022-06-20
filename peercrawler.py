@@ -335,7 +335,8 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
-    parser.add_argument('-c', '--connect', nargs='?', const='http://hetzner1.siganos.xyz:5001/peercrawler/json',
+    # empty string singifies existance of switch but lack of argument
+    parser.add_argument('-c', '--connect', nargs='?', const='',
                         help='connect to peercrawler service given by arg and get list of peers')
 
     parser.add_argument('-v', '--verbosity', type=int, default=0,
@@ -515,8 +516,8 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    if args.connect:
-        do_connect(ctx, args.connect)
+    if args.connect is not None:
+        do_connect(ctx, None if args.connect == '' else args.connect)
         sys.exit(0)
 
     if args.service:

@@ -1121,7 +1121,7 @@ betactx = {
     'peeraddr': "peering-beta.nano.org",
     'peerport': 54000,
     'peercrawlerport': 7071,
-    'peerserviceurl': 'http://hetzner2.siganos.xyz:5002/peercrawler',
+    'peerserviceurl': 'http://hetzner2.siganos.xyz:5002/peercrawler/json',
     'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
     'epoch_v2_signing_account': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
     'genesis_block': beta_genesis_block
