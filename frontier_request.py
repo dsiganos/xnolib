@@ -210,7 +210,7 @@ def main() -> None:
                                     maxacc = args.count)
 
     if args.all:
-        hdr, peers = peercrawler.get_peers_from_service(ctx)
+        peers = peercrawler.get_peers_from_service(ctx)
         peers = [ p for p in peers if p.score >= 1000 ]
         assert peers
     else:
@@ -218,7 +218,7 @@ def main() -> None:
             peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
             peers = [peer_from_endpoint(peeraddr, peerport)]
         else:
-            hdr, peers = peercrawler.get_peers_from_service(ctx)
+            peers = peercrawler.get_peers_from_service(ctx)
             peers = list(filter(lambda p: p.score >= 1000, peers))
             peers = [random.choice(peers)]
 
