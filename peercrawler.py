@@ -258,8 +258,6 @@ class peer_manager:
         assert len(peers_copy) > 0
 
         def crawl_peer(peer: Peer):
-            self.serialize()
-
             # catch unexpected exceptions here otherwise they get lost/ignored due to ThreadPoolExecutor
             try:
                 logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
