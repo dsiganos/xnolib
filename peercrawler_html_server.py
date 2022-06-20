@@ -8,12 +8,13 @@ import threading
 import argparse
 from subprocess import run
 
-from flask import Flask, Response, render_template
+from flask import Flask, Response, render_template, request
 from flask_caching import Cache
 
 import jsonencoder
 import peercrawler
-import pynanocoin
+from typing import Callable
+from pynanocoin import Peer
 from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
@@ -133,7 +134,7 @@ def graph_raw():
     if not app.config["args"].enable_graph:
         return Response(status=404)
 
-    dot = peerman.get_dot_string(True)
+    dot = peerman.get_dot_string(make_filter_from_query_parameters())
     return Response(dot, status=200, mimetype="text/plain")
 
 
@@ -142,12 +143,27 @@ def graph_uncached():
     if not app.config["args"].enable_graph or not app.config["args"].graph_uncached:
         return Response(status=404)
 
-    svg = render_graph_svg(True)
+    svg = render_graph_svg(make_filter_from_query_parameters())
     return Response(svg, status=200, mimetype="image/svg+xml")
 
 
-def render_graph_svg(only_voting: bool = True) -> bytes:
-    dot = peerman.get_dot_string(only_voting)
+def make_filter_from_query_parameters() -> Callable[[Peer, Peer], bool]:
+    minimum_score = request.args.get("score", default=0, type=int)
+    only_voting = request.args.get("only-voting", default=True, type=lambda q: q.lower() == "true")
+
+    def peer_filter(p1: Peer, p2: Peer) -> bool:
+        if only_voting is True and (not p1.is_voting or not p2.is_voting):
+            return False
+        if p1.score < minimum_score or p2.score < minimum_score:
+            return False
+
+        return True
+
+    return peer_filter
+
+
+def render_graph_svg(filter_function: Callable[[Peer, Peer], bool] = None) -> bytes:
+    dot = peerman.get_dot_string(filter_function)
     svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
     return svg
 
@@ -156,7 +172,7 @@ def render_graph_thread(interval_seconds: int):
     time.sleep(10)
 
     while True:
-        svg = render_graph_svg(True)
+        svg = render_graph_svg()
         with open("peers.svg", "wb") as file:
             file.write(svg)
 

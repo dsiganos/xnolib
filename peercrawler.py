@@ -11,7 +11,7 @@ from _thread import interrupt_main
 from ipaddress import IPv6Address
 import jsonpickle
 from functools import reduce
-from typing import Collection, Iterable, Optional
+from typing import Collection, Iterable, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -283,7 +283,7 @@ class peer_manager:
             count += 1
 
     # noinspection PyUnresolvedReferences
-    def get_dot_string(self, only_voting: bool = False) -> str:
+    def get_dot_string(self, should_draw_edge: Callable[[Peer, Peer], bool] = None) -> str:
         def get_label(p: Peer) -> str:
             if p.ip.ipv6.ipv4_mapped is None:
                 address = f"{p.ip.ipv6}"
@@ -298,7 +298,7 @@ class peer_manager:
         graph = Dot("network_connections", graph_type="digraph")
         for node, peers in self.get_connections_graph().items():
             for peer in peers:
-                if only_voting and not (node.is_voting and peer.is_voting):
+                if should_draw_edge is not None and not should_draw_edge(node, peer):
                     continue
 
                 graph.add_edge(Edge(get_label(node), get_label(peer)))
