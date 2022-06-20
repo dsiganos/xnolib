@@ -433,7 +433,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
                 conn.sendall(data)
 
 
-def get_peers_from_service(ctx: dict, url: str ='http://hetzner1.siganos.xyz:5001/peercrawler/json'):
+def get_peers_from_service(ctx: dict, url: str):
     session = requests.Session()
     resp = session.get(url, timeout=5)
     json_resp = resp.json()
@@ -443,7 +443,7 @@ def get_peers_from_service(ctx: dict, url: str ='http://hetzner1.siganos.xyz:500
 
 def get_initial_connected_socket(ctx, peers=None):
     if peers is None or len(peers) == 0:
-        peers = get_peers_from_service(ctx)
+        peers = get_peers_from_service(ctx, 'http://hetzner1.siganos.xyz:5001/peercrawler/json')
         peers = list(peers)
         random.shuffle(peers)
     for peer in peers:
@@ -468,7 +468,7 @@ def get_random_peer(ctx, filter_func=None):
         applies the filter function, if given
         and return a random peer from the filtered set
     '''
-    peers = get_peers_from_service(ctx)
+    peers = get_peers_from_service(ctx, 'http://hetzner1.siganos.xyz:5001/peercrawler/json')
     if filter_func is not None:
         peers = list(filter(filter_func, peers))
     return random.choice(peers)
@@ -485,7 +485,7 @@ def string_to_bytes(string, length):
 
 def do_connect(ctx, server):
     print('server =', server)
-    peers = get_peers_from_service(ctx, addr=server)
+    peers = get_peers_from_service(ctx, url=server)
     peerman = peer_manager(ctx, peers=peers, verbosity=2, listen=False)
     print(peerman)
 
