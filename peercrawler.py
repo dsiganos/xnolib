@@ -283,7 +283,7 @@ class peer_manager:
             count += 1
 
     # noinspection PyUnresolvedReferences
-    def get_dot_string(self, filter_function: Callable[[Peer], bool] = None) -> str:
+    def get_dot_string(self, should_draw_edge: Callable[[Peer, Peer], bool] = None) -> str:
         def get_label(p: Peer) -> str:
             if p.ip.ipv6.ipv4_mapped is None:
                 address = f"{p.ip.ipv6}"
@@ -298,7 +298,7 @@ class peer_manager:
         graph = Dot("network_connections", graph_type="digraph")
         for node, peers in self.get_connections_graph().items():
             for peer in peers:
-                if filter_function is not None and not (filter_function(node) and filter_function(peer)):
+                if should_draw_edge is not None and not should_draw_edge(node, peer):
                     continue
 
                 graph.add_edge(Edge(get_label(node), get_label(peer)))

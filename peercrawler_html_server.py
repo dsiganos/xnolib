@@ -147,14 +147,14 @@ def graph_uncached():
     return Response(svg, status=200, mimetype="image/svg+xml")
 
 
-def make_filter_from_query_parameters() -> Callable[[Peer], bool]:
+def make_filter_from_query_parameters() -> Callable[[Peer, Peer], bool]:
     minimum_score = request.args.get("score", default=0, type=int)
     only_voting = request.args.get("only-voting", default=True, type=lambda q: q.lower() == "true")
 
-    def peer_filter(p: Peer) -> bool:
-        if only_voting is True and p.is_voting is False:
+    def peer_filter(p1: Peer, p2: Peer) -> bool:
+        if only_voting is True and (not p1.is_voting or not p2.is_voting):
             return False
-        if p.score < minimum_score:
+        if p1.score < minimum_score or p2.score < minimum_score:
             return False
 
         return True
@@ -162,7 +162,7 @@ def make_filter_from_query_parameters() -> Callable[[Peer], bool]:
     return peer_filter
 
 
-def render_graph_svg(filter_function: Callable[[Peer], bool] = None) -> bytes:
+def render_graph_svg(filter_function: Callable[[Peer, Peer], bool] = None) -> bytes:
     dot = peerman.get_dot_string(filter_function)
     svg = run(["circo", "-Tsvg"], input=bytes(dot, encoding="utf8"), capture_output=True).stdout
     return svg
