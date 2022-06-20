@@ -333,11 +333,33 @@ class peer_manager:
         nodes = {}
         for peer, connections in graph_copy.items():
             peer_data = vars(peer)
-            peer_data["connections"] = [id(c) for c in connections]
+            peer_data["connections"] = [str(id(c)) for c in connections]
             nodes[id(peer)] = peer_data
 
         json_connections = json.dumps(nodes, cls=jsonencoder.NanoJSONEncoder)
         return json_connections
+
+    @staticmethod
+    def deserialize(data: str) -> dict[Peer, peer_set]:
+        graph = json.loads(data)
+
+        # parse all peers
+        peer_id_mapping: dict[str, Peer] = {}
+        for key, value in graph.items():
+            peer = Peer.from_json(value)
+            peer_id_mapping[key] = peer
+
+        # build the graph
+        result: dict[Peer, peer_set] = {}
+        for key, value in graph.items():
+            peer = peer_id_mapping[key]
+            peers = peer_set()
+            result[peer] = peers
+
+            for connection in value["connections"]:
+                peers.add(peer_id_mapping[connection])
+
+        return result
 
 
 def parse_args():
