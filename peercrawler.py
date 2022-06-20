@@ -333,7 +333,7 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
 
-    parser.add_argument('-c', '--connect', nargs='?', const='::ffff:78.46.80.199',
+    parser.add_argument('-c', '--connect', nargs='?', const='http://hetzner1.siganos.xyz:5001/peercrawler/json',
                         help='connect to peercrawler service given by arg and get list of peers')
 
     parser.add_argument('-v', '--verbosity', type=int, default=0,
