@@ -3,7 +3,7 @@ import argparse
 from block import block_open
 from confirm_req import get_confirm_block_resp
 from peercrawler import get_peers_from_service
-from pynanocoin import livectx, get_connected_socket_endpoint, live_genesis_block, betactx, testctx
+from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
 
