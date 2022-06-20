@@ -19,6 +19,7 @@ from pydot import Dot, Node, Edge
 
 import _logger
 import confirm_req
+import jsonencoder
 import telemetry_req
 from msg_handshake import *
 from peer_set import peer_set
@@ -254,6 +255,8 @@ class peer_manager:
         assert len(peers_copy) > 0
 
         def crawl_peer(peer: Peer):
+            self.serialize()
+
             # catch unexpected exceptions here otherwise they get lost/ignored due to ThreadPoolExecutor
             try:
                 logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
@@ -324,6 +327,17 @@ class peer_manager:
         s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(peers), good)
 
         return s
+
+    def serialize(self) -> str:
+        graph_copy = self.get_connections_graph()
+        nodes = {}
+        for peer, connections in graph_copy.items():
+            peer_data = vars(peer)
+            peer_data["connections"] = [id(c) for c in connections]
+            nodes[id(peer)] = peer_data
+
+        json_connections = json.dumps(nodes, cls=jsonencoder.NanoJSONEncoder)
+        return json_connections
 
 
 def parse_args():
