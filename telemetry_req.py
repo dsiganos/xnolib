@@ -203,7 +203,7 @@ def main() -> None:
     if args.peer:
         peer_tuples.append(parse_endpoint(args.peer, default_port=ctx['peerport']))
     elif args.allpeers:
-        peers = peercrawler.get_peers_from_service(ctx, ctx['peerserviceurl'])
+        peers = peercrawler.get_peers_from_service(ctx)
         for peer in peers:
             peer_tuples.append((str(peer.ip), peer.port))
     else:

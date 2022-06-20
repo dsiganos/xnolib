@@ -433,17 +433,18 @@ def run_peer_service_forever(peerman, addr='', port=7070):
                 conn.sendall(data)
 
 
-def get_peers_from_service(ctx: dict, url: str):
+def get_peers_from_service(ctx: dict, url = None):
+    if url is None:
+        url = ctx['peerserviceurl']
     session = requests.Session()
     resp = session.get(url, timeout=5)
     json_resp = resp.json()
-
     return [ Peer.from_json(r) for r in json_resp ]
 
 
 def get_initial_connected_socket(ctx, peers=None):
     if peers is None or len(peers) == 0:
-        peers = get_peers_from_service(ctx, ctx['peerserviceurl'])
+        peers = get_peers_from_service(ctx)
         peers = list(peers)
         random.shuffle(peers)
     for peer in peers:
@@ -468,7 +469,7 @@ def get_random_peer(ctx, filter_func=None):
         applies the filter function, if given
         and return a random peer from the filtered set
     '''
-    peers = get_peers_from_service(ctx, ctx['peerserviceurl'])
+    peers = get_peers_from_service(ctx)
     if filter_func is not None:
         peers = list(filter(filter_func, peers))
     return random.choice(peers)

@@ -681,7 +681,7 @@ class TestComms(unittest.TestCase):
 
     def test_get_peers_from_service(self):
         ctx = livectx
-        peers = get_peers_from_service(ctx, ctx['peerserviceurl'])
+        peers = get_peers_from_service(ctx)
         self.assertTrue(len(peers) > 0)
 
 
