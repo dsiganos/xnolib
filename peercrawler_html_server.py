@@ -33,10 +33,20 @@ representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbosity: int):
+def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbosity: int, serialize: bool, deserialize: str):
     global peerman
 
-    peerman = peercrawler.peer_manager(ctx, listen=listen, listening_port=listen_port, verbosity=verbosity)
+    initial_graph = None
+    if deserialize:
+        with open(deserialize, "r") as file:
+            contents = file.read()
+            initial_graph = peercrawler.peer_manager.deserialize(contents)
+
+    peerman = peercrawler.peer_manager(ctx, listen=listen, initial_graph=initial_graph, listening_port=listen_port, verbosity=verbosity)
+
+    if serialize:
+        threading.Thread(target=peercrawler.serialize_thread, args=(peerman,), daemon=True).start()
+
     peerman.crawl(forever=True, delay=delay)  # look for peers forever
 
 
@@ -204,6 +214,10 @@ def parse_args():
                         help="how many seconds to wait between rendering the graph; this has no effect if the graph generation feature is not enabled")
     parser.add_argument("--graph-uncached", action="store_true", default=False,
                         help="enables the graph endpoint which serves rendered graphs on demand; this has no effect if the graph generation feature is not enabled")
+    parser.add_argument('--serialize', action='store_true', default=False,
+                        help='serialize the graph of peer connection to peer_connection_graph.json periodically')
+    parser.add_argument('--deserialize', type=str, default=None,
+                        help='deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler')
 
     return parser.parse_args()
 

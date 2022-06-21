@@ -390,6 +390,8 @@ def parse_args():
                         help='tcp port number to listen on in service mode')
     parser.add_argument('--serialize', action='store_true', default=False,
                         help='serialize the graph of peer connection to peer_connection_graph.json periodically')
+    parser.add_argument('--deserialize', type=str, default=None,
+                        help='deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler')
 
     return parser.parse_args()
 
@@ -575,7 +577,14 @@ def main():
         run_peer_service_forever(crawler_thread.peerman, port=args.port)
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
-        peerman = peer_manager(ctx, listen=(not args.nolisten), verbosity=verbosity)
+
+        initial_graph = None
+        if args.deserialize:
+            with open(args.deserialize, "r") as file:
+                contents = file.read()
+                initial_graph = peer_manager.deserialize(contents)
+
+        peerman = peer_manager(ctx, initial_graph=initial_graph, listen=(not args.nolisten), verbosity=verbosity)
 
         if args.serialize:
             threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
