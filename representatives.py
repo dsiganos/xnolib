@@ -10,12 +10,13 @@ import pynanocoin
 import acctools
 import constants
 
+
 RPC_URL = 'http://[::1]:7076'
-#RPC_URL = 'https://mynano.ninja/api/node'
 
 
 class Representative:
     def __init__(self):
+        self.weight_perc = None
         self.account = None
         self.endpoint = None
         self.weight = None
@@ -103,7 +104,7 @@ def get_reps_with_weights() -> list[Representative]:
 
 
 def post(session, params, timeout=5) -> dict:
-    resp = session.post(RPC_URL, json=params, timeout=5)
+    resp = session.post(RPC_URL, json=params, timeout=timeout)
     return resp.json()
 
 
