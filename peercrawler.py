@@ -81,6 +81,7 @@ class peer_manager:
                     new_peer = find_existing_peer(new_peer)
                 else:
                     self.__connections_graph[new_peer] = peer_set()
+                    logger.debug(f"Discovered new peer {new_peer}")
 
                 self.__connections_graph[from_peer].add(new_peer)
 
