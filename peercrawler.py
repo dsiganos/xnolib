@@ -388,6 +388,9 @@ def parse_args():
                         help='listen to incoming connections')
     parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')
+    parser.add_argument('--serialize', action='store_true', default=False,
+                        help='serialize the graph of peer connection to peer_connection_graph.json periodically')
+
     return parser.parse_args()
 
 
@@ -545,6 +548,15 @@ def send_confirm_req_genesis(ctx, peer, s):
     return outcome
 
 
+def serialize_thread(peerman: peer_manager):
+    while True:
+        time.sleep(60)
+
+        serialized_graph = peerman.serialize()
+        with open("peer_connection_graph.json", "w") as file:
+            file.write(serialized_graph)
+
+
 def main():
     args = parse_args()
     _logger.setup_logger(logger, _logger.get_logging_level_from_int(args.verbosity))
@@ -564,6 +576,10 @@ def main():
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
         peerman = peer_manager(ctx, listen=(not args.nolisten), verbosity=verbosity)
+
+        if args.serialize:
+            threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
+
         peerman.crawl(args.forever, args.delay)
 
 
