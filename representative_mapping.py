@@ -14,7 +14,7 @@ class representative_mapping:
 
     def load_from_file(self, path: str):
         try:
-            with open(path) as file:
+            with open(path, encoding='utf8') as file:
                 with self.__mutex:
                     self.__representative_mappings = loads(file.read())
         except FileNotFoundError:
