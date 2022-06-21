@@ -102,12 +102,12 @@ def get_reps_with_weights() -> list[Representative]:
     return reps
 
 
-def post(session, params, timeout=5) -> str:
+def post(session, params, timeout=5) -> dict:
     resp = session.post(RPC_URL, json=params, timeout=5)
     return resp.json()
 
 
-def rpc_confirmation_quorum(session: requests.Session) -> str:
+def rpc_confirmation_quorum(session: requests.Session) -> dict:
     params = {
       'action': 'confirmation_quorum',
       'peer_details': 'true',
@@ -116,7 +116,7 @@ def rpc_confirmation_quorum(session: requests.Session) -> str:
     return result
 
 
-def rpc_peers(session: requests.Session) -> str:
+def rpc_peers(session: requests.Session) -> dict:
     params = {
       'action': 'peers',
       'peer_details': 'true',
@@ -125,7 +125,7 @@ def rpc_peers(session: requests.Session) -> str:
     return result
 
 
-def rpc_representatives(session: requests.Session) -> str:
+def rpc_representatives(session: requests.Session) -> dict:
     params = {
       'action': 'representatives',
     }
@@ -133,7 +133,7 @@ def rpc_representatives(session: requests.Session) -> str:
     return result
 
 
-def get_representatives() -> list[Representative]:
+def get_representatives() -> dict[Representative]:
     session = requests.Session()
 
     quorum_reply = rpc_confirmation_quorum(session)
