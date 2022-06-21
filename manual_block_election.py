@@ -1,11 +1,16 @@
 import argparse
 
+import _logger
 from block import block_open
 from confirm_req import get_confirm_block_resp
 from peercrawler import get_peers_from_service
 from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
+from representative_mapping import representative_mapping
+from common import hexlify
+
+logger = _logger.get_logger()
 
 
 def parse_args():
@@ -33,16 +38,22 @@ def main():
                                ctx['genesis_block']['work'])
 
     votes = []
+    rep_map = representative_mapping()
+    rep_map.load_from_file("representative-mappings.json")
 
     for p in peers:
+        voting_weight = 0
+        rep = rep_map.find(hexlify(p.peer_id), str(p.ip))
+        if len(rep) >= 1:
+            voting_weight = rep[0]['weight']
+        print(hexlify(p.peer_id), str(p.ip), len(rep))
         try:
             with get_connected_socket_endpoint(str(p.ip), p.port) as s:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
                 resp = get_confirm_block_resp(ctx, genesis_block, s)
-                print("completed")
                 if resp is not None:
-                    votes.append(resp)
+                    votes.append((resp, p, voting_weight))
                 else:
                     continue
         except (OSError, PyNanoCoinException):
