@@ -550,6 +550,15 @@ def send_confirm_req_genesis(ctx, peer, s):
     return outcome
 
 
+def deserialize_graph_from_file(path: str) -> Optional[dict[Peer, peer_set]]:
+    try:
+        with open(path, "r") as file:
+            contents = file.read()
+            return peer_manager.deserialize(contents)
+    except FileNotFoundError:
+        return None
+
+
 def serialize_thread(peerman: peer_manager):
     while True:
         time.sleep(60)
@@ -580,9 +589,7 @@ def main():
 
         initial_graph = None
         if args.deserialize:
-            with open(args.deserialize, "r") as file:
-                contents = file.read()
-                initial_graph = peer_manager.deserialize(contents)
+            initial_graph = deserialize_graph_from_file(args.deserialize)
 
         peerman = peer_manager(ctx, initial_graph=initial_graph, listen=(not args.nolisten), verbosity=verbosity)
 

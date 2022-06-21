@@ -33,14 +33,12 @@ representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbosity: int, serialize: bool, deserialize: str):
+def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbosity: int, serialize: bool, deserialize_path: str):
     global peerman
 
     initial_graph = None
-    if deserialize:
-        with open(deserialize, "r") as file:
-            contents = file.read()
-            initial_graph = peercrawler.peer_manager.deserialize(contents)
+    if deserialize_path:
+        initial_graph = peercrawler.deserialize_graph_from_file(deserialize_path)
 
     peerman = peercrawler.peer_manager(ctx, listen=listen, initial_graph=initial_graph, listening_port=listen_port, verbosity=verbosity)
 
