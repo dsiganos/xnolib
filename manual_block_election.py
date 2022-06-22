@@ -6,7 +6,7 @@ import common
 from block import block_open
 from confirm_req import get_confirm_hash_resp
 from peercrawler import get_peers_from_service
-from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx
+from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx, get_genesis_block
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
 from representative_mapping import representative_mapping
@@ -23,7 +23,7 @@ def parse_args():
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
     parser.add_argument('-H', '--hash', type=str,
-                        default='991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948:E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+                        default=None,
                         help='the hash pair (in the form hash:root)')
     return parser.parse_args()
 
@@ -40,12 +40,15 @@ def main():
         ctx = testctx
 
     peers = filter(lambda p: p.is_voting, get_peers_from_service(ctx))
-    block_hash = args.hash.split(':')
-
-    if len(block_hash) == 1:
-        pair = common.hash_pair(binascii.unhexlify(block_hash[0]), b'\x00' * 32)
+    if args.hash is not None:
+        block_hash = args.hash.split(':')
+        if len(block_hash) == 1:
+            pair = common.hash_pair(binascii.unhexlify(block_hash[0]), b'\x00' * 32)
+        else:
+            pair = common.hash_pair(binascii.unhexlify(block_hash[0]), binascii.unhexlify(block_hash[1]))
     else:
-        pair = common.hash_pair(binascii.unhexlify(block_hash[0]), binascii.unhexlify(block_hash[1]))
+        genesis_block = get_genesis_block(ctx)
+        pair = common.hash_pair(genesis_block.hash(), genesis_block.root())
 
     votes = []
     peers_voted = []
