@@ -41,9 +41,15 @@ def main():
 
     peers = filter(lambda p: p.is_voting, get_peers_from_service(ctx))
     block_hash, root = args.hash.split(':')
-    pair = common.hash_pair(binascii.unhexlify(block_hash), binascii.unhexlify(root))
+
+    if len(block_hash) == 1:
+        pair = common.hash_pair(binascii.unhexlify(block_hash[0]), b'\x00' * 32)
+    else:
+        pair = common.hash_pair(binascii.unhexlify(block_hash[0]), binascii.unhexlify(block_hash[1]))
 
     votes = []
+    peers_voted = []
+    voting_weights = []
     rep_map = representative_mapping()
     rep_map.load_from_file("representative-mappings.json")
 
@@ -59,14 +65,18 @@ def main():
                 node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
                 resp = get_confirm_hash_resp(ctx, [pair], s)
                 if resp is not None:
-                    votes.append((resp, p, voting_weight))
+                    votes.append(resp)
+                    peers_voted.append(p)
+                    voting_weights.append(int(voting_weight))
                 else:
                     continue
         except (OSError, PyNanoCoinException):
             print("Node was unreachable")
 
     for v in votes:
-        print(v[0])
+        print(v)
+
+    print(sum(voting_weights))
 
 
 if __name__ == "__main__":
