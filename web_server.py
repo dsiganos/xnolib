@@ -22,16 +22,13 @@ from pynanocoin import livectx, betactx, testctx
 from representatives import get_representatives
 
 
+logger = get_logger()
+
 app = Flask(__name__, static_url_path='/peercrawler')
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 0})
 
-logger = get_logger()
-
 peerman: peercrawler.peer_manager = None
-
 representatives_info = representative_mapping()
-representatives_info.load_from_file("representative-mappings.json")
-threading.Thread(target=representatives_info.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
 def bg_thread_func(ctx: dict, args: argparse.Namespace):
@@ -255,6 +252,9 @@ def main():
 
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, args=(ctx, args), daemon=True).start()
+
+    representatives_info.load_from_file("representative-mappings.json")
+    threading.Thread(target=representatives_info.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
     # start a thread for periodically generating the representatives list
     threading.Thread(target=generate_representatives_thread, args=(1800,), daemon=True).start()
