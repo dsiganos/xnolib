@@ -19,6 +19,7 @@ from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
 from pynanocoin import livectx, betactx, testctx
+from representatives import get_representatives
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
@@ -155,6 +156,16 @@ def graph_uncached():
     return Response(svg, status=200, mimetype="image/svg+xml")
 
 
+@app.route("/representatives")
+def representatives():
+    _representatives = cache.get("representatives")
+
+    if _representatives:
+        return Response(_representatives, status=200, mimetype="application/json")
+    else:
+        return Response("Representatives are still being generated.", status=503, mimetype="text/plain")
+
+
 def make_filter_from_query_parameters() -> Callable[[Peer, Peer], bool]:
     minimum_score = request.args.get("score", default=0, type=int)
     only_voting = request.args.get("only-voting", default=True, type=lambda q: q.lower() == "true")
@@ -183,6 +194,15 @@ def render_graph_thread(interval_seconds: int):
         svg = render_graph_svg()
         with open("peers.svg", "wb") as file:
             file.write(svg)
+
+        time.sleep(interval_seconds)
+
+
+def generate_representatives_thread(interval_seconds: int):
+    while True:
+        _representatives = get_representatives()
+        json_representatives = jsonencoder.to_json(_representatives)
+        cache.set("representatives", json_representatives)
 
         time.sleep(interval_seconds)
 
@@ -235,6 +255,9 @@ def main():
 
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, args=(ctx, args), daemon=True).start()
+
+    # start a thread for periodically generating the representatives list
+    threading.Thread(target=generate_representatives_thread, args=(1800,), daemon=True).start()
 
     if args.enable_graph:
         threading.Thread(target=render_graph_thread, args=(args.graph_interval,), daemon=True).start()

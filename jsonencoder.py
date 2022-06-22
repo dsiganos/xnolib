@@ -2,6 +2,7 @@ import json
 
 from pynanocoin import *
 import telemetry_req
+from representatives import Representative
 
 
 class NanoJSONEncoder(json.JSONEncoder):
@@ -20,9 +21,11 @@ class NanoJSONEncoder(json.JSONEncoder):
             return obj.__dict__
         if isinstance(obj, Peer):
             return obj.__dict__
+        if isinstance(obj, Representative):
+            return obj.__dict__
+
         return json.JSONEncoder.default(self, obj)
 
 
 def to_json(peers):
-    assert isinstance(peers, list)
     return json.dumps(peers, cls=NanoJSONEncoder, indent=4)

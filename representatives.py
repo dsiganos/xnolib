@@ -134,7 +134,7 @@ def rpc_representatives(session: requests.Session) -> dict:
     return result
 
 
-def get_representatives() -> dict[Representative]:
+def get_representatives() -> dict[str, Representative]:
     session = requests.Session()
 
     quorum_reply = rpc_confirmation_quorum(session)
