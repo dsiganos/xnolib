@@ -12,7 +12,7 @@ import acctools
 import constants
 
 
-RPC_URL = 'http://[::1]:7076'
+RPC_URL = "https://mynano.ninja/api/node"
 
 
 class Representative:
