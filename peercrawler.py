@@ -19,6 +19,7 @@ from pydot import Dot, Node, Edge
 
 import _logger
 import confirm_req
+import jsonencoder
 import telemetry_req
 from msg_handshake import *
 from peer_set import peer_set
@@ -40,7 +41,7 @@ def get_telemetry(ctx, s):
 
 class peer_manager:
     def __init__(self, ctx,
-                 verbosity=0,
+                 verbosity=0, initial_graph: dict[Peer, peer_set] = None,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
                  listen=True, listening_port=7777):
         self.ctx = ctx
@@ -48,7 +49,10 @@ class peer_manager:
         self.mutex = threading.Lock()
         self.listening_port = listening_port
 
-        self.__connections_graph: dict[Peer, peer_set] = {}
+        if initial_graph is None:
+            self.__connections_graph: dict[Peer, peer_set] = {}
+        else:
+            self.__connections_graph = initial_graph.copy()
 
         if peers:
             for peer in peers:
@@ -326,6 +330,47 @@ class peer_manager:
 
         return s
 
+    def serialize_dict(self) -> dict[str, dict]:
+        graph_copy = self.get_connections_graph()
+        nodes = {}
+        for peer, connections in graph_copy.items():
+            peer_data = vars(peer)
+            peer_data["connections"] = [str(id(c)) for c in connections]
+            nodes[str(id(peer))] = peer_data
+
+        return nodes
+
+    def serialize(self) -> str:
+        nodes = self.serialize_dict()
+        json_connections = json.dumps(nodes, cls=jsonencoder.NanoJSONEncoder)
+        return json_connections
+
+    @staticmethod
+    def deserialize_dict(data: dict) -> dict[Peer, peer_set]:
+        # parse all peers
+        peer_id_mapping: dict[str, Peer] = {}
+        for key, value in data.items():
+            peer = Peer.from_json(value)
+            peer_id_mapping[key] = peer
+
+        # build the graph
+        result: dict[Peer, peer_set] = {}
+        for key, value in data.items():
+            peer = peer_id_mapping[key]
+            peers = peer_set()
+            result[peer] = peers
+
+            for connection in value["connections"]:
+                peers.add(peer_id_mapping[connection])
+
+        return result
+
+    @classmethod
+    def deserialize(cls, data: str) -> dict[Peer, peer_set]:
+        json_data = json.loads(data)
+        graph = cls.deserialize_dict(json_data)
+        return graph
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -352,6 +397,11 @@ def parse_args():
                         help='listen to incoming connections')
     parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')
+    parser.add_argument('--serialize', action='store_true', default=False,
+                        help='serialize the graph of peer connection to peer_connection_graph.json periodically')
+    parser.add_argument('--deserialize', type=str, default=None,
+                        help='deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler')
+
     return parser.parse_args()
 
 
@@ -509,6 +559,24 @@ def send_confirm_req_genesis(ctx, peer, s):
     return outcome
 
 
+def deserialize_graph_from_file(path: str) -> Optional[dict[Peer, peer_set]]:
+    try:
+        with open(path, "r") as file:
+            contents = file.read()
+            return peer_manager.deserialize(contents)
+    except FileNotFoundError:
+        return None
+
+
+def serialize_thread(peerman: peer_manager):
+    while True:
+        time.sleep(60)
+
+        serialized_graph = peerman.serialize()
+        with open("peer_connection_graph.json", "w") as file:
+            file.write(serialized_graph)
+
+
 def main():
     args = parse_args()
     _logger.setup_logger(logger, _logger.get_logging_level_from_int(args.verbosity))
@@ -527,7 +595,16 @@ def main():
         run_peer_service_forever(crawler_thread.peerman, port=args.port)
     else:
         verbosity = args.verbosity if (args.verbosity is not None) else 1
-        peerman = peer_manager(ctx, listen=(not args.nolisten), verbosity=verbosity)
+
+        initial_graph = None
+        if args.deserialize:
+            initial_graph = deserialize_graph_from_file(args.deserialize)
+
+        peerman = peer_manager(ctx, initial_graph=initial_graph, listen=(not args.nolisten), verbosity=verbosity)
+
+        if args.serialize:
+            threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
+
         peerman.crawl(args.forever, args.delay)
 
 

@@ -33,11 +33,19 @@ representatives.load_from_file("representative-mappings.json")
 threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
-def bg_thread_func(ctx: dict, listen: bool, listen_port: int, delay: int, verbosity: int):
+def bg_thread_func(ctx: dict, args: argparse.Namespace):
     global peerman
 
-    peerman = peercrawler.peer_manager(ctx, listen=listen, listening_port=listen_port, verbosity=verbosity)
-    peerman.crawl(forever=True, delay=delay)  # look for peers forever
+    initial_graph = None
+    if args.deserialize:
+        initial_graph = peercrawler.deserialize_graph_from_file(args.deserialize)
+
+    peerman = peercrawler.peer_manager(ctx, listen=(not args.nolisten), initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
+
+    if args.serialize:
+        threading.Thread(target=peercrawler.serialize_thread, args=(peerman,), daemon=True).start()
+
+    peerman.crawl(forever=True, delay=args.delay)  # look for peers forever
 
 
 @app.route("/peercrawler")
@@ -204,6 +212,10 @@ def parse_args():
                         help="how many seconds to wait between rendering the graph; this has no effect if the graph generation feature is not enabled")
     parser.add_argument("--graph-uncached", action="store_true", default=False,
                         help="enables the graph endpoint which serves rendered graphs on demand; this has no effect if the graph generation feature is not enabled")
+    parser.add_argument('--serialize', action='store_true', default=False,
+                        help='serialize the graph of peer connection to peer_connection_graph.json periodically')
+    parser.add_argument('--deserialize', type=str, default=None,
+                        help='deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler')
 
     return parser.parse_args()
 
@@ -222,7 +234,7 @@ def main():
     setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
     # start the peer crawler in the background
-    threading.Thread(target=bg_thread_func, args=(ctx, not args.nolisten, args.port, args.delay, args.verbosity), daemon=True).start()
+    threading.Thread(target=bg_thread_func, args=(ctx, args), daemon=True).start()
 
     if args.enable_graph:
         threading.Thread(target=render_graph_thread, args=(args.graph_interval,), daemon=True).start()
