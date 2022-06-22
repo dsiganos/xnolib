@@ -1072,6 +1072,10 @@ def get_connected_socket_endpoint(addr: str, port: int, bind_endpoint: tuple = N
     return s
 
 
+def get_genesis_block(ctx: dict):
+    return block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
+                      ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
+                      ctx['genesis_block']['work'])
 
 
 live_genesis_block = {
