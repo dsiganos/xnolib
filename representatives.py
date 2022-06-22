@@ -145,19 +145,16 @@ def get_representatives() -> dict[Representative]:
     quorum.peers_stake_total            = int(quorum_reply['peers_stake_total'])
     quorum.trended_stake_total          = int(quorum_reply['trended_stake_total'])
     quorum.set_delta(int(quorum_reply['quorum_delta']))
-    print(quorum)
-
-    peers_reply = rpc_peers(session)
-    reps_reply = rpc_representatives(session)
-    static_reps = { k:v for k,v in reps_reply['representatives'].items() if int(v) > 0 }
 
     reps = {}
 
     # add the static representatives first
-    for acc, weight in static_reps.items():
+    reps_reply = rpc_representatives(session)
+    reps_reply = {account: int(weight) for account, weight in reps_reply['representatives'].items() if int(weight) > 0}  # filter out representatives with 0 voting weight
+    for acc, weight in reps_reply.items():
         rep = Representative()
         rep.account = acc
-        rep.set_weight(int(weight))
+        rep.set_weight(weight)
         assert acc not in reps.keys()
         reps[acc] = rep
 
@@ -184,7 +181,7 @@ def get_representatives() -> dict[Representative]:
             reps[acc] = rep
 
     # merge in node IDs and protocol version
-    peers = peers_reply['peers']
+    peers = rpc_peers(session)['peers']
     for endpoint in peers.keys():
         for acc, rep in reps.items():
             if endpoint == rep.endpoint:
