@@ -41,18 +41,14 @@ def get_telemetry(ctx, s):
 
 class peer_manager:
     def __init__(self, ctx,
-                 verbosity=0, initial_graph: dict[Peer, peer_set] = None,
+                 verbosity=0, initial_graph: dict[Peer, peer_set] = {},
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
                  listen=True, listening_port=7777):
         self.ctx = ctx
         self.verbosity = verbosity
         self.mutex = threading.Lock()
         self.listening_port = listening_port
-
-        if initial_graph is None:
-            self.__connections_graph: dict[Peer, peer_set] = {}
-        else:
-            self.__connections_graph = initial_graph.copy()
+        self.__connections_graph = initial_graph.copy()
 
         if peers:
             for peer in peers:
