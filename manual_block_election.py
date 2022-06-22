@@ -63,6 +63,9 @@ def main():
         except (OSError, PyNanoCoinException):
             print("Node was unreachable")
 
+    for v in votes:
+        print(v[0])
+
 
 if __name__ == "__main__":
     main()
