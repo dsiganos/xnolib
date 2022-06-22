@@ -23,7 +23,7 @@ from representatives import get_representatives
 
 
 app = Flask(__name__, static_url_path='/peercrawler')
-cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 0})
 
 logger = get_logger()
 
