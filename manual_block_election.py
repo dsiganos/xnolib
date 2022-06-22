@@ -22,7 +22,9 @@ def parse_args():
                        help='use beta network')
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
-    parser.add_argument('-H', '--hash', type=str, required=True)
+    parser.add_argument('-H', '--hash', type=str,
+                        default='991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948:E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
+                        help='the hash pair (in the form hash:root)')
     return parser.parse_args()
 
 
