@@ -11,6 +11,7 @@ import argparse
 import datetime
 
 import common
+import constants
 from pynanocoin import *
 from msg_handshake import node_handshake_id
 from peercrawler import *
@@ -324,11 +325,9 @@ class TestConfirmReq(unittest.TestCase):
         ctx = livectx
         peeraddr = '::ffff:94.130.12.236'
         peerport = 7075
-        pair = common.hash_pair(
-            binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
-            binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'))
 
-        self.assertTrue(confirm_req_peer(ctx, None, pair, peeraddr=peeraddr, peerport=peerport))
+        self.assertTrue(confirm_req_peer(ctx, None, constants.genesis_hash_pair_str, peeraddr=peeraddr,
+                                         peerport=peerport))
 
 
 if __name__ == '__main__':
