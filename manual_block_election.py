@@ -40,7 +40,7 @@ def main():
         ctx = testctx
 
     peers = filter(lambda p: p.is_voting, get_peers_from_service(ctx))
-    block_hash, root = args.hash.split(':')
+    block_hash = args.hash.split(':')
 
     if len(block_hash) == 1:
         pair = common.hash_pair(binascii.unhexlify(block_hash[0]), b'\x00' * 32)
