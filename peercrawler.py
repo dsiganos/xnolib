@@ -325,30 +325,32 @@ class peer_manager:
 
         return s
 
-    def serialize(self) -> str:
+    def serialize_dict(self) -> dict[str, dict]:
         graph_copy = self.get_connections_graph()
         nodes = {}
         for peer, connections in graph_copy.items():
             peer_data = vars(peer)
             peer_data["connections"] = [str(id(c)) for c in connections]
-            nodes[id(peer)] = peer_data
+            nodes[str(id(peer))] = peer_data
 
+        return nodes
+
+    def serialize(self) -> str:
+        nodes = self.serialize_dict()
         json_connections = json.dumps(nodes, cls=jsonencoder.NanoJSONEncoder)
         return json_connections
 
     @staticmethod
-    def deserialize(data: str) -> dict[Peer, peer_set]:
-        graph = json.loads(data)
-
+    def deserialize_dict(data: dict) -> dict[Peer, peer_set]:
         # parse all peers
         peer_id_mapping: dict[str, Peer] = {}
-        for key, value in graph.items():
+        for key, value in data.items():
             peer = Peer.from_json(value)
             peer_id_mapping[key] = peer
 
         # build the graph
         result: dict[Peer, peer_set] = {}
-        for key, value in graph.items():
+        for key, value in data.items():
             peer = peer_id_mapping[key]
             peers = peer_set()
             result[peer] = peers
@@ -357,6 +359,12 @@ class peer_manager:
                 peers.add(peer_id_mapping[connection])
 
         return result
+
+    @classmethod
+    def deserialize(cls, data: str) -> dict[Peer, peer_set]:
+        json_data = json.loads(data)
+        graph = cls.deserialize_dict(json_data)
+        return graph
 
 
 def parse_args():
