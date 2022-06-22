@@ -29,9 +29,9 @@ logger = get_logger()
 
 peerman: peercrawler.peer_manager = None
 
-representatives = representative_mapping()
-representatives.load_from_file("representative-mappings.json")
-threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
+representatives_info = representative_mapping()
+representatives_info.load_from_file("representative-mappings.json")
+threading.Thread(target=representatives_info.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
 
 def bg_thread_func(ctx: dict, args: argparse.Namespace):
@@ -52,7 +52,7 @@ def bg_thread_func(ctx: dict, args: argparse.Namespace):
 @app.route("/peercrawler")
 @cache.cached(timeout=5)
 def main_website():
-    global app, peerman, representatives
+    global app, peerman
 
     peers_copy = list(peerman.get_peers_as_list())
 
@@ -63,7 +63,7 @@ def main_website():
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
 
-            representative_info = representatives.find(node_id, str(peer.ip))
+            representative_info = representatives_info.find(node_id, str(peer.ip))
             aliases = [r.get("alias", " ") for r in representative_info]
             accounts = [r.get("account", " ") for r in representative_info]
             weights = [r.get("weight", " ") for r in representative_info]
