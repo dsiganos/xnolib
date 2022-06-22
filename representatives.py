@@ -4,6 +4,7 @@ import copy
 import requests
 import json
 import argparse
+from typing import List, Dict
 
 import peercrawler
 import pynanocoin
@@ -76,7 +77,7 @@ def weight_to_percentage(weight: int) -> float:
 
 # return the rep object if endpoint is a rep and has at least 'weight' raw weight
 # return None otherwise
-def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int) -> Representative:
+def endpoint_to_rep(reps: List[Representative], endpoint: str, weight: int) -> Representative:
     if isinstance(reps, list):
         for rep in reps:
             if endpoint == rep.endpoint:
@@ -91,7 +92,7 @@ def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int) -> R
         assert 0
 
 
-def get_reps_with_weights() -> list[Representative]:
+def get_reps_with_weights() -> List[Representative]:
     reps = []
     for acc, rep in get_representatives().items():
         #if isinstance(rep, str):
@@ -134,7 +135,7 @@ def rpc_representatives(session: requests.Session) -> dict:
     return result
 
 
-def get_representatives() -> dict[str, Representative]:
+def get_representatives() -> Dict[str, Representative]:
     session = requests.Session()
 
     quorum_reply = rpc_confirmation_quorum(session)
