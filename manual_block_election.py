@@ -1,8 +1,10 @@
 import argparse
+import binascii
 
 import _logger
+import common
 from block import block_open
-from confirm_req import get_confirm_block_resp
+from confirm_req import get_confirm_hash_resp
 from peercrawler import get_peers_from_service
 from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx
 from msg_handshake import node_handshake_id
@@ -20,10 +22,13 @@ def parse_args():
                        help='use beta network')
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
+    parser.add_argument('-H', '--hash', type=str, required=True)
     return parser.parse_args()
 
 
 def main():
+    # eg hash: 991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948
+    # eg root: E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA
     args = parse_args()
     ctx = livectx
 
@@ -33,9 +38,8 @@ def main():
         ctx = testctx
 
     peers = filter(lambda p: p.is_voting, get_peers_from_service(ctx))
-    genesis_block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
-                               ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
-                               ctx['genesis_block']['work'])
+    block_hash, root = args.hash.split(':')
+    pair = common.hash_pair(binascii.unhexlify(block_hash), binascii.unhexlify(root))
 
     votes = []
     rep_map = representative_mapping()
@@ -51,7 +55,7 @@ def main():
             with get_connected_socket_endpoint(str(p.ip), p.port) as s:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
-                resp = get_confirm_block_resp(ctx, genesis_block, s)
+                resp = get_confirm_hash_resp(ctx, [pair], s)
                 if resp is not None:
                     votes.append((resp, p, voting_weight))
                 else:
