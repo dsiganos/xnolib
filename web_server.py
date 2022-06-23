@@ -98,10 +98,10 @@ def main_website():
 
 @app.route("/peercrawler/json")
 def json():
-    peers = peerman.get_peers_as_list()
-    js = jsonencoder.to_json(list(peers))
+    serialized_connections = peerman.serialize_dict()
+    _json = jsonencoder.to_json(serialized_connections)
 
-    return Response(js, status=200, mimetype="application/json")
+    return Response(_json, status=200, mimetype="application/json")
 
 
 @app.route("/peercrawler/logs")
