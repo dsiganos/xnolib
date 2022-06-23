@@ -19,18 +19,16 @@ from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
 from pynanocoin import livectx, betactx, testctx
+from representatives import get_representatives
 
-
-app = Flask(__name__, static_url_path='/peercrawler')
-cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
 logger = get_logger()
 
-peerman: peercrawler.peer_manager = None
+app = Flask(__name__, static_url_path='/peercrawler')
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 0})
 
-representatives = representative_mapping()
-representatives.load_from_file("representative-mappings.json")
-threading.Thread(target=representatives.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
+peerman: peercrawler.peer_manager = None
+representatives_info = representative_mapping()
 
 
 def bg_thread_func(ctx: dict, args: argparse.Namespace):
@@ -51,7 +49,7 @@ def bg_thread_func(ctx: dict, args: argparse.Namespace):
 @app.route("/peercrawler")
 @cache.cached(timeout=5)
 def main_website():
-    global app, peerman, representatives
+    global app, peerman
 
     peers_copy = list(peerman.get_peers_as_list())
 
@@ -62,7 +60,7 @@ def main_website():
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
 
-            representative_info = representatives.find(node_id, str(peer.ip))
+            representative_info = representatives_info.find(node_id, str(peer.ip))
             aliases = [r.get("alias", " ") for r in representative_info]
             accounts = [r.get("account", " ") for r in representative_info]
             weights = [r.get("weight", " ") for r in representative_info]
@@ -155,6 +153,16 @@ def graph_uncached():
     return Response(svg, status=200, mimetype="image/svg+xml")
 
 
+@app.route("/representatives")
+def representatives():
+    _representatives = cache.get("representatives")
+
+    if _representatives:
+        return Response(_representatives, status=200, mimetype="application/json")
+    else:
+        return Response("Representatives are still being generated.", status=503, mimetype="text/plain")
+
+
 def make_filter_from_query_parameters() -> Callable[[Peer, Peer], bool]:
     minimum_score = request.args.get("score", default=0, type=int)
     only_voting = request.args.get("only-voting", default=True, type=lambda q: q.lower() == "true")
@@ -183,6 +191,15 @@ def render_graph_thread(interval_seconds: int):
         svg = render_graph_svg()
         with open("peers.svg", "wb") as file:
             file.write(svg)
+
+        time.sleep(interval_seconds)
+
+
+def generate_representatives_thread(interval_seconds: int):
+    while True:
+        _representatives = get_representatives()
+        json_representatives = jsonencoder.to_json(_representatives)
+        cache.set("representatives", json_representatives)
 
         time.sleep(interval_seconds)
 
@@ -235,6 +252,12 @@ def main():
 
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, args=(ctx, args), daemon=True).start()
+
+    representatives_info.load_from_file("representative-mappings.json")
+    threading.Thread(target=representatives_info.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
+
+    # start a thread for periodically generating the representatives list
+    threading.Thread(target=generate_representatives_thread, args=(1800,), daemon=True).start()
 
     if args.enable_graph:
         threading.Thread(target=render_graph_thread, args=(args.graph_interval,), daemon=True).start()

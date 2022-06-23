@@ -4,18 +4,20 @@ import copy
 import requests
 import json
 import argparse
+from typing import List, Dict
 
 import peercrawler
 import pynanocoin
 import acctools
 import constants
 
-RPC_URL = 'http://[::1]:7076'
-#RPC_URL = 'https://mynano.ninja/api/node'
+
+RPC_URL = "https://mynano.ninja/api/node"
 
 
 class Representative:
     def __init__(self):
+        self.weight_perc = None
         self.account = None
         self.endpoint = None
         self.weight = None
@@ -75,7 +77,7 @@ def weight_to_percentage(weight: int) -> float:
 
 # return the rep object if endpoint is a rep and has at least 'weight' raw weight
 # return None otherwise
-def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int) -> Representative:
+def endpoint_to_rep(reps: List[Representative], endpoint: str, weight: int) -> Representative:
     if isinstance(reps, list):
         for rep in reps:
             if endpoint == rep.endpoint:
@@ -90,7 +92,7 @@ def endpoint_to_rep(reps: list[Representative], endpoint: str, weight: int) -> R
         assert 0
 
 
-def get_reps_with_weights() -> list[Representative]:
+def get_reps_with_weights() -> List[Representative]:
     reps = []
     for acc, rep in get_representatives().items():
         #if isinstance(rep, str):
@@ -102,12 +104,12 @@ def get_reps_with_weights() -> list[Representative]:
     return reps
 
 
-def post(session, params, timeout=5) -> str:
-    resp = session.post(RPC_URL, json=params, timeout=5)
+def post(session, params, timeout=5) -> dict:
+    resp = session.post(RPC_URL, json=params, timeout=timeout)
     return resp.json()
 
 
-def rpc_confirmation_quorum(session: requests.Session) -> str:
+def rpc_confirmation_quorum(session: requests.Session) -> dict:
     params = {
       'action': 'confirmation_quorum',
       'peer_details': 'true',
@@ -116,7 +118,7 @@ def rpc_confirmation_quorum(session: requests.Session) -> str:
     return result
 
 
-def rpc_peers(session: requests.Session) -> str:
+def rpc_peers(session: requests.Session) -> dict:
     params = {
       'action': 'peers',
       'peer_details': 'true',
@@ -125,7 +127,7 @@ def rpc_peers(session: requests.Session) -> str:
     return result
 
 
-def rpc_representatives(session: requests.Session) -> str:
+def rpc_representatives(session: requests.Session) -> dict:
     params = {
       'action': 'representatives',
     }
@@ -133,7 +135,7 @@ def rpc_representatives(session: requests.Session) -> str:
     return result
 
 
-def get_representatives() -> list[Representative]:
+def get_representatives() -> Dict[str, Representative]:
     session = requests.Session()
 
     quorum_reply = rpc_confirmation_quorum(session)
@@ -144,19 +146,16 @@ def get_representatives() -> list[Representative]:
     quorum.peers_stake_total            = int(quorum_reply['peers_stake_total'])
     quorum.trended_stake_total          = int(quorum_reply['trended_stake_total'])
     quorum.set_delta(int(quorum_reply['quorum_delta']))
-    print(quorum)
-
-    peers_reply = rpc_peers(session)
-    reps_reply = rpc_representatives(session)
-    static_reps = { k:v for k,v in reps_reply['representatives'].items() if int(v) > 0 }
 
     reps = {}
 
     # add the static representatives first
-    for acc, weight in static_reps.items():
+    reps_reply = rpc_representatives(session)
+    reps_reply = {account: int(weight) for account, weight in reps_reply['representatives'].items() if int(weight) > 0}  # filter out representatives with 0 voting weight
+    for acc, weight in reps_reply.items():
         rep = Representative()
         rep.account = acc
-        rep.set_weight(int(weight))
+        rep.set_weight(weight)
         assert acc not in reps.keys()
         reps[acc] = rep
 
@@ -183,7 +182,7 @@ def get_representatives() -> list[Representative]:
             reps[acc] = rep
 
     # merge in node IDs and protocol version
-    peers = peers_reply['peers']
+    peers = rpc_peers(session)['peers']
     for endpoint in peers.keys():
         for acc, rep in reps.items():
             if endpoint == rep.endpoint:
