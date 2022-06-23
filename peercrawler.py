@@ -13,6 +13,7 @@ import jsonpickle
 from functools import reduce
 from typing import Collection, Iterable, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 
 import requests
 from pydot import Dot, Node, Edge
@@ -334,7 +335,7 @@ class peer_manager:
         graph_copy = self.get_connections_graph()
         nodes = {}
         for peer, connections in graph_copy.items():
-            peer_data = vars(peer)
+            peer_data = vars(deepcopy(peer))
             peer_data["connections"] = [str(id(c)) for c in connections]
             nodes[str(id(peer))] = peer_data
 
