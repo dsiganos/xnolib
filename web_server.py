@@ -196,8 +196,9 @@ def render_graph_thread(interval_seconds: int):
 
 
 def generate_representatives_thread(interval_seconds: int):
+    peer_service_url = f"http://127.0.0.1:{app.config['args'].http_port}/peercrawler/json"
     while True:
-        _representatives = get_representatives()
+        _representatives = get_representatives(peer_service_url)
         json_representatives = jsonencoder.to_json(_representatives)
         cache.set("representatives", json_representatives)
 

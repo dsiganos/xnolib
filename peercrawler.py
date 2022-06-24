@@ -494,7 +494,7 @@ def get_peers_from_service(ctx: dict, url = None):
     session = requests.Session()
     resp = session.get(url, timeout=5)
     json_resp = resp.json()
-    return [ Peer.from_json(r) for r in json_resp ]
+    return [Peer.from_json(r) for r in json_resp.values()]
 
 
 def get_initial_connected_socket(ctx, peers=None):
