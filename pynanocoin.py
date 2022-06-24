@@ -401,9 +401,7 @@ class block_manager:
         self.gitrepo = gitrepo
 
         # create genesis account and block
-        open_block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
-                                ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
-                                ctx["genesis_block"]["work"])
+        open_block = ctx["genesis_block"]
         open_block.ancillary["balance"] = 0xffffffffffffffffffffffffffffffff
         self.accounts.append(nano_account(self, open_block))
 
@@ -1072,38 +1070,25 @@ def get_connected_socket_endpoint(addr: str, port: int, bind_endpoint: tuple = N
     return s
 
 
-def get_genesis_block(ctx: dict):
-    return block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
-                      ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
-                      ctx['genesis_block']['work'])
+live_genesis_block = block_open(binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+                                binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+                                binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
+                                binascii.unhexlify('9F0C933C8ADE004D808EA1985FA746A7E95BA2A38F867640F53EC8F180BDFE9E2C1268DEAD7C2664F356E37ABA362BC58E46DBA03E523A7B5A19E4B6EB12BB02'),
+                                int.from_bytes(binascii.unhexlify('62F05417DD3FB691'), "little"))
 
 
-live_genesis_block = {
-    "hash": binascii.unhexlify("991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948"),
-    "source": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
-    "representative": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
-    "account": binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'),
-    "signature": binascii.unhexlify('9F0C933C8ADE004D808EA1985FA746A7E95BA2A38F867640F53EC8F180BDFE9E2C1268DEAD7C2664F356E37ABA362BC58E46DBA03E523A7B5A19E4B6EB12BB02'),
-    "work": int.from_bytes(binascii.unhexlify('62F05417DD3FB691'), "little")
-}
+beta_genesis_block = block_open(binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
+                                binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
+                                binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
+                                binascii.unhexlify("4BD7F96F9ED2721BCEE5EAED400EA50AD00524C629AE55E9AFF11220D2C1B00C3D4B3BB770BF67D4F8658023B677F91110193B6C101C2666931F57046A6DB806"),
+                                int.from_bytes(binascii.unhexlify("79D4E27DC873C6F2"), "little"))
 
-beta_genesis_block = {
-    "hash": binascii.unhexlify("01A92459E69440D5C1088D3B31F4CA678BE944BAB3776C2E6B7665E9BD99BD5A"),
-    "source": binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
-    "representative": binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
-    "account": binascii.unhexlify("259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A"),
-    "signature": binascii.unhexlify("4BD7F96F9ED2721BCEE5EAED400EA50AD00524C629AE55E9AFF11220D2C1B00C3D4B3BB770BF67D4F8658023B677F91110193B6C101C2666931F57046A6DB806"),
-    "work": int.from_bytes(binascii.unhexlify("79D4E27DC873C6F2"), "little")
-}
 
-test_genesis_block = {
-    "hash": binascii.unhexlify("B1D60C0B886B57401EF5A1DAA04340E53726AA6F4D706C085706F31BBD100CEE"),
-    "source": binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
-    "representative": binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
-    "account": binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
-    "signature": binascii.unhexlify("15049467CAEE3EC768639E8E35792399B6078DA763DA4EBA8ECAD33B0EDC4AF2E7403893A5A602EB89B978DABEF1D6606BB00F3C0EE11449232B143B6E07170E"),
-    "work": int.from_bytes(binascii.unhexlify("BC1EF279C1A34EB1"), "little")
-}
+test_genesis_block = block_open(binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
+                                binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
+                                binascii.unhexlify("45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED"),
+                                binascii.unhexlify("15049467CAEE3EC768639E8E35792399B6078DA763DA4EBA8ECAD33B0EDC4AF2E7403893A5A602EB89B978DABEF1D6606BB00F3C0EE11449232B143B6E07170E"),
+                                int.from_bytes(binascii.unhexlify("BC1EF279C1A34EB1"), "little"))
 
 
 livectx = {

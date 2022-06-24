@@ -139,9 +139,7 @@ def get_next_confirm_ack(s: socket.socket) -> message_header and bytes:
 
 
 def send_confirm_req_block(ctx: dict, s: socket.socket) -> None:
-    block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
-                       ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
-                       ctx['genesis_block']['work'])
+    block = ctx['genesis_block']
 
     print('The block we send hash: %s' % hexlify(block.hash()))
 
@@ -154,9 +152,7 @@ def send_confirm_req_block(ctx: dict, s: socket.socket) -> None:
 
 
 def send_example_confirm_req_hash(ctx: dict, s: socket.socket) -> None:
-    block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
-                       ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
-                       ctx['genesis_block']['work'])
+    block = ctx['genesis_block']
 
     # print(block)
 
@@ -284,9 +280,7 @@ def main() -> None:
         else:
             pair = common.hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
     else:
-        block = block_open(ctx['genesis_block']['source'], ctx['genesis_block']['representative'],
-                           ctx['genesis_block']['account'], ctx['genesis_block']['signature'],
-                           ctx['genesis_block']['work'])
+        block = ctx['genesis_block']
 
     if args.peer is not None:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
@@ -325,8 +319,11 @@ class TestConfirmReq(unittest.TestCase):
         ctx = livectx
         peeraddr = '::ffff:94.130.12.236'
         peerport = 7075
+        pair = common.hash_pair(
+            binascii.unhexlify('991CF190094C00F0B68E2E5F75F6BEE95A2E0BD93CEAA4A6734DB9F19B728948'),
+            binascii.unhexlify('E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA'))
 
-        self.assertTrue(confirm_req_peer(ctx, None, constants.genesis_hash_pair_str, peeraddr=peeraddr,
+        self.assertTrue(confirm_req_peer(ctx, None, pair, peeraddr=peeraddr,
                                          peerport=peerport))
 
 
