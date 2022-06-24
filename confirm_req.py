@@ -214,7 +214,7 @@ def get_confirm_hash_resp(ctx: dict, pairs: list[hash_pair], s: socket.socket) -
                                                                                         confirm_ack.confirm_ack_block]:
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.confirm_req), 0)
     req = confirm_req_hash(hdr, pairs)
-    s.send(req.serialise())
+    s.sendall(req.serialise())
 
     resp = search_for_response(s, req)
     return resp
