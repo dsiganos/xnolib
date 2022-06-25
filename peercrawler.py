@@ -396,7 +396,7 @@ def parse_args():
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='run peer crawler as a service')
     parser.add_argument('-l', '--listen', type=str, default=None,
-                        help='advertise the IP address passed in this argument in outgoing keepalive packets and listen to incoming connections;'
+                        help='the public IP address of this machine; this address will be advertised in outgoing keepalive packets and the incoming connection listener will be enabled'
                              'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
     parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')

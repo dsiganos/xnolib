@@ -218,7 +218,7 @@ def parse_args():
     parser.add_argument("-d", "--delay", type=int, default=300,
                         help="delay between crawls in seconds")
     parser.add_argument('-l', '--listen', type=str, default=None,
-                        help='advertise the IP address passed in this argument in outgoing keepalive packets and listen to incoming connections;'
+                        help='the public IP address of this machine; this address will be advertised in outgoing keepalive packets and the incoming connection listener will be enabled'
                              'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
     parser.add_argument("-p", "--port", type=int, default=7777,
                         help="port to listen on for incoming requests from other peers in the network")
