@@ -395,7 +395,7 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='run peer crawler as a service')
-    parser.add_argument('-l', '--listen', action='str', default=None,
+    parser.add_argument('-l', '--listen', type=str, default=None,
                         help='advertise the IP address passed in this argument in outgoing keepalive packets and listen to incoming connections;'
                              'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
     parser.add_argument('-p', '--port', type=int, default=7070,
