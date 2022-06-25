@@ -1,17 +1,34 @@
 import argparse
 import binascii
 
+import requests
+
 import _logger
 import common
 from confirm_req import get_confirm_hash_resp
 from peercrawler import get_peers_from_service
-from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx
+from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx, parse_endpoint
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
 from representative_mapping import representative_mapping
 from common import hexlify
+from representatives import get_representatives, Representative
 
 logger = _logger.get_logger()
+
+
+def parse_reps(resp):
+    reps = []
+    for i in resp.keys():
+        rep = Representative()
+        rep.account = i
+        rep.endpoint = resp[i]['endpoint']
+        rep.set_weight(resp[i]['weight'])
+        rep.node_id = resp[i]['node_id']
+        rep.protover = resp[i]['protover']
+        rep.voting = resp[i]['voting']
+        reps.append(rep)
+    return reps
 
 
 def parse_args():
@@ -38,7 +55,6 @@ def main():
     elif args.test:
         ctx = testctx
 
-    peers = filter(lambda p: p.is_voting, get_peers_from_service(ctx))
     if args.hash is not None:
         block_hash = args.hash.split(':')
         if len(block_hash) == 1:
@@ -50,25 +66,24 @@ def main():
         pair = common.hash_pair(genesis_block.hash(), genesis_block.root())
 
     votes = []
-    peers_voted = []
+    reps_voted = []
     voting_weights = []
-    rep_map = representative_mapping()
-    rep_map.load_from_file("representative-mappings.json")
+    session = requests.Session()
+    resp = session.get("https://nano.migul.xyz/representatives", timeout=5).json()
+    reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
 
-    for p in peers:
-        voting_weight = 0
-        rep = rep_map.find(hexlify(p.peer_id), str(p.ip))
-        if len(rep) >= 1:
-            voting_weight = rep[0]['weight']
-        print(hexlify(p.peer_id), str(p.ip), len(rep))
+    for r in reps:
+        voting_weight = r.weight
+        print(r.account, str(r.endpoint), voting_weight)
+        ip, port = parse_endpoint(r.endpoint)
         try:
-            with get_connected_socket_endpoint(str(p.ip), p.port) as s:
+            with get_connected_socket_endpoint(ip, port) as s:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
                 resp = get_confirm_hash_resp(ctx, [pair], s)
                 if resp is not None:
                     votes.append(resp)
-                    peers_voted.append(p)
+                    reps_voted.append(r)
                     voting_weights.append(int(voting_weight))
                 else:
                     continue
@@ -78,7 +93,7 @@ def main():
     for v in votes:
         print(v)
 
-    print(sum(voting_weights))
+    print("Total votes: %d (%f)" % (sum(voting_weights), sum(voting_weights) / (10**30)))
 
 
 if __name__ == "__main__":
