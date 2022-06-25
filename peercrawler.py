@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import copy
-import logging
 import sys
 import argparse
 import threading
 from _thread import interrupt_main
-from ipaddress import IPv6Address
 import jsonpickle
 from functools import reduce
 from typing import Collection, Iterable, Optional, Callable
@@ -44,10 +41,11 @@ class peer_manager:
     def __init__(self, ctx,
                  verbosity=0, initial_graph: dict[Peer, peer_set] = None,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
-                 listen=True, listening_port=7777):
+                 listening_address: Optional[str] = None, listening_port=7777):
         self.ctx = ctx
         self.verbosity = verbosity
         self.mutex = threading.Lock()
+        self.listening_address: Optional[ip_addr] = ip_addr.from_string(listening_address) if listening_address is not None else None
         self.listening_port = listening_port
 
         if initial_graph is None:
@@ -59,7 +57,7 @@ class peer_manager:
             for peer in peers:
                 self.add_peers(peer, [])
 
-        if listen:
+        if self.listening_address:
             threading.Thread(target=self.listen_incoming, daemon=True).start()
 
         if inactivity_threshold_seconds > 0:
@@ -200,9 +198,11 @@ class peer_manager:
         return incoming_peer, incoming_peer_peers, is_voting
 
     def send_keepalive_packet(self, connection: socket):
-        local_peer = Peer(ip_addr(IPv6Address("::ffff:78.46.80.199")), self.listening_port)  # this should be changed manually
+        assert self.listening_address is not None
+
+        local_peer = Peer(self.listening_address, self.listening_port)  # this should be changed manually
         packet = message_keepalive.make_packet([local_peer], self.ctx["net_id"], 18)
-        connection.send(packet)
+        connection.sendall(packet)
 
     def get_peers_from_peer(self, peer, no_telemetry=False, no_confirm_req=False) -> list[Peer]:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -228,7 +228,8 @@ class peer_manager:
                 peer.peer_id = peer_id
                 logger.debug(f"ID: {hexlify(peer_id)}")
 
-                self.send_keepalive_packet(s)
+                if self.listening_address:
+                    self.send_keepalive_packet(s)
 
                 starttime = time.time()
                 while time.time() - starttime <= 10:
@@ -394,8 +395,9 @@ def parse_args():
                         help='delay between crawls in seconds')
     parser.add_argument('-s', '--service', action='store_true', default=False,
                         help='run peer crawler as a service')
-    parser.add_argument('-l', '--nolisten', action='store_true', default=False,
-                        help='listen to incoming connections')
+    parser.add_argument('-l', '--listen', action='str', default=None,
+                        help='advertise the IP address passed in this argument in outgoing keepalive packets and listen to incoming connections;'
+                             'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
     parser.add_argument('-p', '--port', type=int, default=7070,
                         help='tcp port number to listen on in service mode')
     parser.add_argument('--serialize', action='store_true', default=False,
@@ -601,7 +603,7 @@ def main():
         if args.deserialize:
             initial_graph = deserialize_graph_from_file(args.deserialize)
 
-        peerman = peer_manager(ctx, initial_graph=initial_graph, listen=(not args.nolisten), verbosity=verbosity)
+        peerman = peer_manager(ctx, initial_graph=initial_graph, listening_address=args.listen, verbosity=verbosity)
 
         if args.serialize:
             threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
