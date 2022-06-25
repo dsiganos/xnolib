@@ -53,13 +53,13 @@ class frontier_service:
             if c_packet.is_all_zero():
                 frontiers = self.interface.get_all()
                 s_packet = server_packet(frontiers)
-                s.send(s_packet.serialise())
+                s.sendall(s_packet.serialise())
                 return
 
             else:
                 frontier = self.interface.get_frontier(c_packet.account)
                 s_packet = server_packet([frontier])
-                s.send(s_packet.serialise())
+                s.sendall(s_packet.serialise())
 
     def join_finished_threads(self) -> None:
         remove_threads = []
@@ -103,7 +103,7 @@ class frontier_service:
             # maxacc argument can be removed in final version
             hdr = frontier_request.frontier_request.generate_header(self.ctx)
             req = frontier_request.frontier_request(hdr)
-            s.send(req.serialise())
+            s.sendall(req.serialise())
 
             front_iter = frontier_read_iter(s)
             self.add_fronts_from_iter(front_iter, p)
@@ -528,7 +528,7 @@ def get_all_frontiers_packet_from_service(addr = '::1', port = 7080):
 
         c_packet1 = client_packet(b'\x00' * 32)
 
-        s.send((c_packet1.serialise()))
+        s.sendall((c_packet1.serialise()))
 
         hdr_data = read_socket(s, 9)
         s_hdr = server_packet_header.parse(hdr_data)
@@ -547,7 +547,7 @@ def get_accounts_frontier_packet_from_service(account, addr = '::1', port = 7080
 
         c_packet = client_packet(account)
 
-        s.send(c_packet.serialise())
+        s.sendall(c_packet.serialise())
 
         hdr_data = read_socket(s, 9)
         s_hdr = server_packet_header.parse(hdr_data)

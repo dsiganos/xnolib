@@ -367,7 +367,7 @@ def frontier_iter(ctx: dict, peers: list[Peer], num: int, start_acc: bytes = b'\
                 s.connect((str(peer.ip), peer.port))
                 front_hdr = frontier_request.generate_header(ctx)
                 req = frontier_request(front_hdr, maxacc=num, start_account=start_acc)
-                s.send(req.serialise())
+                s.sendall(req.serialise())
 
                 for i in range(0, num):
                     accounts_read += 1

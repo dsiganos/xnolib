@@ -101,7 +101,7 @@ def main() -> None:
         hdr.set_block_type(block_type_enum.state)
         msg = msg_publish(hdr, blk)
         print(msg)
-        s.send(msg.serialise())
+        s.sendall(msg.serialise())
 
 
 if __name__ == '__main__':

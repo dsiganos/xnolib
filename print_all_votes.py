@@ -22,7 +22,7 @@ def frontier_iter_with_retries(ctx: dict, peeraddr: str, peerport: int, start_ac
                 front_hdr = frontier_request.generate_header(ctx, confirmed=True)
                 print('Sending frontier request starting from account %s' % hexlify(last_acc))
                 req = frontier_request(front_hdr, maxacc=num, start_account=last_acc)
-                s.send(req.serialise())
+                s.sendall(req.serialise())
 
                 while True:
                     frontier = read_frontier_response(s)

@@ -198,7 +198,7 @@ class confirm_ack_thread(threading.Thread):
             print('Peer  Node ID: %s' % acctools.to_account_addr(peer_id, prefix='node_'))
 
             while True:
-                s.send(self.data)
+                s.sendall(self.data)
         print('confirm ack thread ended')
 
 

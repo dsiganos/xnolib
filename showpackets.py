@@ -153,10 +153,10 @@ def main() -> None:
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.keepalive), 0)
         keepalive = message_keepalive(hdr)
         req = keepalive.serialise()
-        s.send(req)
+        s.sendall(req)
 
         # do a telemetry request
-        s.send(telemetry_req(ctx).serialise())
+        s.sendall(telemetry_req(ctx).serialise())
 
         # now we are waiting for keepalives, so set a long timeout (60 minutes)
         s.settimeout(60 * 60)
@@ -172,7 +172,7 @@ def main() -> None:
                 print(functions[hdr.msg_type.type](hdr, payload))
 
             if hdr.msg_type.type == message_type_enum.telemetry_req:
-                s.send(telem_ack.serialize())
+                s.sendall(telem_ack.serialize())
 
 
 if __name__ == "__main__":
