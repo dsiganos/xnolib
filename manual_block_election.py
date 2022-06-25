@@ -3,10 +3,9 @@ import binascii
 
 import _logger
 import common
-from block import block_open
 from confirm_req import get_confirm_hash_resp
 from peercrawler import get_peers_from_service
-from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx, get_genesis_block
+from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
 from representative_mapping import representative_mapping
@@ -47,7 +46,7 @@ def main():
         else:
             pair = common.hash_pair(binascii.unhexlify(block_hash[0]), binascii.unhexlify(block_hash[1]))
     else:
-        genesis_block = get_genesis_block(ctx)
+        genesis_block = ctx['genesis_block']
         pair = common.hash_pair(genesis_block.hash(), genesis_block.root())
 
     votes = []
