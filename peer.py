@@ -75,7 +75,7 @@ class Peer:
         self.score = max(0, self.score - score)
 
     def merge(self, peer: "Peer") -> None:
-        assert self.compare(peer)
+        assert self.compare(peer), "Attempt occurred at merging two peers which aren't considered equal"
 
         self.last_seen = peer.last_seen
 

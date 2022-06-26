@@ -74,6 +74,7 @@ class peer_manager:
         with self.mutex:
             existing_peer = find_existing_peer(from_peer)  # check if there's a key with this same peer already in the graph
             if existing_peer:
+                existing_peer.merge(from_peer)
                 from_peer = existing_peer
             else:  # add it if there isn't it
                 self.__connections_graph[from_peer] = peer_set()
@@ -86,6 +87,7 @@ class peer_manager:
                 # the existing one should be used
                 existing_peer = find_existing_peer(new_peer)
                 if existing_peer:  # if this peer was already known, simply register the connection
+                    existing_peer.merge(new_peer)
                     self.__connections_graph[from_peer].add(existing_peer)
                 else:
                     self.__connections_graph[new_peer] = peer_set()
