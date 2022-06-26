@@ -38,7 +38,7 @@ def bg_thread_func(ctx: dict, args: argparse.Namespace):
     if args.deserialize:
         initial_graph = peercrawler.deserialize_graph_from_file(args.deserialize)
 
-    peerman = peercrawler.peer_manager(ctx, listen=(not args.nolisten), initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
+    peerman = peercrawler.peer_manager(ctx, listening_address=args.listen, initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
 
     if args.serialize:
         threading.Thread(target=peercrawler.serialize_thread, args=(peerman,), daemon=True).start()
@@ -218,8 +218,9 @@ def parse_args():
                         help="verbosity level")
     parser.add_argument("-d", "--delay", type=int, default=300,
                         help="delay between crawls in seconds")
-    parser.add_argument("-l", "--nolisten", action="store_true", default=False,
-                        help="disable incoming connection listener for other peers in the network")
+    parser.add_argument('-l', '--listen', type=str, default=None,
+                        help='the public IP address of this machine; this address will be advertised in outgoing keepalive packets and the incoming connection listener will be enabled'
+                             'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
     parser.add_argument("-p", "--port", type=int, default=7777,
                         help="port to listen on for incoming requests from other peers in the network")
     parser.add_argument("--http-port", type=int, default=5001,
