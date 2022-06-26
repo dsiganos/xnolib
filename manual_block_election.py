@@ -69,7 +69,8 @@ def main():
     reps_voted = []
     voting_weights = []
     session = requests.Session()
-    resp = session.get("https://nano.migul.xyz/representatives", timeout=5).json()
+    print("contacting: %s" % ctx['repservurl'])
+    resp = session.get(ctx['repservurl'], timeout=5).json()
     reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
 
     for r in reps:
