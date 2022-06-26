@@ -135,7 +135,7 @@ def rpc_representatives(session: requests.Session) -> dict:
     return result
 
 
-def get_representatives() -> Dict[str, Representative]:
+def get_representatives(peer_service_url: str = None) -> Dict[str, Representative]:
     session = requests.Session()
 
     quorum_reply = rpc_confirmation_quorum(session)
@@ -190,7 +190,7 @@ def get_representatives() -> Dict[str, Representative]:
                 rep.protover = peers[endpoint]['protocol_version']
 
     # merge in voting capabilities from peercrawler
-    peers = peercrawler.get_peers_from_service(pynanocoin.livectx)
+    peers = peercrawler.get_peers_from_service(pynanocoin.livectx, url=peer_service_url)
     for peer in peers:
         if peer.peer_id:
             for acc, rep in reps.items():
