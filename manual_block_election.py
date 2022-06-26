@@ -1,3 +1,7 @@
+#!/bin/env python3
+
+from __future__ import annotations
+
 import argparse
 import binascii
 
@@ -13,6 +17,7 @@ from exceptions import PyNanoCoinException
 from representative_mapping import representative_mapping
 from common import hexlify
 from representatives import get_representatives, Representative
+from constants import max_nano_supply
 
 logger = _logger.get_logger()
 
@@ -69,32 +74,43 @@ def main():
     reps_voted = []
     voting_weights = []
     session = requests.Session()
-    print("contacting: %s" % ctx['repservurl'])
+    print("Retrieving list of reps from: %s" % ctx['repservurl'])
     resp = session.get(ctx['repservurl'], timeout=5).json()
     reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
 
     for r in reps:
-        voting_weight = r.weight
-        print(r.account, str(r.endpoint), voting_weight)
+        # skip very small representatives, smaller than 0.5% of total supply weight
+        if r.weight < (max_nano_supply / 100 / 100 / 2):
+            print('SKIP', r.account, str(r.endpoint), r.weight / (10**30))
+            continue
+
         ip, port = parse_endpoint(r.endpoint)
         try:
             with get_connected_socket_endpoint(ip, port) as s:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
                 resp = get_confirm_hash_resp(ctx, [pair], s)
-                if resp is not None:
-                    votes.append(resp)
-                    reps_voted.append(r)
-                    voting_weights.append(int(voting_weight))
-                else:
-                    continue
         except (OSError, PyNanoCoinException):
-            print("Node was unreachable")
+            print('EXC ', r.account, str(r.endpoint), r.weight / (10**30))
+
+        if resp is not None:
+            votes.append(resp)
+            reps_voted.append(r)
+            voting_weights.append(int(r.weight))
+            print('OK  ', r.account, str(r.endpoint), r.weight / (10**30))
+        else:
+            print('FAIL', r.account, str(r.endpoint), r.weight / (10**30))
 
     for v in votes:
         print(v)
 
-    print("Total votes: %d (%f)" % (sum(voting_weights), sum(voting_weights) / (10**30)))
+    total_votes = sum(voting_weights)
+    print("Total votes: %d (%s)" % (total_votes, '{:,}'.format(total_votes / (10**30))))
+
+    percentage_of_total_supply = total_votes * 100 / max_nano_supply
+    print("Percentage of total supply: %s" % percentage_of_total_supply)
+
+    print("Percentage of online weight: TODO")
 
 
 if __name__ == "__main__":
