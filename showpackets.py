@@ -1,4 +1,7 @@
 #!/bin/env python3
+
+from __future__ import annotations
+
 import time
 import socket
 import random
@@ -114,7 +117,7 @@ def make_telemetry_ack(ctx: dict, signing_key: ed25519_blake2b.keys.SigningKey,
         peer_count=22,
         protocol_ver=18,
         uptime=3,
-        genesis_hash=ctx['genesis_block']['hash'],
+        genesis_hash=ctx['genesis_block'].hash(),
         major_ver=77,
         minor_ver=77,
         patch_ver=77,

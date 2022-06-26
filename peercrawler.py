@@ -550,9 +550,7 @@ def do_connect(ctx, server):
 
 def send_confirm_req_genesis(ctx, peer, s):
     assert (isinstance(peer, Peer))
-    block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
-                       ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
-                       ctx["genesis_block"]["work"])
+    block = ctx["genesis_block"]
 
     try:
         outcome = confirm_req.confirm_block(ctx, block, s)
