@@ -84,7 +84,7 @@ class peer_manager:
                 # if there's already a peer object in the graph representing the same peer as new_peer,
                 # the existing one should be used
                 existing_peer = find_existing_peer(new_peer)
-                if existing_peer:
+                if existing_peer:  # if this peer was already known, simply register the connection
                     self.__connections_graph[from_peer].add(existing_peer)
                 else:
                     self.__connections_graph[new_peer] = peer_set()
@@ -268,12 +268,13 @@ class peer_manager:
             try:
                 logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
                 self.add_peers(peer, self.get_peers_from_peer(peer))
-            except Exception as e:
+            except Exception:
                 logger.error(f"Unexpected exception while crawling peer [{peer.ip}]:{peer.port}", exc_info=True, stack_info=True)
 
         with ThreadPoolExecutor(max_workers=max_workers) as t:
             for p in peers_copy:
-                t.submit(crawl_peer, peer=p)
+                if p.incoming is False:  # connections shouldn't be made to peers marked as incoming, as their real port isn't known
+                    t.submit(crawl_peer, peer=p)
 
     def crawl(self, forever, delay, max_workers=4):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
