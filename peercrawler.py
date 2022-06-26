@@ -68,11 +68,14 @@ class peer_manager:
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
         def find_existing_peer(peer: Peer):
             for p in self.__connections_graph:
-                if p == peer:
+                if p.compare(peer):
                     return p
 
         with self.mutex:
-            if from_peer not in self.__connections_graph:
+            existing_peer = find_existing_peer(from_peer)  # check if there's a key with this same peer already in the graph
+            if existing_peer:
+                from_peer = existing_peer
+            else:  # add it if there isn't it
                 self.__connections_graph[from_peer] = peer_set()
 
             for new_peer in new_peers:
@@ -81,13 +84,13 @@ class peer_manager:
 
                 # if there's already a peer object in the graph representing the same peer as new_peer,
                 # the existing one should be used
-                if new_peer in self.__connections_graph:
-                    new_peer = find_existing_peer(new_peer)
+                existing_peer = find_existing_peer(new_peer)
+                if existing_peer:
+                    self.__connections_graph[from_peer].add(existing_peer)
                 else:
                     self.__connections_graph[new_peer] = peer_set()
+                    self.__connections_graph[from_peer].add(new_peer)
                     logger.debug(f"Discovered new peer {new_peer}")
-
-                self.__connections_graph[from_peer].add(new_peer)
 
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:

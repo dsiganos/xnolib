@@ -75,7 +75,7 @@ class Peer:
         self.score = max(0, self.score - score)
 
     def merge(self, peer: "Peer") -> None:
-        assert self == peer
+        assert self.compare(peer)
 
         self.last_seen = peer.last_seen
 
@@ -88,6 +88,10 @@ class Peer:
             self.is_voting = True
 
         logger.log(VERBOSE, f"Merged peer {peer}")
+
+    def compare(self, other: "Peer") -> bool:
+        """Check if the ip and node_id of both peers are equal."""
+        return self.peer_id == other.peer_id or (self.ip == other.ip and self.port == other.port)
 
     @classmethod
     def parse_peer(cls, data: bytes):
