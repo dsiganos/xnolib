@@ -82,7 +82,7 @@ class Peer:
         if peer.telemetry is not None:
             self.telemetry = peer.telemetry
         if peer.incoming is False:
-            self.port = peer.port
+            self.port = peer.port  # the true port of peers discovered from incoming handshakes is unknown, set it here
             self.incoming = False
         if peer.is_voting is True:
             self.is_voting = True
