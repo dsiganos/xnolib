@@ -13,7 +13,7 @@ from peer import Peer
 def frontier_req(ctx: dict, s: socket.socket, peer: Peer, acc_id: bytes) -> None:
     hdr = frontier_request.frontier_request.generate_header(ctx, True)
     frontier = frontier_request.frontier_request(hdr, start_account=acc_id, maxacc=1)
-    s.send(frontier.serialise())
+    s.sendall(frontier.serialise())
     frontier = frontier_request.read_frontier_response(s)
     endmark = frontier_request.read_frontier_response(s)
     assert endmark.is_end_marker()
@@ -21,7 +21,7 @@ def frontier_req(ctx: dict, s: socket.socket, peer: Peer, acc_id: bytes) -> None
 
     hdr = frontier_request.frontier_request.generate_header(ctx, False)
     frontier = frontier_request.frontier_request(hdr, start_account=acc_id, maxacc=1)
-    s.send(frontier.serialise())
+    s.sendall(frontier.serialise())
     frontier = frontier_request.read_frontier_response(s)
     endmark = frontier_request.read_frontier_response(s)
     assert endmark.is_end_marker()
@@ -43,7 +43,7 @@ def pull_blocks(ctx: dict, blockman: block_manager, peer: Peer, acc: bytes) -> i
         # send a block pull request
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(6), 0)
         bulk_pull = message_bulk_pull(hdr, hexlify(acc))
-        s.send(bulk_pull.serialise())
+        s.sendall(bulk_pull.serialise())
 
         # pull blocks from peer
         blocks_pulled = 0

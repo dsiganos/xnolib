@@ -188,7 +188,7 @@ def main():
         flag = args.flag
 
         msg = bulk_pull_account(hdr, account, flag)
-        s.send(msg.serialise())
+        s.sendall(msg.serialise())
 
         # All entries start with a frontier_balance_entry
         front_hash = read_socket(s, 32)
@@ -220,7 +220,7 @@ class TestBulkPullAccount(unittest.TestCase):
         with self.s as s:
             flag = 0
             msg = bulk_pull_account(self.hdr, self.account, flag)
-            s.send(msg.serialise())
+            s.sendall(msg.serialise())
 
             # All entries start with a frontier_balance_entry
             front_hash = read_socket(s, 32)
@@ -242,7 +242,7 @@ class TestBulkPullAccount(unittest.TestCase):
         with self.s as s:
             flag = 1
             msg = bulk_pull_account(self.hdr, self.account, flag)
-            s.send(msg.serialise())
+            s.sendall(msg.serialise())
 
             # All entries start with a frontier_balance_entry
             front_hash = read_socket(s, 32)
@@ -264,7 +264,7 @@ class TestBulkPullAccount(unittest.TestCase):
         with self.s as s:
             flag = 2
             msg = bulk_pull_account(self.hdr, self.account, flag)
-            s.send(msg.serialise())
+            s.sendall(msg.serialise())
 
             # All entries start with a frontier_balance_entry
             front_hash = read_socket(s, 32)

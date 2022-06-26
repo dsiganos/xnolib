@@ -23,14 +23,14 @@ class node_handshake_id:
                                    verifying_key: ed25519_blake2b.VerifyingKey) -> bytes:
         hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(10), 1)
         msg_handshake = handshake_query(hdr)
-        s.send(msg_handshake.serialise())
+        s.sendall(msg_handshake.serialise())
         try:
             data = read_socket(s, 136)
             hdr = message_header.parse_header(data[0:8])
             recvd_response = handshake_response_query.parse_query_response(hdr, data[8:])
 
             response = handshake_response.create_response(ctx, recvd_response.cookie, signing_key, verifying_key)
-            s.send(response.serialise())
+            s.sendall(response.serialise())
 
             vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
             vk.verify(recvd_response.sig, msg_handshake.cookie)

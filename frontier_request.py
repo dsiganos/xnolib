@@ -183,11 +183,11 @@ def get_frontiers_from_peer(peer: Peer, frontier_req: frontier_request, use_db: 
             filename = '%s/%s:%s' % (use_db, str(peer.ip), str(peer.port))
             lmdb_env = lmdb.open(filename, subdir=False, max_dbs=10000, map_size=10*1000*1000*1000)
             with lmdb_env.begin(write=True) as tx:
-                s.send(frontier_req.serialise())
+                s.sendall(frontier_req.serialise())
                 read_all_frontiers(s, lambda cnt, f, readtime: tx.put(f.account, f.frontier_hash))
             lmdb_env.close()
         else:
-            s.send(frontier_req.serialise())
+            s.sendall(frontier_req.serialise())
             read_all_frontiers(s, print_handler)
 
 

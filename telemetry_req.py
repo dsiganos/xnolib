@@ -180,7 +180,7 @@ def do_telemetry_req(ctx: dict, peeraddr: str, peerport: int) -> None:
         print('Peer  Node ID: %s' % acctools.to_account_addr(peer_id, prefix='node_'))
 
         req = telemetry_req(ctx)
-        s.send(req.serialise())
+        s.sendall(req.serialise())
 
         hdr, data = get_next_hdr_payload(s)
         while hdr.msg_type != message_type(13):

@@ -981,7 +981,7 @@ def get_account_blocks(ctx: dict, s: socket.socket, account: bytes, no_of_blocks
     if isinstance(account, bytes):
         account = hexlify(account)
     bulk_pull = message_bulk_pull(hdr, account, count=no_of_blocks)
-    s.send(bulk_pull.serialise())
+    s.sendall(bulk_pull.serialise())
     return read_bulk_pull_response(s)
 
 

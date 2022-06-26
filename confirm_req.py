@@ -192,7 +192,7 @@ def convert_blocks_to_hash_pairs(blocks: list) -> list[common.hash_pair]:
 def confirm_block(ctx: dict, block, s: socket.socket) -> bool:
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
-    s.send(req.serialise())
+    s.sendall(req.serialise())
 
     resp = search_for_response(s, req)
     print(resp)
@@ -206,7 +206,7 @@ def confirm_block(ctx: dict, block, s: socket.socket) -> bool:
 def get_confirm_block_resp(ctx: dict, block, s: socket.socket) -> confirm_ack.confirm_ack or None:
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_block(hdr, block)
-    s.send(req.serialise())
+    s.sendall(req.serialise())
 
     resp = search_for_response(s, req)
 
@@ -217,7 +217,7 @@ def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket) 
     assert(isinstance(pairs, list))
     hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0)
     req = confirm_req_hash(hdr, pairs)
-    s.send(req.serialise())
+    s.sendall(req.serialise())
 
     resp = search_for_response(s, req)
     print(resp)
