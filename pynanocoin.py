@@ -1097,6 +1097,7 @@ livectx = {
     'peerport': 7075,
     'peercrawlerport': 7070,
     'peerserviceurl': 'http://hetzner1.siganos.xyz:5001/peercrawler/json',
+    'repservurl': 'https://nano.migul.xyz/representatives',
     'genesis_pub': 'E89208DD038FBB269987689621D52292AE9C35941A7484756ECCED92A65093BA',
     'another_pub': '059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5',
     'random_block': '6E5404423E7DDD30A0287312EC79DFF5B2841EADCD5082B9A035BCD5DB4301B6',
@@ -1111,6 +1112,7 @@ betactx = {
     'peerport': 54000,
     'peercrawlerport': 7071,
     'peerserviceurl': 'http://hetzner2.siganos.xyz:5002/peercrawler/json',
+    'repservurl': 'http://beta.nano.migul.xyz/representatives',
     'genesis_pub': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
     'epoch_v2_signing_account': '259A43ABDB779E97452E188BA3EB951B41C961D3318CA6B925380F4D99F0577A',
     'genesis_block': beta_genesis_block
@@ -1123,6 +1125,7 @@ testctx = {
     'peerport': 17075,
     'peercrawlerport': 7072,
     'peerserviceurl': 'http://hetzner2.siganos.xyz:5001/peercrawler/json',
+    'repservurl': 'http://test.nano.migul.xyz/representatives',
     'genesis_pub': '45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED',
     'epoch_v2_signing_account': '45C6FF9D1706D61F0821327752671BDA9F9ED2DA40326B01935AB566FB9E08ED',
     'genesis_block': test_genesis_block
