@@ -544,7 +544,7 @@ def string_to_bytes(string, length):
 def do_connect(ctx, server):
     print('server =', server)
     peers = get_peers_from_service(ctx, url=server)
-    peerman = peer_manager(ctx, peers=peers, verbosity=2, listen=False)
+    peerman = peer_manager(ctx, peers=peers, verbosity=2)
     print(peerman)
 
 
