@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import binascii
+import threading
 
 import requests
 
@@ -34,6 +35,25 @@ def parse_reps(resp):
         rep.voting = resp[i]['voting']
         reps.append(rep)
     return reps
+
+
+def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair, rep: Representative,
+                           sem: threading.BoundedSemaphore, votes, reps_voted, voting_weights):
+    try:
+        with get_connected_socket_endpoint(ip, port) as s:
+            signing_key, verifying_key = node_handshake_id.keypair()
+            node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
+            resp = get_confirm_hash_resp(ctx, [pair], s)
+            if resp is not None:
+                votes.append(resp)
+                reps_voted.append(rep)
+                voting_weights.append(int(rep.weight))
+                print('OK  ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+            else:
+                print('FAIL', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+    except (OSError, PyNanoCoinException):
+        print('EXC ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+    sem.release()
 
 
 def parse_args():
@@ -77,29 +97,24 @@ def main():
     print("Retrieving list of reps from: %s" % ctx['repservurl'])
     resp = session.get(ctx['repservurl'], timeout=5).json()
     reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
+    threads = []
 
     for r in reps:
         # skip very small representatives, smaller than 0.5% of total supply weight
         if r.weight < (max_nano_supply / 100 / 100 / 2):
             print('SKIP', r.account, str(r.endpoint), r.weight / (10**30))
             continue
-
         ip, port = parse_endpoint(r.endpoint)
-        try:
-            with get_connected_socket_endpoint(ip, port) as s:
-                signing_key, verifying_key = node_handshake_id.keypair()
-                node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
-                resp = get_confirm_hash_resp(ctx, [pair], s)
-        except (OSError, PyNanoCoinException):
-            print('EXC ', r.account, str(r.endpoint), r.weight / (10**30))
+        sem = threading.BoundedSemaphore(8)
+        sem.acquire()
+        vote_thread = threading.Thread(target=get_vote_from_endpoint, args=(ctx, ip, port, pair, r, sem, votes,
+                                                                            reps_voted, voting_weights),
+                                       daemon=True)
+        vote_thread.start()
+        threads.append(vote_thread)
 
-        if resp is not None:
-            votes.append(resp)
-            reps_voted.append(r)
-            voting_weights.append(int(r.weight))
-            print('OK  ', r.account, str(r.endpoint), r.weight / (10**30))
-        else:
-            print('FAIL', r.account, str(r.endpoint), r.weight / (10**30))
+    for t in threads:
+        t.join()
 
     for v in votes:
         print(v)
