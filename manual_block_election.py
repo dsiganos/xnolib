@@ -17,7 +17,7 @@ from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
 from representative_mapping import representative_mapping
 from common import hexlify
-from representatives import get_representatives, Representative
+from representatives import get_representatives, Representative, Quorum, rpc_confirmation_quorum
 from constants import max_nano_supply
 
 logger = _logger.get_logger()
@@ -56,6 +56,20 @@ def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair
     sem.release()
 
 
+def get_quorum():
+    session = requests.Session()
+
+    quorum_reply = rpc_confirmation_quorum(session)
+    quorum = Quorum()
+    quorum.online_weight_quorum_percent = int(quorum_reply['online_weight_quorum_percent'])
+    quorum.online_weight_minimum = int(quorum_reply['online_weight_minimum'])
+    quorum.online_stake_total = int(quorum_reply['online_stake_total'])
+    quorum.peers_stake_total = int(quorum_reply['peers_stake_total'])
+    quorum.trended_stake_total = int(quorum_reply['trended_stake_total'])
+    quorum.set_delta(int(quorum_reply['quorum_delta']))
+    return quorum
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
@@ -90,6 +104,7 @@ def main():
         genesis_block = ctx['genesis_block']
         pair = common.hash_pair(genesis_block.hash(), genesis_block.root())
 
+    quorum = get_quorum()
     votes = []
     reps_voted = []
     voting_weights = []
@@ -123,9 +138,10 @@ def main():
     print("Total votes: %d (%s)" % (total_votes, '{:,}'.format(total_votes / (10**30))))
 
     percentage_of_total_supply = total_votes * 100 / max_nano_supply
+    percentage_of_online_weight = total_votes * 100 / quorum.online_weight
     print("Percentage of total supply: %s" % percentage_of_total_supply)
 
-    print("Percentage of online weight: TODO")
+    print("Percentage of online weight: %s" % percentage_of_online_weight)
 
 
 if __name__ == "__main__":
