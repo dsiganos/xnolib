@@ -111,10 +111,10 @@ def post(session, params, timeout=5) -> dict:
     return resp.json()
 
 
-def rpc_confirmation_quorum(session: requests.Session) -> dict:
+def rpc_confirmation_quorum(session: requests.Session, peer_details: bool = True) -> dict:
     params = {
       'action': 'confirmation_quorum',
-      'peer_details': 'true',
+      'peer_details': f'{str(peer_details).lower()}',
     }
     result = post(session, params)
     return result

@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 import threading
 import argparse
 from subprocess import run
+from json import dumps
 
+import requests
 from flask import Flask, Response, render_template, request
 from flask_caching import Cache
 
@@ -19,7 +21,7 @@ from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
 from pynanocoin import livectx, betactx, testctx
-from representatives import get_representatives
+from representatives import get_representatives, rpc_confirmation_quorum
 
 
 logger = get_logger()
@@ -161,6 +163,13 @@ def representatives():
         return Response(_representatives, status=200, mimetype="application/json")
     else:
         return Response("Representatives are still being generated.", status=503, mimetype="text/plain")
+
+
+@app.route("/representatives/network")
+@cache.cached(timeout=60)
+def representatives_network():
+    quorum = rpc_confirmation_quorum(requests.Session(), peer_details=False)
+    return Response(dumps(quorum), status=200, mimetype="application/json")
 
 
 def make_filter_from_query_parameters() -> Callable[[Peer, Peer], bool]:
