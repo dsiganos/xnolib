@@ -15,13 +15,13 @@ from flask_caching import Cache
 
 import jsonencoder
 import peercrawler
+import representatives
 from typing import Callable
 from pynanocoin import Peer
 from acctools import to_account_addr
 from representative_mapping import representative_mapping
 from _logger import setup_logger, get_logger, get_logging_level_from_int
 from pynanocoin import livectx, betactx, testctx
-from representatives import get_representatives, rpc_confirmation_quorum
 
 
 logger = get_logger()
@@ -156,7 +156,7 @@ def graph_uncached():
 
 
 @app.route("/representatives")
-def representatives():
+def network_representatives():
     _representatives = cache.get("representatives")
 
     if _representatives:
@@ -168,7 +168,7 @@ def representatives():
 @app.route("/representatives/network")
 @cache.cached(timeout=60)
 def representatives_network():
-    quorum = rpc_confirmation_quorum(requests.Session(), peer_details=False)
+    quorum = representatives.rpc_confirmation_quorum(requests.Session(), peer_details=False)
     return Response(dumps(quorum), status=200, mimetype="application/json")
 
 
@@ -207,7 +207,7 @@ def render_graph_thread(interval_seconds: int):
 def generate_representatives_thread(interval_seconds: int):
     peer_service_url = f"http://127.0.0.1:{app.config['args'].http_port}/peercrawler/json"
     while True:
-        _representatives = get_representatives(peer_service_url)
+        _representatives = representatives.get_representatives(peer_service_url)
         json_representatives = jsonencoder.to_json(_representatives)
         cache.set("representatives", json_representatives)
 
@@ -244,6 +244,8 @@ def parse_args():
                         help='serialize the graph of peer connection to peer_connection_graph.json periodically')
     parser.add_argument('--deserialize', type=str, default=None,
                         help='deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler')
+    parser.add_argument('--rpc-url', type=str, default=None,
+                        help='the rpc server url to use when needed')
 
     return parser.parse_args()
 
@@ -268,6 +270,8 @@ def main():
     threading.Thread(target=representatives_info.load_from_url_loop, args=("https://nano.community/data/representative-mappings.json", 3600), daemon=True).start()
 
     # start a thread for periodically generating the representatives list
+    if args.rpc_url:
+        representatives.RPC_URL = args.rpc_url
     threading.Thread(target=generate_representatives_thread, args=(1800,), daemon=True).start()
 
     if args.enable_graph:
