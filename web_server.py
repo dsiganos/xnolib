@@ -40,7 +40,7 @@ def bg_thread_func(ctx: dict, args: argparse.Namespace):
     if args.deserialize:
         initial_graph = peercrawler.deserialize_graph_from_file(args.deserialize)
 
-    peerman = peercrawler.peer_manager(ctx, listening_address=args.listen, initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
+    peerman = peercrawler.peer_manager(ctx, representatives_info, listening_address=args.listen, initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
 
     if args.serialize:
         threading.Thread(target=peercrawler.serialize_thread, args=(peerman,), daemon=True).start()

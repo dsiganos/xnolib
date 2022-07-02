@@ -622,7 +622,10 @@ def main():
         if args.deserialize:
             initial_graph = deserialize_graph_from_file(args.deserialize)
 
-        peerman = peer_manager(ctx, initial_graph=initial_graph, listening_address=args.listen, verbosity=verbosity)
+        mapping = representative_mapping()
+        mapping.load_from_file("representative-mappings.json")
+
+        peerman = peer_manager(ctx, mapping, initial_graph=initial_graph, listening_address=args.listen, verbosity=verbosity)
 
         if args.serialize:
             threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
