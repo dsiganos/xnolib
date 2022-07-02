@@ -62,7 +62,7 @@ def main_website():
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
 
-            representative_info = representatives_info.find(node_id, str(peer.ip))
+            representative_info = representatives_info.find(ip_address=str(peer.ip), port=peer.port)
             aliases = [r.get("alias", " ") for r in representative_info]
             accounts = [r.get("account", " ") for r in representative_info]
             weights = [r.get("weight", " ") for r in representative_info]
