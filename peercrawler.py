@@ -23,6 +23,7 @@ from msg_handshake import *
 from peer_set import peer_set
 from confirm_ack import confirm_ack
 from peer import Peer
+from representative_mapping import representative_mapping
 
 
 logger = _logger.get_logger()
@@ -38,7 +39,7 @@ def get_telemetry(ctx, s):
 
 
 class peer_manager:
-    def __init__(self, ctx,
+    def __init__(self, ctx, mappings: representative_mapping,
                  verbosity=0, initial_graph: dict[Peer, peer_set] = None,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
                  listening_address: Optional[str] = None, listening_port=7777):
@@ -47,6 +48,7 @@ class peer_manager:
         self.mutex = threading.Lock()
         self.listening_address: Optional[ip_addr] = ip_addr.from_string(listening_address) if listening_address is not None else None
         self.listening_port = listening_port
+        self.representative_mappings: representative_mapping = mappings
 
         if initial_graph is None:
             self.__connections_graph: dict[Peer, peer_set] = {}
@@ -70,7 +72,19 @@ class peer_manager:
                 if p.compare(peer):
                     return p
 
+        def match_with_representative_mapping(peer: Peer) -> Peer:
+            match = self.representative_mappings.find(ip_address=str(peer.ip), port=peer.port)
+            if not match:
+                return peer
+
+            match = match[0]  # use first match
+            known_peer = Peer(ip=ip_addr.from_string(match["address"]), port=match["port"])
+            known_peer.merge(peer)
+
+            return known_peer
+
         with self.mutex:
+            from_peer = match_with_representative_mapping(from_peer)
             existing_peer = find_existing_peer(from_peer)  # check if there's a key with this same peer already in the graph
             if existing_peer:
                 existing_peer.merge(from_peer)
@@ -84,6 +98,7 @@ class peer_manager:
 
                 # if there's already a peer object in the graph representing the same peer as new_peer,
                 # the existing one should be used
+                new_peer = match_with_representative_mapping(new_peer)
                 existing_peer = find_existing_peer(new_peer)
                 if existing_peer:  # if this peer was already known, simply register the connection
                     existing_peer.merge(new_peer)
