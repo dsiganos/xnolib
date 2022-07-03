@@ -20,7 +20,9 @@ from common import hexlify
 from representatives import get_representatives, Representative, Quorum, rpc_confirmation_quorum
 from constants import max_nano_supply
 
+
 logger = _logger.get_logger()
+__print_lock = threading.Lock()
 
 
 def parse_reps(resp):
@@ -48,11 +50,15 @@ def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair
                 votes.append(resp)
                 reps_voted.append(rep)
                 voting_weights.append(int(rep.weight))
-                print('OK  ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+
+                with __print_lock:
+                    print('OK  ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
             else:
-                print('FAIL', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+                with __print_lock:
+                    print('FAIL', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
     except (OSError, PyNanoCoinException):
-        print('EXC ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+        with __print_lock:
+            print('EXC ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
     sem.release()
 
 
@@ -117,8 +123,10 @@ def main():
     for r in reps:
         # skip very small representatives, smaller than 0.5% of total supply weight
         if r.weight < (max_nano_supply / 100 / 100 / 2):
-            print('SKIP', r.account, str(r.endpoint), r.weight / (10**30))
+            with __print_lock:
+                print('SKIP', r.account, str(r.endpoint), r.weight / (10**30))
             continue
+
         ip, port = parse_endpoint(r.endpoint)
         sem = threading.BoundedSemaphore(8)
         sem.acquire()
