@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import binascii
 import threading
+import typing
 
 import requests
 
@@ -39,8 +40,8 @@ def parse_reps(resp):
     return reps
 
 
-def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair, rep: Representative,
-                           sem: threading.BoundedSemaphore, votes, reps_voted, voting_weights):
+def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair,
+                           rep: Representative, votes, reps_voted, voting_weights):
     try:
         with get_connected_socket_endpoint(ip, port) as s:
             signing_key, verifying_key = node_handshake_id.keypair()
@@ -58,8 +59,7 @@ def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair
                     print('FAIL', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
     except (OSError, PyNanoCoinException):
         with __print_lock:
-            print('EXC ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
-    sem.release()
+            print('ERR ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
 
 
 def get_quorum():
@@ -118,6 +118,8 @@ def main():
     print("Retrieving list of reps from: %s" % ctx['repservurl'])
     resp = session.get(ctx['repservurl'], timeout=5).json()
     reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
+
+    thread_semaphore = threading.BoundedSemaphore(8)
     threads = []
 
     for r in reps:
@@ -128,12 +130,17 @@ def main():
             continue
 
         ip, port = parse_endpoint(r.endpoint)
-        sem = threading.BoundedSemaphore(8)
-        sem.acquire()
-        vote_thread = threading.Thread(target=get_vote_from_endpoint, args=(ctx, ip, port, pair, r, sem, votes,
-                                                                            reps_voted, voting_weights),
-                                       daemon=True)
+
+        def get_vote_from_endpoint_semaphore():
+            try:
+                get_vote_from_endpoint(ctx, ip, port, pair, r, votes, reps_voted, voting_weights)
+            finally:
+                thread_semaphore.release()
+
+        thread_semaphore.acquire()
+        vote_thread = threading.Thread(target=get_vote_from_endpoint_semaphore)
         vote_thread.start()
+
         threads.append(vote_thread)
 
     for t in threads:
