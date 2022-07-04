@@ -11,16 +11,15 @@ import requests
 import _logger
 import common
 from confirm_req import get_confirm_hash_resp
-from peercrawler import get_peers_from_service
 from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx, parse_endpoint
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
-from representative_mapping import representative_mapping
-from common import hexlify
-from representatives import get_representatives, Representative, Quorum, rpc_confirmation_quorum
+from representatives import Representative, Quorum, rpc_confirmation_quorum
 from constants import max_nano_supply
 
+
 logger = _logger.get_logger()
+__print_lock = threading.Lock()
 
 
 def parse_reps(resp):
@@ -37,8 +36,8 @@ def parse_reps(resp):
     return reps
 
 
-def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair, rep: Representative,
-                           sem: threading.BoundedSemaphore, votes, reps_voted, voting_weights):
+def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair,
+                           rep: Representative, votes, reps_voted, voting_weights):
     try:
         with get_connected_socket_endpoint(ip, port) as s:
             signing_key, verifying_key = node_handshake_id.keypair()
@@ -48,12 +47,15 @@ def get_vote_from_endpoint(ctx: dict, ip: str, port: int, pair: common.hash_pair
                 votes.append(resp)
                 reps_voted.append(rep)
                 voting_weights.append(int(rep.weight))
-                print('OK  ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+
+                with __print_lock:
+                    print('OK  ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
             else:
-                print('FAIL', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
+                with __print_lock:
+                    print('FAIL', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
     except (OSError, PyNanoCoinException):
-        print('EXC ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
-    sem.release()
+        with __print_lock:
+            print('ERR ', rep.account, str(rep.endpoint), rep.weight / (10 ** 30))
 
 
 def get_quorum():
@@ -77,9 +79,11 @@ def parse_args():
                        help='use beta network')
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
-    parser.add_argument('-H', '--hash', type=str,
-                        default=None,
+
+    parser.add_argument('-H', '--hash', type=str, default=None,
                         help='the hash pair (in the form hash:root)')
+    parser.add_argument('--threads', type=int, default=8,
+                        help='maximum number of connections threads alive at once')
     return parser.parse_args()
 
 
@@ -108,24 +112,27 @@ def main():
     votes = []
     reps_voted = []
     voting_weights = []
-    session = requests.Session()
-    print("Retrieving list of reps from: %s" % ctx['repservurl'])
-    resp = session.get(ctx['repservurl'], timeout=5).json()
-    reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
+
+    print("Retrieving list of representatives from: %s" % ctx['repservurl'])
+    resp = requests.get(ctx['repservurl'], timeout=5).json()
+    reps = list(filter(lambda r: r.voting and r.endpoint is not None and r.weight > (max_nano_supply / 100 / 100 / 2), parse_reps(resp)))
+
+    thread_semaphore = threading.BoundedSemaphore(args.threads)
     threads = []
 
     for r in reps:
-        # skip very small representatives, smaller than 0.5% of total supply weight
-        if r.weight < (max_nano_supply / 100 / 100 / 2):
-            print('SKIP', r.account, str(r.endpoint), r.weight / (10**30))
-            continue
         ip, port = parse_endpoint(r.endpoint)
-        sem = threading.BoundedSemaphore(8)
-        sem.acquire()
-        vote_thread = threading.Thread(target=get_vote_from_endpoint, args=(ctx, ip, port, pair, r, sem, votes,
-                                                                            reps_voted, voting_weights),
-                                       daemon=True)
+
+        def get_vote_from_endpoint_semaphore():
+            try:
+                get_vote_from_endpoint(ctx, ip, port, pair, r, votes, reps_voted, voting_weights)
+            finally:
+                thread_semaphore.release()
+
+        thread_semaphore.acquire()
+        vote_thread = threading.Thread(target=get_vote_from_endpoint_semaphore)
         vote_thread.start()
+
         threads.append(vote_thread)
 
     for t in threads:
@@ -135,12 +142,11 @@ def main():
         print(v)
 
     total_votes = sum(voting_weights)
-    print("Total votes: %d (%s)" % (total_votes, '{:,}'.format(total_votes / (10**30))))
-
     percentage_of_total_supply = total_votes * 100 / max_nano_supply
     percentage_of_online_weight = total_votes * 100 / quorum.online_weight
-    print("Percentage of total supply: %s" % percentage_of_total_supply)
 
+    print("Total votes: %d (%s)" % (total_votes, '{:,}'.format(total_votes / (10 ** 30))))
+    print("Percentage of total supply: %s" % percentage_of_total_supply)
     print("Percentage of online weight: %s" % percentage_of_online_weight)
 
 
