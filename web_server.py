@@ -16,6 +16,7 @@ from flask_caching import Cache
 import jsonencoder
 import peercrawler
 import representatives
+from args import add_network_switcher_args
 from typing import Callable
 from pynanocoin import Peer
 from acctools import to_account_addr
@@ -219,12 +220,7 @@ def generate_representatives_thread(interval_seconds: int):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-b", "--beta", action="store_true", default=False,
-                       help="use beta network")
-    group.add_argument("-t", "--test", action="store_true", default=False,
-                       help="use test network")
+    add_network_switcher_args(parser)
 
     parser.add_argument("-v", "--verbosity", type=int, default=0,
                         help="verbosity level")

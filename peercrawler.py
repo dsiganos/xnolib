@@ -19,6 +19,7 @@ import _logger
 import confirm_req
 import jsonencoder
 import telemetry_req
+from args import add_network_switcher_args
 from msg_handshake import *
 from peer_set import peer_set
 from confirm_ack import confirm_ack
@@ -376,17 +377,11 @@ class peer_manager:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-b', '--beta', action='store_true', default=False,
-                       help='use beta network')
-    group.add_argument('-t', '--test', action='store_true', default=False,
-                       help='use test network')
+    add_network_switcher_args(parser)
 
     # empty string singifies existance of switch but lack of argument
     parser.add_argument('-c', '--connect', nargs='?', const='',
                         help='connect to peercrawler service given by arg and get list of peers')
-
     parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help='verbosity level')
     parser.add_argument('-f', '--forever', action='store_true', default=False,

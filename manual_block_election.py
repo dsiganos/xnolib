@@ -10,6 +10,7 @@ import requests
 
 import _logger
 import common
+from args import add_network_switcher_args
 from confirm_req import get_confirm_hash_resp
 from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx, parse_endpoint
 from msg_handshake import node_handshake_id
@@ -74,11 +75,7 @@ def get_quorum():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-b', '--beta', action='store_true', default=False,
-                       help='use beta network')
-    group.add_argument('-t', '--test', action='store_true', default=False,
-                       help='use test network')
+    add_network_switcher_args(parser)
 
     parser.add_argument('-H', '--hash', type=str, default=None,
                         help='the hash pair (in the form hash:root)')
