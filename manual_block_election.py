@@ -79,9 +79,11 @@ def parse_args():
                        help='use beta network')
     group.add_argument('-t', '--test', action='store_true', default=False,
                        help='use test network')
-    parser.add_argument('-H', '--hash', type=str,
-                        default=None,
+
+    parser.add_argument('-H', '--hash', type=str, default=None,
                         help='the hash pair (in the form hash:root)')
+    parser.add_argument('--threads', type=int, default=8,
+                        help='maximum number of connections threads alive at once')
     return parser.parse_args()
 
 
@@ -115,7 +117,7 @@ def main():
     resp = requests.get(ctx['repservurl'], timeout=5).json()
     reps = list(filter(lambda r: r.voting and r.endpoint is not None and r.weight > (max_nano_supply / 100 / 100 / 2), parse_reps(resp)))
 
-    thread_semaphore = threading.BoundedSemaphore(8)
+    thread_semaphore = threading.BoundedSemaphore(args.threads)
     threads = []
 
     for r in reps:
