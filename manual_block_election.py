@@ -5,20 +5,16 @@ from __future__ import annotations
 import argparse
 import binascii
 import threading
-import typing
 
 import requests
 
 import _logger
 import common
 from confirm_req import get_confirm_hash_resp
-from peercrawler import get_peers_from_service
 from pynanocoin import livectx, get_connected_socket_endpoint, betactx, testctx, parse_endpoint
 from msg_handshake import node_handshake_id
 from exceptions import PyNanoCoinException
-from representative_mapping import representative_mapping
-from common import hexlify
-from representatives import get_representatives, Representative, Quorum, rpc_confirmation_quorum
+from representatives import Representative, Quorum, rpc_confirmation_quorum
 from constants import max_nano_supply
 
 
@@ -114,21 +110,15 @@ def main():
     votes = []
     reps_voted = []
     voting_weights = []
-    session = requests.Session()
-    print("Retrieving list of reps from: %s" % ctx['repservurl'])
-    resp = session.get(ctx['repservurl'], timeout=5).json()
-    reps = list(filter(lambda r: r.voting and r.endpoint is not None, parse_reps(resp)))
+
+    print("Retrieving list of representatives from: %s" % ctx['repservurl'])
+    resp = requests.get(ctx['repservurl'], timeout=5).json()
+    reps = list(filter(lambda r: r.voting and r.endpoint is not None and r.weight > (max_nano_supply / 100 / 100 / 2), parse_reps(resp)))
 
     thread_semaphore = threading.BoundedSemaphore(8)
     threads = []
 
     for r in reps:
-        # skip very small representatives, smaller than 0.5% of total supply weight
-        if r.weight < (max_nano_supply / 100 / 100 / 2):
-            with __print_lock:
-                print('SKIP', r.account, str(r.endpoint), r.weight / (10**30))
-            continue
-
         ip, port = parse_endpoint(r.endpoint)
 
         def get_vote_from_endpoint_semaphore():
@@ -150,12 +140,11 @@ def main():
         print(v)
 
     total_votes = sum(voting_weights)
-    print("Total votes: %d (%s)" % (total_votes, '{:,}'.format(total_votes / (10**30))))
-
     percentage_of_total_supply = total_votes * 100 / max_nano_supply
     percentage_of_online_weight = total_votes * 100 / quorum.online_weight
-    print("Percentage of total supply: %s" % percentage_of_total_supply)
 
+    print("Total votes: %d (%s)" % (total_votes, '{:,}'.format(total_votes / (10 ** 30))))
+    print("Percentage of total supply: %s" % percentage_of_total_supply)
     print("Percentage of online weight: %s" % percentage_of_online_weight)
 
 
