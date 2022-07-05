@@ -562,28 +562,29 @@ def main():
     # - MySQL Port: 3306
     # - MySQL Pass: password123
 
-    # TODO: Automatically choose database name using ctx
     # TODO: Remove the -c, replace with code which will create a new db if one doesn't exist
     # TODO: Add dumpdb option
 
     args = parse_args()
 
-    ctx = livectx
-    db_name = "live_net_frontiers"
     if args.beta:
         ctx = betactx
         db_name = "beta_net_frontiers"
     elif args.test:
         ctx = testctx
         db_name = "test_net_frontiers"
+    else:
+        ctx = livectx
+        db_name = "live_net_frontiers"
 
-    # if args.db is None:
-    #     args.db = db_name
+    if args.db is None:
+        args.db = db_name
 
-    if args.rmdb:
+    if args.rmdb:  # drop database and exit program
         db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
-        db.cursor().execute("DROP DATABASE %s" % args.db)
+        db.cursor().execute(f"DROP DATABASE {args.db}")
         sys.exit(0)
+
     if args.ram:
         inter = store_in_ram_interface(ctx, args.verbosity)
     elif args.lmdb:
