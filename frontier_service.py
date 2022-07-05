@@ -12,9 +12,11 @@ import frontier_request
 import peercrawler
 import mysql.connector
 
+from args import add_network_switcher_args
 from sql_utils import *
 from pynanocoin import *
 from peer import Peer
+
 
 class frontier_service:
     def __init__(self, ctx, interface, verbosity = 0):
@@ -463,20 +465,15 @@ class peer_frontiers:
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    add_network_switcher_args(parser)
 
-    group1 = parser.add_mutually_exclusive_group()
-    group1.add_argument('-b', '--beta', action='store_true', default=False,
-                       help='use beta network')
-    group1.add_argument('-t', '--test', action='store_true', default=False,
-                       help='use test network')
-
-    group2 = parser.add_mutually_exclusive_group(required = True)
-    group2.add_argument('--sql', action='store_true', default=False,
-                        help='Use this argument to use the SQL interface')
-    group2.add_argument('--ram', action='store_true', default=False,
-                        help='Use this argument to store frontiers in RAM')
-    group2.add_argument('--lmdb', action='store_true', default=False,
-                        help='Use this argument to store frontiers in LMDB database')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--sql', action='store_true', default=False,
+                       help='Use this argument to use the SQL interface')
+    group.add_argument('--ram', action='store_true', default=False,
+                       help='Use this argument to store frontiers in RAM')
+    group.add_argument('--lmdb', action='store_true', default=False,
+                       help='Use this argument to store frontiers in LMDB database')
 
     parser.add_argument('-f', '--forever', action="store_true", default=False,
                         help='"forever" argument for the peercrawler thread')
