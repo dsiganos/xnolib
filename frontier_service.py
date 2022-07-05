@@ -131,9 +131,7 @@ class frontier_service:
 
     def merge_peers(self, peers) -> None:
         for p in peers:
-            if self.blacklist.is_blacklisted(p):
-                continue
-            elif p not in self.peers:
+            if not self.blacklist.is_blacklisted(p) and p not in self.peers:
                 self.peers.append(p)
 
 
