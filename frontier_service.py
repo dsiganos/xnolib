@@ -60,13 +60,15 @@ class frontier_service:
                 s_packet = server_packet([frontier])
                 s.sendall(s_packet.serialise())
 
+    def fetch_peers(self) -> None:
+        peers = peercrawler.get_peers_from_service(self.ctx)
+        peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
+        assert peers
+        self.merge_peers(peers)
+
     def run(self) -> None:
         while True:
-            peers = peercrawler.get_peers_from_service(self.ctx)
-            peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
-            assert peers
-            self.merge_peers(peers)
-
+            self.fetch_peers()
             self.single_pass()
 
     def single_pass(self) -> None:
@@ -474,6 +476,11 @@ def parse_args():
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='the ip of the sql server')
 
+    parser.add_argument('--peer', type=str, default=None,
+                        help='the ip address of the single peer which the service will connect to')
+    parser.add_argument('--peer-port', type=int, default=7075,
+                        help='the port of the single peer which the service will connect to')
+
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
     parser.add_argument('-s', '--service', action='store_true', default=False,
@@ -588,11 +595,15 @@ def main():
 
     service = frontier_service(ctx, inter, args.verbosity)
 
-    # This will run forever
-    if args.service:
+    if args.peer:
+        peer = Peer(ip=ip_addr.from_string(args.peer), port=args.peer_port)
+        service.merge_peers([peer])
+        service.single_pass()
+    elif args.service:  # this will run forever
         if args.forever:
             service.start_service()
         else:
+            service.fetch_peers()
             service.single_pass()
 
     # This is a piece of code which can find accounts with different frontier hashes
