@@ -277,8 +277,10 @@ class my_sql_db(frontier_database):
         query = "INSERT INTO Peers(peer_id, ip_address, port, score) "
         query += "VALUES('%s', '%s', %d, %d) " % (hexlify(peer.serialise()), str(peer.ip), peer.port, peer.score)
         query += "ON DUPLICATE KEY UPDATE port = port"
+
         if self.verbosity > 0:
-            print(query)
+            print(f"Adding new peer to database: {peer}")
+
         self.cursor.execute(query)
         self.db.commit()
 
