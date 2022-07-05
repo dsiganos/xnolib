@@ -22,7 +22,7 @@ class frontier_service:
     def __init__(self, ctx, interface, verbosity = 0):
         assert isinstance(interface, frontier_database)
         self.ctx = ctx
-        self.interface = interface
+        self.interface: frontier_database = interface
         self.verbosity = verbosity
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
