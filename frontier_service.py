@@ -28,9 +28,10 @@ class frontier_service:
         self.blacklist = blacklist_manager(Peer, 1800)
         self.threads = []
 
-    def start_service(self, addr = '::1', port = 7080) -> None:
-        thread = threading.Thread(target=self.run, daemon=True)
-        thread.start()
+    def start_service(self, addr='::', port=7080) -> None:
+        # start the frontier request thread
+        threading.Thread(target=self.run, daemon=True).start()
+
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -41,9 +42,9 @@ class frontier_service:
             while True:
                 conn, addr = s.accept()
                 conn.settimeout(600)
-                thread2 = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
-                thread2.start()
-                self.threads.append(thread2)
+                thread = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
+                thread.start()
+                self.threads.append(thread)
                 self.join_finished_threads()
 
     def comm_thread(self, s) -> None:
@@ -602,16 +603,14 @@ def main():
             cursor = db.cursor()
             inter = my_sql_db(ctx, args.verbosity, cursor, db)
 
-    frontserv = frontier_service(ctx, inter, args.verbosity)
+    service = frontier_service(ctx, inter, args.verbosity)
 
     # This will run forever
     if args.service:
-        peercrawler.get_peers_from_service(ctx)
         if args.forever:
-            frontserv.start_service()
-
+            service.start_service()
         else:
-            frontserv.single_pass()
+            service.single_pass()
 
     # This is a piece of code which can find accounts with different frontier hashes
     # if args.differences:
