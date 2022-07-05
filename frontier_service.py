@@ -62,25 +62,21 @@ class frontier_service:
 
     def run(self) -> None:
         while True:
+            peers = peercrawler.get_peers_from_service(self.ctx)
+            peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
+            assert peers
+            self.merge_peers(peers)
+
             self.single_pass()
 
     def single_pass(self) -> None:
-        peers = peercrawler.get_peers_from_service(self.ctx)
-        peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
-        assert peers
-        self.merge_peers(peers)
-
         for p in self.peers:
-
             try:
                 self.manage_peer_frontiers(p)
-
-            except (ConnectionRefusedError, socket.timeout, PyNanoCoinException,
-                    FrontierServiceSlowPeer) as ex:
+            except (ConnectionRefusedError, socket.timeout, PyNanoCoinException, FrontierServiceSlowPeer) as exception:
                 p.deduct_score(200)
                 if self.verbosity >= 1:
-                    print(ex)
-                continue
+                    print(exception)
 
     def manage_peer_frontiers(self, p) -> None:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
