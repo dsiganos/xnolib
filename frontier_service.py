@@ -26,7 +26,6 @@ class frontier_service:
         self.verbosity = verbosity
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
-        self.threads = []
 
     def start_service(self, addr='::', port=7080) -> None:
         # start the frontier request thread
@@ -42,10 +41,7 @@ class frontier_service:
             while True:
                 conn, addr = s.accept()
                 conn.settimeout(600)
-                thread = threading.Thread(target=self.comm_thread, args=(conn,), daemon=True)
-                thread.start()
-                self.threads.append(thread)
-                self.join_finished_threads()
+                threading.Thread(target=self.comm_thread, args=(conn,), daemon=True).start()
 
     def comm_thread(self, s) -> None:
         with s:
@@ -63,16 +59,6 @@ class frontier_service:
                 frontier = self.interface.get_frontier(c_packet.account)
                 s_packet = server_packet([frontier])
                 s.sendall(s_packet.serialise())
-
-    def join_finished_threads(self) -> None:
-        remove_threads = []
-        for t in self.threads:
-            if not t.is_alive():
-                t.join()
-                remove_threads.append(t)
-
-        for t in remove_threads:
-            self.threads.remove(t)
 
     def run(self) -> None:
         while True:
