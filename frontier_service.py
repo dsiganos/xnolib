@@ -28,6 +28,12 @@ class frontier_service:
         self.blacklist = blacklist_manager(Peer, 1800)
 
     def start_service(self, addr='::', port=7080) -> None:
+        def incoming_connection_handler(sock: socket.socket):
+            try:
+                self.comm_thread(sock)
+            finally:
+                semaphore.release()
+
         # start the frontier request thread
         threading.Thread(target=self.run, daemon=True).start()
 
@@ -38,10 +44,13 @@ class frontier_service:
 
             s.listen()
 
+            semaphore = threading.BoundedSemaphore(8)
             while True:
+                semaphore.acquire()
+
                 conn, addr = s.accept()
-                conn.settimeout(600)
-                threading.Thread(target=self.comm_thread, args=(conn,), daemon=True).start()
+                conn.settimeout(60)
+                threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
 
     def comm_thread(self, s) -> None:
         with s:
