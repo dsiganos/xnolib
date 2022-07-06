@@ -129,7 +129,7 @@ class peer_manager:
                     semaphore.acquire()
                     connection, address = s.accept()
                     threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address), daemon=True).start()
-            except:
+            except Exception:
                 logger.exception("Error occurred in listener thread")
                 interrupt_main()
 
@@ -150,7 +150,12 @@ class peer_manager:
         incoming_peer_peers = None
         is_voting = False
 
-        header, payload = get_next_hdr_payload(connection)
+        try:
+            header, payload = get_next_hdr_payload(connection)
+        except UnknownPacketType as exception:
+            logger.log(VERBOSE, f"Received unknown packet type from {address}: {exception.message_type}")
+            return
+
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
                 logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")

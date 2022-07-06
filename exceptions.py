@@ -1,6 +1,5 @@
-
-# all exceptions in this project inherit this class
 class PyNanoCoinException(Exception):
+    """Base exception class for all project-specific exceptions."""
     pass
 
 
@@ -102,3 +101,9 @@ class NoBlocksPulled(PyNanoCoinException):
 
 class FrontierIteratorFail(PyNanoCoinException):
     pass
+
+
+class UnknownPacketType(CommsError):
+    def __init__(self, message_type: int, message: str = None):
+        self.message_type = message_type
+        super(UnknownPacketType, self).__init__(message)

@@ -964,7 +964,7 @@ def get_next_hdr_payload(s: socket.socket) -> tuple[message_header, bytes]:
     # we can determine the size of the payload from the header
     size = header.payload_length_bytes()
     if size is None:
-        raise CommsError("Received unknown packet type")
+        raise UnknownPacketType(header.msg_type.type)
 
     # read and parse payload
     data = read_socket(s, size)
