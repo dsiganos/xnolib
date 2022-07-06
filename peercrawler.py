@@ -138,6 +138,8 @@ class peer_manager:
             result = self.handle_incoming(connection, address, self.ctx)
             if result:
                 self.add_peers(result[0], result[1])
+        except (CommsError, SocketClosedByPeer):
+            logger.log(VERBOSE, f"Error in connection to peer {address}")
         finally:
             semaphore.release()
             connection.close()
