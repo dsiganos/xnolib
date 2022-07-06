@@ -169,9 +169,7 @@ class peer_manager:
             telemetry_request = telemetry_req.telemetry_req(ctx)
             connection.sendall(telemetry_request.serialise())
 
-            block = block_open(ctx["genesis_block"]["source"], ctx["genesis_block"]["representative"],
-                               ctx["genesis_block"]["account"], ctx["genesis_block"]["signature"],
-                               ctx["genesis_block"]["work"])
+            block = ctx["genesis_block"]
             confirm_request = confirm_req.confirm_req_block(message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0), block)
             connection.sendall(confirm_request.serialise())
 
