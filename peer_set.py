@@ -12,8 +12,9 @@ class peer_set(set):
     def add(self, new_peer: Peer) -> None:
         assert isinstance(new_peer, Peer)
 
-        if new_peer in self:
-            self.find(new_peer).merge(new_peer)
+        existing = self.find(new_peer)
+        if existing:
+            existing.merge(new_peer)
         else:
             super(peer_set, self).add(new_peer)
 
@@ -21,9 +22,9 @@ class peer_set(set):
         for p in s:
             self.add(p)
 
-    def find(self, element: Peer) -> Optional[Peer]:
+    def find(self: set[Peer], element: Peer) -> Optional[Peer]:
         for p in self:
-            if element == p:
+            if p.compare(element):
                 return p
 
         return None

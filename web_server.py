@@ -41,7 +41,7 @@ def bg_thread_func(ctx: dict, args: argparse.Namespace):
     if args.deserialize:
         initial_graph = peercrawler.deserialize_graph_from_file(args.deserialize)
 
-    peerman = peercrawler.peer_manager(ctx, listening_address=args.listen, initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
+    peerman = peercrawler.peer_manager(ctx, representatives_info, listening_address=args.listen, initial_graph=initial_graph, listening_port=args.port, verbosity=args.verbosity)
 
     if args.serialize:
         threading.Thread(target=peercrawler.serialize_thread, args=(peerman,), daemon=True).start()
@@ -63,7 +63,7 @@ def main_website():
         if telemetry != None:
             node_id = to_account_addr(telemetry.node_id, "node_")
 
-            representative_info = representatives_info.find(node_id, str(peer.ip))
+            representative_info = representatives_info.find(ip_address=str(peer.ip), port=peer.port)
             aliases = [r.get("alias", " ") for r in representative_info]
             accounts = [r.get("account", " ") for r in representative_info]
             weights = [r.get("weight", " ") for r in representative_info]

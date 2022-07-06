@@ -24,6 +24,7 @@ from msg_handshake import *
 from peer_set import peer_set
 from confirm_ack import confirm_ack
 from peer import Peer
+from representative_mapping import representative_mapping
 
 
 logger = _logger.get_logger()
@@ -39,7 +40,7 @@ def get_telemetry(ctx, s):
 
 
 class peer_manager:
-    def __init__(self, ctx,
+    def __init__(self, ctx, mappings: representative_mapping,
                  verbosity=0, initial_graph: dict[Peer, peer_set] = None,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
                  listening_address: Optional[str] = None, listening_port=7777):
@@ -48,6 +49,7 @@ class peer_manager:
         self.mutex = threading.Lock()
         self.listening_address: Optional[ip_addr] = ip_addr.from_string(listening_address) if listening_address is not None else None
         self.listening_port = listening_port
+        self.representative_mappings: representative_mapping = mappings
 
         if initial_graph is None:
             self.__connections_graph: dict[Peer, peer_set] = {}
@@ -68,11 +70,27 @@ class peer_manager:
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
         def find_existing_peer(peer: Peer):
             for p in self.__connections_graph:
-                if p == peer:
+                if p.compare(peer):
                     return p
 
+        def match_with_representative_mapping(peer: Peer) -> Peer:
+            match = self.representative_mappings.find(ip_address=str(peer.ip), port=peer.port)
+            if not match:
+                return peer
+
+            match = match[0]  # use first match
+            known_peer = Peer(ip=ip_addr.from_string(match["address"]), port=match["port"])
+            known_peer.merge(peer)
+
+            return known_peer
+
         with self.mutex:
-            if from_peer not in self.__connections_graph:
+            from_peer = match_with_representative_mapping(from_peer)
+            existing_peer = find_existing_peer(from_peer)  # check if there's a key with this same peer already in the graph
+            if existing_peer:
+                existing_peer.merge(from_peer)
+                from_peer = existing_peer
+            else:  # add it if there isn't it
                 self.__connections_graph[from_peer] = peer_set()
 
             for new_peer in new_peers:
@@ -81,13 +99,15 @@ class peer_manager:
 
                 # if there's already a peer object in the graph representing the same peer as new_peer,
                 # the existing one should be used
-                if new_peer in self.__connections_graph:
-                    new_peer = find_existing_peer(new_peer)
+                new_peer = match_with_representative_mapping(new_peer)
+                existing_peer = find_existing_peer(new_peer)
+                if existing_peer:  # if this peer was already known, simply register the connection
+                    existing_peer.merge(new_peer)
+                    self.__connections_graph[from_peer].add(existing_peer)
                 else:
                     self.__connections_graph[new_peer] = peer_set()
+                    self.__connections_graph[from_peer].add(new_peer)
                     logger.debug(f"Discovered new peer {new_peer}")
-
-                self.__connections_graph[from_peer].add(new_peer)
 
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
@@ -271,12 +291,13 @@ class peer_manager:
             try:
                 logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
                 self.add_peers(peer, self.get_peers_from_peer(peer))
-            except Exception as e:
+            except Exception:
                 logger.error(f"Unexpected exception while crawling peer [{peer.ip}]:{peer.port}", exc_info=True, stack_info=True)
 
         with ThreadPoolExecutor(max_workers=max_workers) as t:
             for p in peers_copy:
-                t.submit(crawl_peer, peer=p)
+                if p.incoming is False:  # connections shouldn't be made to peers marked as incoming, as their real port isn't known
+                    t.submit(crawl_peer, peer=p)
 
     def crawl(self, forever, delay, max_workers=4):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
@@ -601,7 +622,10 @@ def main():
         if args.deserialize:
             initial_graph = deserialize_graph_from_file(args.deserialize)
 
-        peerman = peer_manager(ctx, initial_graph=initial_graph, listening_address=args.listen, verbosity=verbosity)
+        mapping = representative_mapping()
+        mapping.load_from_file("representative-mappings.json")
+
+        peerman = peer_manager(ctx, mapping, initial_graph=initial_graph, listening_address=args.listen, verbosity=verbosity)
 
         if args.serialize:
             threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
