@@ -107,23 +107,23 @@ def json():
     return Response(_json, status=200, mimetype="application/json")
 
 
-@app.route("/peercrawler/logs")
-def logs():
-    log_file_name = "peercrawler.log"
-
-    try:
-        with open(log_file_name + ".1", mode="r", encoding="UTF-8") as f:
-            log_1 = f.read()
-    except FileNotFoundError:
-        log_1 = ""
-
-    try:
-        with open(log_file_name, mode="r") as f:
-            log_2 = f.read()
-    except FileNotFoundError:
-        log_2 = ""
-
-    return Response(log_1 + log_2, status=200, mimetype="text/plain")
+# @app.route("/peercrawler/logs")
+# def logs():
+#     log_file_name = app.config["log_file_name"]
+#
+#     try:
+#         with open(log_file_name + ".1", mode="r", encoding="UTF-8") as f:
+#             log_1 = f.read()
+#     except FileNotFoundError:
+#         log_1 = ""
+#
+#     try:
+#         with open(log_file_name, mode="r") as f:
+#             log_2 = f.read()
+#     except FileNotFoundError:
+#         log_2 = ""
+#
+#     return Response(log_1 + log_2, status=200, mimetype="text/plain")
 
 
 @app.route("/peercrawler/graph")
@@ -255,12 +255,16 @@ def main():
 
     if args.beta:
         ctx = betactx
+        log_file_name = "beta"
     elif args.test:
         ctx = testctx
+        log_file_name = "test"
     else:
         ctx = livectx
+        log_file_name = "live"
 
-    setup_logger(logger, get_logging_level_from_int(args.verbosity))
+    app.config["log_file_name"] = f"{log_file_name}.log"
+    setup_logger(logger, get_logging_level_from_int(args.verbosity), file_name=log_file_name)
 
     # start the peer crawler in the background
     threading.Thread(target=bg_thread_func, args=(ctx, args), daemon=True).start()

@@ -14,7 +14,7 @@ def get_logger(logger_name: str = DEFAULT_LOGGER_NAME) -> logging.Logger:
     return logger
 
 
-def setup_logger(logger: logging.Logger, level: int = VERBOSE) -> None:
+def setup_logger(logger: logging.Logger, level: int = VERBOSE, file_name: str = None) -> None:
     logging.addLevelName(VERBOSE, "VERBOSE")
 
     logger.setLevel(level)
@@ -25,7 +25,7 @@ def setup_logger(logger: logging.Logger, level: int = VERBOSE) -> None:
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    f = RotatingFileHandler(logger.name + ".log", mode="a", maxBytes=(50 * 5000), backupCount=1)
+    f = RotatingFileHandler(f"{file_name if file_name else logger.name}.log", mode="a", maxBytes=(50 * 5000), backupCount=1)
     f.setLevel(level)
     f.setFormatter(formatter)
     logger.addHandler(f)
