@@ -23,7 +23,7 @@ class frontier_service:
     def __init__(self, ctx, interface, verbosity = 0):
         assert isinstance(interface, frontier_database)
         self.ctx = ctx
-        self.interface: frontier_database = interface
+        self.database_interface: frontier_database = interface
         self.verbosity = verbosity
         self.peers = []
         self.blacklist = blacklist_manager(Peer, 1800)
@@ -60,13 +60,13 @@ class frontier_service:
             data = s.recv(33)
             c_packet = client_packet.parse(data)
             if c_packet.is_all_zero():
-                frontiers = self.interface.get_all()
+                frontiers = self.database_interface.get_all()
                 s_packet = server_packet(frontiers)
                 s.sendall(s_packet.serialise())
                 return
 
             else:
-                frontier = self.interface.get_frontier(c_packet.account)
+                frontier = self.database_interface.get_frontier(c_packet.account)
                 s_packet = server_packet([frontier])
                 s.sendall(s_packet.serialise())
 
@@ -109,9 +109,10 @@ class frontier_service:
         while True:
             try:
                 front = next(front_iter)
-                self.interface.add_frontier(front, peer)
+                self.database_interface.add_frontier(front, peer)
             except StopIteration:
                 return
+
     # Function which will query all accounts with different frontier hashes
     # def find_accounts_different_hashes(self):
     #     fetched_records = []
@@ -245,6 +246,8 @@ class frontier_database(ABC):
 
 
 class my_sql_db(frontier_database):
+    BATCH_SIZE = 1024
+
     def __init__(self, ctx, verbosity, cursor, db):
         super().__init__(ctx, verbosity)
         self.ctx = ctx
@@ -253,18 +256,25 @@ class my_sql_db(frontier_database):
         self.db = db
         self.peers_stored = []
 
+        self.__cache = []
+        self.__cache_lock = threading.Lock()
+
     def add_frontier(self, frontier, peer) -> None:
         if peer not in self.peers_stored:
             self.add_peer_to_db(peer)
             self.peers_stored.append(peer)
 
-        query = "INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) "
-        query += "VALUES ('%s', '%s', '%s') " % (hexlify(peer.serialise()), hexlify(frontier.account),
-                                                 hexlify(frontier.frontier_hash))
-        query += "ON DUPLICATE KEY UPDATE frontier_hash = '%s'" % hexlify(frontier.frontier_hash)
+        query = "('%s', '%s', '%s')" % (hexlify(peer.serialise()), hexlify(frontier.account), hexlify(frontier.frontier_hash))
+        with self.__cache_lock:
+            self.__cache.append(query)
 
-        if self.verbosity > 1:
-            print(query)
+            if len(self.__cache) > self.BATCH_SIZE:
+                self.__add_batch()
+
+    def __add_batch(self):
+        query = f"INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) VALUES {', '.join(self.__cache)} ON DUPLICATE KEY UPDATE frontier_hash = VALUES(frontier_hash)"
+        self.__cache.clear()
+
         self.cursor.execute(query)
         self.db.commit()
 
@@ -363,10 +373,10 @@ class store_in_lmdb(frontier_database):
                 print("Added values %s, %s to lmdb" % (hexlify(frontier.account),
                                                        hexlify(frontier.frontier_hash)))
 
-    def get_lmdb_env(self, name):
+    @staticmethod
+    def get_lmdb_env(name):
         os.makedirs('frontier_lmdb_databases', exist_ok=True)
-        return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000,
-                         map_size=10 * 1000 * 1000 * 1000)
+        return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000, map_size=(10 * 1000 * 1000 * 1000))
 
     def get_frontier(self, account):
         with self.lmdb_env.begin(write=False) as tx:
