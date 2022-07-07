@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import argparse
 import copy
 import sys
@@ -221,22 +222,26 @@ class server_packet:
         return string
 
 
-class frontier_database:
+class frontier_database(ABC):
     def __init__(self, ctx, verbosity):
         self.ctx = ctx
         self.verbosity = verbosity
 
+    @abstractmethod
     def add_frontier(self, frontier, peer) -> None:
-        assert False
+        raise NotImplementedError()
 
+    @abstractmethod
     def remove_frontier(self, frontier, peer) -> None:
-        assert False
+        raise NotImplementedError()
 
-    def get_frontier(self, account) -> None:
-        assert False
+    @abstractmethod
+    def get_frontier(self, account) -> tuple[str, str]:
+        raise NotImplementedError()
 
-    def get_all(self) -> None:
-        assert False
+    @abstractmethod
+    def get_all(self) -> list:
+        raise NotImplementedError()
 
 
 class my_sql_db(frontier_database):
@@ -288,6 +293,9 @@ class my_sql_db(frontier_database):
 
         self.cursor.execute(query)
         self.db.commit()
+
+    def get_all(self) -> list:
+        raise NotImplementedError()
 
 
 class store_in_ram_interface(frontier_database):
@@ -372,6 +380,9 @@ class store_in_lmdb(frontier_database):
                 front = frontier_request.frontier_entry(key, value)
                 frontiers.append(front)
         return frontiers
+
+    def remove_frontier(self, frontier, peer) -> None:
+        raise NotImplementedError()
 
 
 class blacklist_entry:
