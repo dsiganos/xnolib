@@ -13,10 +13,14 @@ import frontier_request
 import peercrawler
 import mysql.connector
 
+from _logger import get_logger, get_logging_level_from_int, VERBOSE, setup_logger
 from args import add_network_switcher_args
 from sql_utils import *
 from pynanocoin import *
 from peer import Peer
+
+
+logger = get_logger()
 
 
 class frontier_service:
@@ -84,11 +88,11 @@ class frontier_service:
     def single_pass(self) -> None:
         for p in self.peers:
             try:
+                logger.debug(f"Fetching frontiers from peer {p}")
                 self.manage_peer_frontiers(p)
             except (ConnectionRefusedError, socket.timeout, PyNanoCoinException, FrontierServiceSlowPeer) as exception:
                 p.deduct_score(200)
-                if self.verbosity >= 1:
-                    print(exception)
+                logger.info(f"Error while connecting to peer {p}", exc_info=exception)
 
     def manage_peer_frontiers(self, p) -> None:
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
@@ -298,8 +302,7 @@ class my_sql_db(frontier_database):
         query += "VALUES('%s', '%s', %d, %d) " % (hexlify(peer.serialise()), str(peer.ip), peer.port, peer.score)
         query += "ON DUPLICATE KEY UPDATE port = port"
 
-        if self.verbosity > 0:
-            print(f"Adding new peer to database: {peer}")
+        logger.info(f"Adding new peer to database: {peer}")
 
         self.cursor.execute(query)
         self.db.commit()
@@ -319,23 +322,16 @@ class store_in_ram_interface(frontier_database):
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             existing_front.frontier_hash = frontier.frontier_hash
-
-            if self.verbosity > 0:
-                print("Updated %s accounts frontier to %s" %
-                      (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+            logger.info("Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
         else:
             self.frontiers.append(frontier)
-            if self.verbosity > 0:
-                print("Added %s accounts frontier %s " %
-                      (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+            logger.info("Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
     def remove_frontier(self, frontier, peer) -> None:
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             self.frontiers.remove(existing_front)
-            print("Removed the following frontier from list %s" % str(existing_front))
-
-        print("Frontier wasn't in the list so wasn't removed")
+            logger.info("Removed the following frontier from list %s" % str(existing_front))
 
     def get_frontier(self, account):
         for f in self.frontiers:
@@ -369,9 +365,7 @@ class store_in_lmdb(frontier_database):
     def add_frontier(self, frontier, peer):
         with self.lmdb_env.begin(write=True) as tx:
             tx.put(frontier.account, frontier.frontier_hash)
-            if self.verbosity > 0:
-                print("Added values %s, %s to lmdb" % (hexlify(frontier.account),
-                                                       hexlify(frontier.frontier_hash)))
+            logger.info("Added values %s, %s to lmdb" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
     @staticmethod
     def get_lmdb_env(name):
@@ -585,6 +579,7 @@ def main():
     # TODO: Add dumpdb option
 
     args = parse_args()
+    setup_logger(logger, get_logging_level_from_int(args.verbosity))
 
     if args.beta:
         ctx = betactx
