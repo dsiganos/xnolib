@@ -228,10 +228,6 @@ class server_packet:
 
 
 class frontier_database(ABC):
-    def __init__(self, ctx, verbosity):
-        self.ctx = ctx
-        self.verbosity = verbosity
-
     @abstractmethod
     def add_frontier(self, frontier, peer) -> None:
         raise NotImplementedError()
@@ -252,10 +248,7 @@ class frontier_database(ABC):
 class my_sql_db(frontier_database):
     BATCH_SIZE = 1024
 
-    def __init__(self, ctx, verbosity, cursor, db):
-        super().__init__(ctx, verbosity)
-        self.ctx = ctx
-        self.verbosity = verbosity
+    def __init__(self, cursor, db):
         self.cursor = cursor
         self.db = db
         self.peers_stored = []
@@ -312,10 +305,7 @@ class my_sql_db(frontier_database):
 
 
 class store_in_ram_interface(frontier_database):
-    def __init__(self, ctx, verbosity):
-        super().__init__(ctx, verbosity)
-        self.ctx = ctx
-        self.verbosity = verbosity
+    def __init__(self):
         self.frontiers = []
 
     def add_frontier(self, frontier, peer) -> None:
@@ -350,17 +340,8 @@ class store_in_ram_interface(frontier_database):
 
 
 class store_in_lmdb(frontier_database):
-    def __init__(self, ctx, verbosity):
-        super().__init__(ctx, verbosity)
-        self.ctx = ctx
-        self.verbosity = verbosity
-        name = 'live_net_db'
-        if ctx == testctx:
-            name = 'test_net_db'
-        elif ctx == betactx:
-            name = 'beta_net_db'
-
-        self.lmdb_env = self.get_lmdb_env(name)
+    def __init__(self, file_name: str = "frontiers_db"):
+        self.lmdb_env = self.get_lmdb_env(file_name)
 
     def add_frontier(self, frontier, peer):
         with self.lmdb_env.begin(write=True) as tx:
@@ -600,23 +581,23 @@ def main():
         sys.exit(0)
 
     if args.ram:
-        inter = store_in_ram_interface(ctx, args.verbosity)
+        inter = store_in_ram_interface()
     elif args.lmdb:
-        inter = store_in_lmdb(ctx, args.verbosity)
+        inter = store_in_lmdb(file_name=args.db)
 
     else:
         try:
             db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
             cursor = db.cursor()
-            inter = my_sql_db(ctx, args.verbosity, cursor, db)
-        except mysql.connector.errors.ProgrammingError as err:
+            inter = my_sql_db(cursor, db)
+        except mysql.connector.errors.ProgrammingError:
             db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
             create_new_database(db.cursor(), name=args.db)
             create_db_structure_frontier_service(db.cursor())
             db.close()
             db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
             cursor = db.cursor()
-            inter = my_sql_db(ctx, args.verbosity, cursor, db)
+            inter = my_sql_db(cursor, db)
 
     service = frontier_service(ctx, inter, args.verbosity)
 
