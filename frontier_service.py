@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import argparse
 import copy
 import sys
@@ -12,6 +11,8 @@ import threading
 import frontier_request
 import peercrawler
 import mysql.connector
+from abc import ABC, abstractmethod
+from typing import Set
 
 from _logger import get_logger, get_logging_level_from_int, VERBOSE, setup_logger
 from args import add_network_switcher_args
@@ -29,7 +30,7 @@ class frontier_service:
         self.ctx = ctx
         self.database_interface: frontier_database = interface
         self.verbosity = verbosity
-        self.peers = []
+        self.peers: Set[Peer] = set()
         self.blacklist = blacklist_manager(Peer, 1800)
 
     def start_service(self, addr='::', port=7080) -> None:
@@ -145,7 +146,7 @@ class frontier_service:
     def merge_peers(self, peers) -> None:
         for p in peers:
             if not self.blacklist.is_blacklisted(p) and p not in self.peers:
-                self.peers.append(p)
+                self.peers.add(p)
 
 
 class client_packet:
