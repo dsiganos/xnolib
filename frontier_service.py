@@ -245,6 +245,10 @@ class frontier_database(ABC):
     def get_all(self) -> list:
         raise NotImplementedError()
 
+    @abstractmethod
+    def count_frontiers(self) -> int:
+        raise NotImplementedError()
+
 
 class my_sql_db(frontier_database):
     BATCH_SIZE = 1024
@@ -286,6 +290,11 @@ class my_sql_db(frontier_database):
 
         self.cursor.execute("DELETE FROM Frontiers WHERE account  = '%s'")
 
+    def count_frontiers(self) -> int:
+        query = "SELECT COUNT(*) from Frontiers;"
+        self.cursor.execute(query)
+        return self.cursor.fetchone()[0]
+
     def remove_peer_data(self, p) -> None:
         self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
         self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
@@ -307,7 +316,7 @@ class my_sql_db(frontier_database):
 
 class store_in_ram_interface(frontier_database):
     def __init__(self):
-        self.frontiers = []
+        self.__frontiers = []
 
     def add_frontier(self, frontier, peer) -> None:
         existing_front = self.get_frontier(frontier.account)
@@ -315,27 +324,30 @@ class store_in_ram_interface(frontier_database):
             existing_front.frontier_hash = frontier.frontier_hash
             logger.info("Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
         else:
-            self.frontiers.append(frontier)
+            self.__frontiers.append(frontier)
             logger.info("Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
     def remove_frontier(self, frontier, peer) -> None:
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
-            self.frontiers.remove(existing_front)
+            self.__frontiers.remove(existing_front)
             logger.info("Removed the following frontier from list %s" % str(existing_front))
 
     def get_frontier(self, account):
-        for f in self.frontiers:
+        for f in self.__frontiers:
             if f.account == account:
                 return f
         return None
 
+    def count_frontiers(self) -> int:
+        return len(self.__frontiers)
+
     def get_all(self):
-        return copy.copy(self.frontiers)
+        return copy.copy(self.__frontiers)
 
     def __str__(self):
         string = "--- Frontiers in RAM ---\n"
-        for f in self.frontiers:
+        for f in self.__frontiers:
             string += "acc: %s   front: %s\n" % (hexlify(f.account), hexlify(f.frontier_hash))
         return string
 
@@ -368,6 +380,9 @@ class store_in_lmdb(frontier_database):
         return frontiers
 
     def remove_frontier(self, frontier, peer) -> None:
+        raise NotImplementedError()
+
+    def count_frontiers(self) -> int:
         raise NotImplementedError()
 
 
