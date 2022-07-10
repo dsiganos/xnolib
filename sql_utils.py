@@ -16,10 +16,14 @@ def create_new_database(cursor, name: str) -> None:
 
 
 def create_db_structure_frontier_service(cursor) -> None:
+    # create the Peers table
     cursor.execute("CREATE TABLE Peers (peer_id VARCHAR(36) PRIMARY KEY, ip_address VARCHAR(50), port int, score int)")
-    cursor.execute("CREATE TABLE Frontiers (peer_id VARCHAR(36), frontier_hash VARCHAR(64), " +
-                   "account_hash VARCHAR(64), PRIMARY KEY(peer_id, account_hash), " +
-                   "FOREIGN KEY (peer_id) REFERENCES Peers(peer_id))")
+    
+    # create the Frontiers table
+    cursor.execute("CREATE TABLE Frontiers"
+                   "(peer_id VARCHAR(36), frontier_hash VARCHAR(64), account_hash VARCHAR(64),"
+                   "CONSTRAINT peer_account_unique UNIQUE (peer_id, account_hash),"
+                   "FOREIGN KEY (peer_id) REFERENCES Peers(peer_id));")
 
 
 def query_accounts_different_hashes(cursor):
