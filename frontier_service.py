@@ -137,11 +137,9 @@ class frontier_service:
     #         records.append(frontiers_record.from_tuple(rec))
     #
     #     return records
-    #
-    # def count_frontiers(self):
-    #     self.cursor.execute("SELECT COUNT(*) FROM frontiers")
-    #     result = self.cursor.fetchall()
-    #     return result[0]
+
+    def count_frontiers(self) -> int:
+        return self.database_interface.count_frontiers()
 
     def merge_peers(self, peers) -> None:
         for p in peers:
