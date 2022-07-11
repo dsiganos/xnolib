@@ -1,23 +1,29 @@
 import ipaddress
 import socket
+from typing import Optional
 
-from common import *
-from exceptions import *
+from _logger import get_logger, VERBOSE
+from exceptions import ParseErrorBadIPv6, SocketClosedByPeer
 
 
-def read_socket(sock: socket.socket, byte_count: int) -> bytes or None:
-    try:
-        data = bytearray()
-        while len(data) < byte_count:
-            data += sock.recv(1)
-            if len(data) == 0:
-                raise SocketClosedByPeer('read_socket: data=%s' % data)
+logger = get_logger()
 
-        return bytes(data)
 
-    except OSError as msg:
-        print('read_socket] Error reading %d bytes, data=%s, msg=%s' % (byte_count, hexlify(data), msg))
-        return None
+def read_socket(sock: socket.socket, byte_count: int) -> Optional[bytes]:  # ideally this should either raise or return None, not both
+    data = bytearray()
+    while len(data) < byte_count:
+        try:
+            packet = sock.recv(byte_count - len(data))
+        except OSError:
+            logger.log(VERBOSE, f"Error while reading {byte_count} bytes", exc_info=True)
+            return None
+
+        if len(packet) > 0:
+            data.extend(packet)
+        else:
+            raise SocketClosedByPeer('read_socket: data=%s' % data)
+
+    return bytes(data)
 
 
 def parse_ipv6(data: bytes) -> ipaddress.IPv6Address:
