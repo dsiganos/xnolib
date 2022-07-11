@@ -75,19 +75,25 @@ class Peer:
         self.score = max(0, self.score - score)
 
     def merge(self, peer: "Peer") -> None:
-        assert self == peer
+        assert self.compare(peer), "Attempt occurred at merging two peers which aren't considered equal"
 
         self.last_seen = peer.last_seen
 
         if peer.telemetry is not None:
             self.telemetry = peer.telemetry
         if peer.incoming is False:
-            self.port = peer.port
+            self.port = peer.port  # the true port of peers discovered from incoming handshakes is unknown, set it here
             self.incoming = False
         if peer.is_voting is True:
             self.is_voting = True
+        if self.peer_id is None and peer.peer_id is not None:
+            self.peer_id = peer.peer_id
 
         logger.log(VERBOSE, f"Merged peer {peer}")
+
+    def compare(self, other: "Peer") -> bool:
+        """Check if the ip and node_id of both peers are equal."""
+        return (self.peer_id is not None and self.peer_id == other.peer_id) or (self.ip == other.ip and self.port == other.port)
 
     @classmethod
     def parse_peer(cls, data: bytes):

@@ -68,11 +68,15 @@ class peer_manager:
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
         def find_existing_peer(peer: Peer):
             for p in self.__connections_graph:
-                if p == peer:
+                if p.compare(peer):
                     return p
 
         with self.mutex:
-            if from_peer not in self.__connections_graph:
+            existing_peer = find_existing_peer(from_peer)  # check if there's a key with this same peer already in the graph
+            if existing_peer:
+                existing_peer.merge(from_peer)
+                from_peer = existing_peer
+            else:  # add it if there isn't it
                 self.__connections_graph[from_peer] = peer_set()
 
             for new_peer in new_peers:
@@ -81,13 +85,14 @@ class peer_manager:
 
                 # if there's already a peer object in the graph representing the same peer as new_peer,
                 # the existing one should be used
-                if new_peer in self.__connections_graph:
-                    new_peer = find_existing_peer(new_peer)
+                existing_peer = find_existing_peer(new_peer)
+                if existing_peer:  # if this peer was already known, simply register the connection
+                    existing_peer.merge(new_peer)
+                    self.__connections_graph[from_peer].add(existing_peer)
                 else:
                     self.__connections_graph[new_peer] = peer_set()
+                    self.__connections_graph[from_peer].add(new_peer)
                     logger.debug(f"Discovered new peer {new_peer}")
-
-                self.__connections_graph[from_peer].add(new_peer)
 
     def run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
@@ -271,12 +276,13 @@ class peer_manager:
             try:
                 logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
                 self.add_peers(peer, self.get_peers_from_peer(peer))
-            except Exception as e:
+            except Exception:
                 logger.error(f"Unexpected exception while crawling peer [{peer.ip}]:{peer.port}", exc_info=True, stack_info=True)
 
         with ThreadPoolExecutor(max_workers=max_workers) as t:
             for p in peers_copy:
-                t.submit(crawl_peer, peer=p)
+                if p.incoming is False:  # connections shouldn't be made to peers marked as incoming, as their real port isn't known
+                    t.submit(crawl_peer, peer=p)
 
     def crawl(self, forever, delay, max_workers=4):
         initial_peers = get_all_dns_addresses_as_peers(self.ctx['peeraddr'], self.ctx['peerport'], -1)
