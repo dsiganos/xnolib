@@ -13,12 +13,14 @@ def read_socket(sock: socket.socket, byte_count: int) -> Optional[bytes]:  # ide
     data = bytearray()
     while len(data) < byte_count:
         try:
-            data.extend(sock.recv(byte_count - len(data)))
+            packet = sock.recv(byte_count - len(data))
         except OSError:
             logger.log(VERBOSE, f"Error while reading {byte_count} bytes", exc_info=True)
             return None
 
-        if len(data) == 0:
+        if len(packet) > 0:
+            data.extend(packet)
+        else:
             raise SocketClosedByPeer('read_socket: data=%s' % data)
 
     return bytes(data)
