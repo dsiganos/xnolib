@@ -193,7 +193,7 @@ class handshake_response_query(node_handshake_id):
 
 def handshake_exchange_server(ctx: dict, sock: socket.socket, query: handshake_query,
                               signing_key: ed25519_blake2b.SigningKey,
-                              verifying_key: ed25519_blake2b.VerifyingKey) -> None:
+                              verifying_key: ed25519_blake2b.VerifyingKey) -> handshake_response:
     response = handshake_response_query.create_response(ctx, query.cookie, signing_key, verifying_key)
     sock.send(response.serialise())
 
@@ -203,3 +203,5 @@ def handshake_exchange_server(ctx: dict, sock: socket.socket, query: handshake_q
 
     vk = ed25519_blake2b.keys.VerifyingKey(recvd_response.account)
     vk.verify(recvd_response.sig, response.cookie)
+
+    return recvd_response

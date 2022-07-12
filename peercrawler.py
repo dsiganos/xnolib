@@ -66,18 +66,19 @@ class peer_manager:
             thread.start()
 
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
-        def find_existing_peer(peer: Peer):
+        def find_existing_peer(peer: Peer) -> Optional[Peer]:
+            """Looks through the connection graph keys for the same peer."""
             for p in self.__connections_graph:
                 if p.compare(peer):
                     return p
 
         with self.mutex:
-            existing_peer = find_existing_peer(from_peer)  # check if there's a key with this same peer already in the graph
+            existing_peer = find_existing_peer(from_peer)
             if existing_peer:
                 existing_peer.merge(from_peer)
                 from_peer = existing_peer
-            else:  # add it if there isn't it
-                self.__connections_graph[from_peer] = peer_set()
+            else:
+                self.__connections_graph[from_peer] = peer_set()  # add this peer as a key to the graph
 
             for new_peer in new_peers:
                 if new_peer.ip.ipv6.is_unspecified:
@@ -170,7 +171,7 @@ class peer_manager:
 
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
-            handshake_exchange_server(ctx, connection, query, signing_key, verifying_key)
+            incoming_peer.peer_id = handshake_exchange_server(ctx, connection, query, signing_key, verifying_key).account
             logger.debug(f"Successful handshake from from {address}")
 
             telemetry_request = telemetry_req.telemetry_req(ctx)
