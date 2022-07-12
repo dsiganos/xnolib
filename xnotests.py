@@ -671,7 +671,7 @@ class TestComms(unittest.TestCase):
         self.assertEqual(hs1, hs2)
 
     def test_frontier_service_client(self):
-        inter = store_in_ram_interface(livectx, 0)
+        inter = store_in_ram_interface()
         frontserv = frontier_service(livectx, inter, 0)
         thread1 = threading.Thread(target=frontserv.start_service, daemon=True)
         thread1.start()
