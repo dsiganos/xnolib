@@ -392,6 +392,13 @@ class store_in_lmdb(frontier_database):
         raise NotImplementedError()
 
 
+class frontier_database_entry:
+    def __init__(self, peer: Peer, frontier_hash: bytes, account_hash: bytes):
+        self.peer = peer
+        self.frontier_hash = frontier_hash
+        self.account_hash = account_hash
+
+
 class blacklist_entry:
     def __init__(self, item, time_added):
         self.item = item
