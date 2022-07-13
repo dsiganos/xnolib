@@ -330,36 +330,42 @@ class my_sql_db(frontier_database):
 class store_in_ram_interface(frontier_database):
     def __init__(self):
         self.__frontiers: Set[frontier_database_entry] = set()
+        self.__mutex = threading.Lock()
 
     def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
-        existing_frontier_entry = self.__find_specific(peer, frontier.account)
-        if existing_frontier_entry is not None:
-            existing_frontier_entry.frontier_hash = frontier.frontier_hash
-            logger.log(VERBOSE, "Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
-        else:
-            entry = frontier_database_entry(peer=peer, frontier_hash=frontier.frontier_hash, account_hash=frontier.account)
-            self.__frontiers.add(entry)
-            logger.log(VERBOSE, "Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+        with self.__mutex:
+            existing_frontier_entry = self.__find_specific(peer, frontier.account)
+            if existing_frontier_entry is not None:
+                existing_frontier_entry.frontier_hash = frontier.frontier_hash
+                logger.log(VERBOSE, "Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+            else:
+                entry = frontier_database_entry(peer=peer, frontier_hash=frontier.frontier_hash, account_hash=frontier.account)
+                self.__frontiers.add(entry)
+                logger.log(VERBOSE, "Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
     def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
-        existing_front = self.get_frontier(frontier.account)
-        if existing_front is not None:
-            self.__frontiers.remove(existing_front)
-            logger.info("Removed the following frontier from list %s" % str(existing_front))
+        with self.__mutex:
+            existing_front = self.get_frontier(frontier.account)
+            if existing_front is not None:
+                self.__frontiers.remove(existing_front)
+                logger.info("Removed the following frontier from list %s" % str(existing_front))
 
     def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
-        for f in self.__frontiers:
-            if f.account_hash == account_hash:
-                return f
+        with self.__mutex:
+            for f in self.__frontiers:
+                if f.account_hash == account_hash:
+                    return f
 
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
         raise NotImplementedError()
 
     def count_frontiers(self) -> int:
-        return len(self.__frontiers)
+        with self.__mutex:
+            return len(self.__frontiers)
 
     def get_all(self):
-        return copy.copy(self.__frontiers)
+        with self.__mutex:
+            return copy.copy(self.__frontiers)
 
     def __find_specific(self, peer: Peer, account_hash: bytes) -> frontier_database_entry:
         for f in self.__frontiers:
