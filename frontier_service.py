@@ -329,16 +329,17 @@ class my_sql_db(frontier_database):
 
 class store_in_ram_interface(frontier_database):
     def __init__(self):
-        self.__frontiers = []
+        self.__frontiers: Set[frontier_database_entry] = set()
 
     def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
-        existing_front = self.get_frontier(frontier.account)
-        if existing_front is not None:
-            existing_front.frontier_hash = frontier.frontier_hash
-            logger.info("Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+        existing_frontier_entry = self.__find_specific(peer, frontier.account)
+        if existing_frontier_entry is not None:
+            existing_frontier_entry.frontier_hash = frontier.frontier_hash
+            logger.log(VERBOSE, "Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
         else:
-            self.__frontiers.append(frontier)
-            logger.info("Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+            entry = frontier_database_entry(peer=peer, frontier_hash=frontier.frontier_hash, account_hash=frontier.account)
+            self.__frontiers.add(entry)
+            logger.log(VERBOSE, "Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
     def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         existing_front = self.get_frontier(frontier.account)
@@ -359,6 +360,11 @@ class store_in_ram_interface(frontier_database):
 
     def get_all(self):
         return copy.copy(self.__frontiers)
+
+    def __find_specific(self, peer: Peer, account_hash: bytes) -> frontier_database_entry:
+        for f in self.__frontiers:
+            if f.peer == peer and f.account_hash == account_hash:
+                return f
 
 
 class store_in_lmdb(frontier_database):
