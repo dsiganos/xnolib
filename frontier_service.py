@@ -343,12 +343,6 @@ class store_in_ram_interface(frontier_database):
     def get_all(self):
         return copy.copy(self.__frontiers)
 
-    def __str__(self):
-        string = "--- Frontiers in RAM ---\n"
-        for f in self.__frontiers:
-            string += "acc: %s   front: %s\n" % (hexlify(f.account), hexlify(f.frontier_hash))
-        return string
-
 
 class store_in_lmdb(frontier_database):
     def __init__(self, file_name: str = "frontiers_db"):
