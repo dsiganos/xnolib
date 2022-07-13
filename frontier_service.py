@@ -412,9 +412,12 @@ class store_in_lmdb(frontier_database):
 
 class frontier_database_entry:
     def __init__(self, peer: Peer, frontier_hash: bytes, account_hash: bytes):
-        self.peer = peer
-        self.frontier_hash = frontier_hash
-        self.account_hash = account_hash
+        self.peer: Peer = peer
+        self.frontier_hash: bytes = frontier_hash
+        self.account_hash: bytes = account_hash
+
+    def __str__(self):
+        return f"frontier_hash:{self.frontier_hash} account_hash:{self.account_hash} peer:{self.peer}"
 
 
 class blacklist_entry:
