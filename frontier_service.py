@@ -236,7 +236,7 @@ class frontier_database(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_frontier(self, account_hash: bytes) -> frontier_database_entry:
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -282,12 +282,15 @@ class my_sql_db(frontier_database):
         self.cursor.execute(query)
         self.db.commit()
 
-    def get_frontier(self, account_hash: bytes) -> frontier_database_entry:
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         self.cursor.execute("""
         SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
         FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
         """, {"account_hash": hexlify(account_hash)})
         entry = self.cursor.fetchone()
+
+        if entry is None:
+            return None
 
         peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
         return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
@@ -343,9 +346,9 @@ class store_in_ram_interface(frontier_database):
             self.__frontiers.remove(existing_front)
             logger.info("Removed the following frontier from list %s" % str(existing_front))
 
-    def get_frontier(self, account) -> frontier_database_entry:
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         for f in self.__frontiers:
-            if f.account == account:
+            if f.account_hash == account_hash:
                 return f
 
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
@@ -372,7 +375,7 @@ class store_in_lmdb(frontier_database):
         os.makedirs('frontier_lmdb_databases', exist_ok=True)
         return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000, map_size=(10 * 1000 * 1000 * 1000))
 
-    def get_frontier(self, account_hash: bytes) -> frontier_database_entry:
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         with self.lmdb_env.begin(write=False) as tx:
             front_hash = tx.get(account_hash)
             return frontier_request.frontier_entry(account_hash, front_hash)
