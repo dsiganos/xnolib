@@ -236,11 +236,11 @@ class frontier_database(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_frontier(self, account_hash: str):
+    def get_frontier(self, account_hash: bytes) -> frontier_database_entry:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_all_frontiers_for_account(self, account_hash: str):
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -263,7 +263,7 @@ class my_sql_db(frontier_database):
         self.__cache = []
         self.__cache_lock = threading.Lock()
 
-    def add_frontier(self, frontier, peer) -> None:
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         if peer not in self.peers_stored:
             self.add_peer_to_db(peer)
             self.peers_stored.append(peer)
@@ -282,17 +282,20 @@ class my_sql_db(frontier_database):
         self.cursor.execute(query)
         self.db.commit()
 
-    def get_frontier(self, account) -> tuple[str, str]:
-        query = 'SELECT (account_hash, frontier_hash) FROM Frontiers WHERE account_hash = "%s"' % hexlify(account)
-        self.cursor.execute(query)
-        return self.cursor.fetchone()
+    def get_frontier(self, account_hash: bytes) -> frontier_database_entry:
+        self.cursor.execute("""
+        SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+        FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
+        """, {"account_hash": hexlify(account_hash)})
+        entry = self.cursor.fetchone()
 
-    def get_all_frontiers_for_account(self, account_hash: str):
-        query = f"SELECT (peer_id, account_hash, frontier_hash) FROM Frontiers WHERE account_hash = {account_hash}"
-        self.cursor.execute(query)
-        return self.cursor.fetchall()
+        peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
+        return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
 
-    def remove_frontier(self, frontier, peer) -> None:
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
+        raise NotImplementedError()
+
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         self.remove_peer_data(peer)
 
         self.cursor.execute("DELETE FROM Frontiers WHERE account  = '%s'")
@@ -325,7 +328,7 @@ class store_in_ram_interface(frontier_database):
     def __init__(self):
         self.__frontiers = []
 
-    def add_frontier(self, frontier, peer) -> None:
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             existing_front.frontier_hash = frontier.frontier_hash
@@ -334,19 +337,19 @@ class store_in_ram_interface(frontier_database):
             self.__frontiers.append(frontier)
             logger.info("Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
-    def remove_frontier(self, frontier, peer) -> None:
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         existing_front = self.get_frontier(frontier.account)
         if existing_front is not None:
             self.__frontiers.remove(existing_front)
             logger.info("Removed the following frontier from list %s" % str(existing_front))
 
-    def get_frontier(self, account):
+    def get_frontier(self, account) -> frontier_database_entry:
         for f in self.__frontiers:
             if f.account == account:
                 return f
 
-    def get_all_frontiers_for_account(self, account_hash: str):
-        return [frontier for frontier in self.__frontiers if str(frontier.account) == account_hash]
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
+        raise NotImplementedError()
 
     def count_frontiers(self) -> int:
         return len(self.__frontiers)
@@ -359,7 +362,7 @@ class store_in_lmdb(frontier_database):
     def __init__(self, file_name: str = "frontiers_db"):
         self.lmdb_env = self.get_lmdb_env(file_name)
 
-    def add_frontier(self, frontier, peer):
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer):
         with self.lmdb_env.begin(write=True) as tx:
             tx.put(frontier.account, frontier.frontier_hash)
             logger.info("Added values %s, %s to lmdb" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
@@ -369,10 +372,10 @@ class store_in_lmdb(frontier_database):
         os.makedirs('frontier_lmdb_databases', exist_ok=True)
         return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000, map_size=(10 * 1000 * 1000 * 1000))
 
-    def get_frontier(self, account):
+    def get_frontier(self, account_hash: bytes) -> frontier_database_entry:
         with self.lmdb_env.begin(write=False) as tx:
-            front_hash = tx.get(account)
-            return frontier_request.frontier_entry(account, front_hash)
+            front_hash = tx.get(account_hash)
+            return frontier_request.frontier_entry(account_hash, front_hash)
 
     def get_all(self):
         with self.lmdb_env.begin(write=False) as tx:
@@ -382,10 +385,10 @@ class store_in_lmdb(frontier_database):
                 frontiers.append(front)
         return frontiers
 
-    def get_all_frontiers_for_account(self, account_hash: str):
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
         raise NotImplementedError()
 
-    def remove_frontier(self, frontier, peer) -> None:
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         raise NotImplementedError()
 
     def count_frontiers(self) -> int:
