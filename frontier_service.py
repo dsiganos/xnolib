@@ -228,15 +228,19 @@ class server_packet:
 
 class frontier_database(ABC):
     @abstractmethod
-    def add_frontier(self, frontier, peer) -> None:
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def remove_frontier(self, frontier, peer) -> None:
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_frontier(self, account) -> tuple[str, str]:
+    def get_frontier(self, account_hash: str):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_all_frontiers_for_account(self, account_hash: str):
         raise NotImplementedError()
 
     @abstractmethod
@@ -282,6 +286,11 @@ class my_sql_db(frontier_database):
         query = 'SELECT (account_hash, frontier_hash) FROM Frontiers WHERE account_hash = "%s"' % hexlify(account)
         self.cursor.execute(query)
         return self.cursor.fetchone()
+
+    def get_all_frontiers_for_account(self, account_hash: str):
+        query = f"SELECT (peer_id, account_hash, frontier_hash) FROM Frontiers WHERE account_hash = {account_hash}"
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
 
     def remove_frontier(self, frontier, peer) -> None:
         self.remove_peer_data(peer)
@@ -335,7 +344,9 @@ class store_in_ram_interface(frontier_database):
         for f in self.__frontiers:
             if f.account == account:
                 return f
-        return None
+
+    def get_all_frontiers_for_account(self, account_hash: str):
+        return [frontier for frontier in self.__frontiers if str(frontier.account) == account_hash]
 
     def count_frontiers(self) -> int:
         return len(self.__frontiers)
@@ -370,6 +381,9 @@ class store_in_lmdb(frontier_database):
                 front = frontier_request.frontier_entry(key, value)
                 frontiers.append(front)
         return frontiers
+
+    def get_all_frontiers_for_account(self, account_hash: str):
+        raise NotImplementedError()
 
     def remove_frontier(self, frontier, peer) -> None:
         raise NotImplementedError()
