@@ -299,19 +299,14 @@ class my_sql_db(frontier_database):
         raise NotImplementedError()
 
     def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
-        self.remove_peer_data(peer)
-
-        self.cursor.execute("DELETE FROM Frontiers WHERE account  = '%s'")
+        self.cursor.execute("DELETE FROM Frontiers WHERE account_hash = %(account_hash)s AND peer_id = %(peer_id)s",
+                            {"account_hash": hexlify(frontier.account), "peer_id": hexlify(peer.serialise())})
+        self.db.commit()
 
     def count_frontiers(self) -> int:
         query = "SELECT COUNT(*) from Frontiers;"
         self.cursor.execute(query)
         return self.cursor.fetchone()[0]
-
-    def remove_peer_data(self, p) -> None:
-        self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
-        self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
-        self.db.commit()
 
     def add_peer_to_db(self, peer) -> None:
         query = "INSERT INTO Peers(peer_id, ip_address, port, score) "
@@ -345,10 +340,10 @@ class store_in_ram_interface(frontier_database):
 
     def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         with self.__mutex:
-            existing_front = self.get_frontier(frontier.account)
-            if existing_front is not None:
-                self.__frontiers.remove(existing_front)
-                logger.info("Removed the following frontier from list %s" % str(existing_front))
+            existing_frontier_entry = self.__find_specific(peer, frontier.account)
+            if existing_frontier_entry is not None:
+                self.__frontiers.remove(existing_frontier_entry)
+                logger.log(VERBOSE, "Removed the following frontier from list %s" % str(existing_frontier_entry))
 
     def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         with self.__mutex:
