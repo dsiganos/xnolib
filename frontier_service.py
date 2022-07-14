@@ -10,9 +10,10 @@ import lmdb
 import threading
 import frontier_request
 import peercrawler
-import mysql.connector
 from abc import ABC, abstractmethod
 from typing import Set
+
+from mysql.connector.pooling import MySQLConnectionPool
 
 from _logger import get_logger, get_logging_level_from_int, VERBOSE, setup_logger
 from args import add_network_switcher_args
@@ -255,11 +256,10 @@ class frontier_database(ABC):
 class my_sql_db(frontier_database):
     BATCH_SIZE = 1024
 
-    def __init__(self, cursor, db):
-        self.cursor = cursor
-        self.db = db
+    def __init__(self, database_connection_pool: MySQLConnectionPool):
         self.peers_stored = []
 
+        self.__connection_pool = database_connection_pool
         self.__cache = []
         self.__cache_lock = threading.Lock()
 
@@ -279,15 +279,18 @@ class my_sql_db(frontier_database):
         query = f"INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) VALUES {', '.join(self.__cache)} ON DUPLICATE KEY UPDATE frontier_hash = VALUES(frontier_hash)"
         self.__cache.clear()
 
-        self.cursor.execute(query)
-        self.db.commit()
+        with self.__connection_pool.get_connection() as database:
+            database.cursor().execute(query)
+            database.commit()
 
     def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
-        self.cursor.execute("""
-        SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
-        FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
-        """, {"account_hash": hexlify(account_hash)})
-        entry = self.cursor.fetchone()
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute("""
+            SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+            FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
+            """, {"account_hash": hexlify(account_hash)})
+            entry = cursor.fetchone()
 
         if entry is None:
             return None
@@ -296,11 +299,13 @@ class my_sql_db(frontier_database):
         return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
 
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
-        self.cursor.execute("""
-                SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
-                FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
-                """, {"account_hash": hexlify(account_hash)})
-        entries = self.cursor.fetchall()
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute("""
+                    SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+                    FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
+                    """, {"account_hash": hexlify(account_hash)})
+            entries = cursor.fetchall()
 
         result = set()
         for entry in entries:
@@ -311,14 +316,18 @@ class my_sql_db(frontier_database):
         return result
 
     def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
-        self.cursor.execute("DELETE FROM Frontiers WHERE account_hash = %(account_hash)s AND peer_id = %(peer_id)s",
-                            {"account_hash": hexlify(frontier.account), "peer_id": hexlify(peer.serialise())})
-        self.db.commit()
+        with self.__connection_pool.get_connection() as database:
+            database.cursor().execute("DELETE FROM Frontiers WHERE account_hash = %(account_hash)s AND peer_id = %(peer_id)s",
+                                      {"account_hash": hexlify(frontier.account), "peer_id": hexlify(peer.serialise())})
+            database.commit()
 
     def count_frontiers(self) -> int:
-        query = "SELECT COUNT(*) from Frontiers;"
-        self.cursor.execute(query)
-        return self.cursor.fetchone()[0]
+        query = "SELECT COUNT(*) from Frontiers"
+
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute(query)
+            return cursor.fetchone()[0]
 
     def add_peer_to_db(self, peer) -> None:
         query = "INSERT INTO Peers(peer_id, ip_address, port, score) "
@@ -327,8 +336,9 @@ class my_sql_db(frontier_database):
 
         logger.info(f"Adding new peer to database: {peer}")
 
-        self.cursor.execute(query)
-        self.db.commit()
+        with self.__connection_pool.get_connection() as database:
+            database.cursor().execute(query)
+            database.commit()
 
     def get_all(self) -> list:
         raise NotImplementedError()
@@ -638,29 +648,27 @@ def main():
     if args.db is None:
         args.db = db_name
 
-    if args.rmdb:  # drop database and exit program
-        db = setup_db_connection(host=args.host, user=args.username, password=args.password)
-        db.cursor().execute(f"DROP DATABASE {args.db}")
-        sys.exit(0)
+    # if args.rmdb:  # drop database and exit program
+    #     db = setup_db_connection(host=args.host, user=args.username, password=args.password)
+    #     db.cursor().execute(f"DROP DATABASE {args.db}")
+    #     sys.exit(0)
 
     if args.ram:
         inter = store_in_ram_interface()
     elif args.lmdb:
         inter = store_in_lmdb(file_name=args.db)
-
     else:
-        try:
-            db = setup_db_connection(host=args.host, user=args.username, password=args.password, database=args.db)
-            cursor = db.cursor()
-            inter = my_sql_db(cursor, db)
-        except mysql.connector.errors.ProgrammingError:
-            db = setup_db_connection(host=args.host, user=args.username, password=args.password)
-            create_new_database(db.cursor(), name=args.db)
-            create_db_structure_frontier_service(db.cursor())
-            db.close()
-            db = setup_db_connection(host=args.host, user=args.username, password=args.password, database=args.db)
-            cursor = db.cursor()
-            inter = my_sql_db(cursor, db)
+        connection_pool = MySQLConnectionPool(pool_name="mypool", pool_size=8, host=args.host, user=args.username, passwd=args.password, auth_plugin='mysql_native_password')
+
+        with connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            create_new_database(cursor, args.db)
+            create_db_structure_frontier_service(cursor)
+
+            database.commit()
+
+        connection_pool.set_config(database=args.db)
+        inter = my_sql_db(connection_pool)
 
     service = frontier_service(ctx, inter, args.verbosity)
 
