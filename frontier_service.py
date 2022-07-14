@@ -296,7 +296,19 @@ class my_sql_db(frontier_database):
         return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
 
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
-        raise NotImplementedError()
+        self.cursor.execute("""
+                SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+                FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
+                """, {"account_hash": hexlify(account_hash)})
+        entries = self.cursor.fetchall()
+
+        result = set()
+        for entry in entries:
+            peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
+            database_entry = frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
+            result.add(database_entry)
+
+        return result
 
     def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         self.cursor.execute("DELETE FROM Frontiers WHERE account_hash = %(account_hash)s AND peer_id = %(peer_id)s",
@@ -352,7 +364,13 @@ class store_in_ram_interface(frontier_database):
                     return f
 
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
-        raise NotImplementedError()
+        result = set()
+        with self.__mutex:
+            for f in self.__frontiers:
+                if f.account_hash == account_hash:
+                    result.add(f)
+
+        return result
 
     def count_frontiers(self) -> int:
         with self.__mutex:
