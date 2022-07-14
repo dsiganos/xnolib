@@ -430,7 +430,7 @@ class frontier_database_entry:
         self.account_hash: bytes = account_hash
 
     def __str__(self):
-        return f"frontier_hash:{self.frontier_hash} account_hash:{self.account_hash} peer:{self.peer}"
+        return f"frontier_hash:{hexlify(self.frontier_hash)} account_hash:{hexlify(self.account_hash)} peer:{self.peer}"
 
 
 class blacklist_entry:
