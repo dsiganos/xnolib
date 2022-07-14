@@ -639,7 +639,7 @@ def main():
         args.db = db_name
 
     if args.rmdb:  # drop database and exit program
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
+        db = setup_db_connection(host=args.host, user=args.username, password=args.password)
         db.cursor().execute(f"DROP DATABASE {args.db}")
         sys.exit(0)
 
@@ -650,15 +650,15 @@ def main():
 
     else:
         try:
-            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
+            db = setup_db_connection(host=args.host, user=args.username, password=args.password, database=args.db)
             cursor = db.cursor()
             inter = my_sql_db(cursor, db)
         except mysql.connector.errors.ProgrammingError:
-            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
+            db = setup_db_connection(host=args.host, user=args.username, password=args.password)
             create_new_database(db.cursor(), name=args.db)
             create_db_structure_frontier_service(db.cursor())
             db.close()
-            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
+            db = setup_db_connection(host=args.host, user=args.username, password=args.password, database=args.db)
             cursor = db.cursor()
             inter = my_sql_db(cursor, db)
 

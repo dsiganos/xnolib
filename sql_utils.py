@@ -1,12 +1,11 @@
 import mysql.connector
 
 
-def setup_db_connection(host: str = "localhost", user: str = "root",
-                        passwd: str = "password123", db: str = None):
-    if db is None:
-        return mysql.connector.connect(host=host, user=user, passwd=passwd, auth_plugin='mysql_native_password')
+def setup_db_connection(host: str, user: str, password: str, database: str = None):
+    if database is None:
+        return mysql.connector.connect(host=host, user=user, passwd=password, auth_plugin='mysql_native_password')
     else:
-        return mysql.connector.connect(host=host, user=user, passwd=passwd, database=db, auth_plugin='mysql_native_password')
+        return mysql.connector.connect(host=host, user=user, passwd=password, database=database, auth_plugin='mysql_native_password')
 
 
 def create_new_database(cursor, name: str) -> None:
