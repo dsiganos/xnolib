@@ -241,6 +241,10 @@ class frontier_database(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        raise NotImplementedError()
+
+    @abstractmethod
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
         raise NotImplementedError()
 
@@ -290,6 +294,22 @@ class my_sql_db(frontier_database):
             SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
             FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
             """, {"account_hash": hexlify(account_hash)})
+            entry = cursor.fetchone()
+
+        if entry is None:
+            return None
+
+        peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
+        return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
+
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute("""
+            SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+            FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id
+            WHERE f.account_hash = %(account_hash)s AND f.peer_id = %(peer_id)s
+            """, {"account_hash": hexlify(account_hash), "peer_id": hexlify(peer.serialise())})
             entry = cursor.fetchone()
 
         if entry is None:
@@ -373,6 +393,12 @@ class store_in_ram_interface(frontier_database):
                 if f.account_hash == account_hash:
                     return f
 
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        with self.__mutex:
+            for f in self.__frontiers:
+                if f.account_hash == account_hash and f.peer == peer:
+                    return f
+
     def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
         result = set()
         with self.__mutex:
@@ -414,6 +440,9 @@ class store_in_lmdb(frontier_database):
         with self.lmdb_env.begin(write=False) as tx:
             front_hash = tx.get(account_hash)
             return frontier_request.frontier_entry(account_hash, front_hash)
+
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        raise NotImplementedError()
 
     def get_all(self):
         with self.lmdb_env.begin(write=False) as tx:
