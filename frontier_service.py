@@ -56,13 +56,13 @@ class frontier_service:
                 semaphore.acquire()
 
                 conn, addr = s.accept()
+                logger.debug(f"Receiving connection from {addr}")
+
                 conn.settimeout(60)
                 threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
 
-    def comm_thread(self, s) -> None:
+    def comm_thread(self, s: socket.socket) -> None:
         with s:
-            s.settimeout(10)
-
             data = s.recv(33)
             c_packet = client_packet.parse(data)
             if c_packet.is_all_zero():
@@ -80,6 +80,8 @@ class frontier_service:
         peers = peercrawler.get_peers_from_service(self.ctx)
         peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
         assert peers
+
+        logger.debug(f"Fetched {len(peers)} from the peer service")
         self.merge_peers(peers)
 
     def run(self) -> None:
@@ -90,7 +92,7 @@ class frontier_service:
     def single_pass(self) -> None:
         for p in self.peers:
             try:
-                logger.debug(f"Fetching frontiers from peer {p}")
+                logger.info(f"Fetching frontiers from peer {p}")
                 self.manage_peer_frontiers(p)
             except (ConnectionRefusedError, socket.timeout, PyNanoCoinException, FrontierServiceSlowPeer) as exception:
                 p.deduct_score(200)
