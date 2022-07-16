@@ -11,7 +11,7 @@ import threading
 import frontier_request
 import peercrawler
 from abc import ABC, abstractmethod
-from typing import Set
+from typing import Collection, Iterator, Set
 
 from mysql.connector.pooling import MySQLConnectionPool
 
@@ -252,7 +252,7 @@ class frontier_database(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_all(self) -> list:
+    def get_all(self) -> Iterator[frontier_request.frontier_entry]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -363,8 +363,15 @@ class my_sql_db(frontier_database):
             database.cursor().execute(query)
             database.commit()
 
-    def get_all(self) -> list:
-        raise NotImplementedError()
+    def get_all(self) -> Iterator[frontier_request.frontier_entry]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor(buffered=False)
+            cursor.execute("""SELECT account_hash, frontier_hash FROM Frontiers GROUP BY account_hash""")
+            while True:
+                cache = cursor.fetchmany(size=64)
+                cache = [frontier_request.frontier_entry(account=bytes.fromhex(f[0]), frontier_hash=bytes.fromhex(f[1])) for f in cache]
+                for c in cache:
+                    yield c
 
 
 class store_in_ram_interface(frontier_database):
@@ -415,9 +422,13 @@ class store_in_ram_interface(frontier_database):
         with self.__mutex:
             return len(self.__frontiers)
 
-    def get_all(self):
-        with self.__mutex:
-            return copy.copy(self.__frontiers)
+    def get_all(self) -> Iterator[frontier_request.frontier_entry]:
+        sent_accounts: Set[bytes] = set()
+        for f in self.__frontiers:
+            account = f.account_hash
+            if account not in sent_accounts:
+                sent_accounts.add(account)
+                yield frontier_request.frontier_entry(account=account, frontier_hash=f.frontier_hash)
 
     def __find_specific(self, peer: Peer, account_hash: bytes) -> frontier_database_entry:
         for f in self.__frontiers:
