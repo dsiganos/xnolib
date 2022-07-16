@@ -20,6 +20,7 @@ from args import add_network_switcher_args
 from sql_utils import *
 from pynanocoin import *
 from peer import Peer
+from peer_set import peer_set
 
 
 logger = get_logger()
@@ -31,7 +32,7 @@ class frontier_service:
         self.ctx = ctx
         self.database_interface: frontier_database = interface
         self.verbosity = verbosity
-        self.peers: Set[Peer] = set()
+        self.peers: Set[Peer] = peer_set()
         self.blacklist = blacklist_manager(Peer, 1800)
 
     def start_service(self, addr='::', port=7080) -> None:
