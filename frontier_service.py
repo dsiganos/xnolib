@@ -423,8 +423,12 @@ class store_in_ram_interface(frontier_database):
             return len(self.__frontiers)
 
     def get_all(self) -> Iterator[frontier_request.frontier_entry]:
+        # make shallow copy of the frontiers set, to avoid it changing size during iteration (temporary)
+        with self.__mutex:
+            frontiers = self.__frontiers.copy()
+
         sent_accounts: Set[bytes] = set()
-        for f in self.__frontiers:
+        for f in frontiers:
             account = f.account_hash
             if account not in sent_accounts:
                 sent_accounts.add(account)
