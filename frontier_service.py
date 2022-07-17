@@ -594,7 +594,7 @@ def parse_args():
                         help='verbosity for the peercrawler')
 
     parser.add_argument('--rmdb', action='store_true', default=False,
-                        help='determines whether the frontier service tables should be reset')
+                        help='drops the MySQL database and exits')
     parser.add_argument('--db', type=str, default=None,
                         help='the name of the database that will be either created or connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
@@ -712,9 +712,13 @@ def main():
 
         with connection_pool.get_connection() as database:
             cursor = database.cursor()
+
+            if args.rmdb:
+                cursor().execute(f"DROP DATABASE {args.db}")
+                sys.exit(0)
+
             create_new_database(cursor, args.db)
             create_db_structure_frontier_service(cursor)
-
             database.commit()
 
         connection_pool.set_config(database=args.db)
