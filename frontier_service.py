@@ -36,46 +36,49 @@ class frontier_service:
         self.blacklist = blacklist_manager(Peer, 1800)
 
     def start_service(self, addr='::', port=7080) -> None:
-        def incoming_connection_handler(sock: socket.socket):
-            try:
-                self.comm_thread(sock)
-            finally:
-                semaphore.release()
+        self.run()
 
-        # start the frontier request thread
-        threading.Thread(target=self.run, daemon=True).start()
+        # TODO broken
+        # def incoming_connection_handler(sock: socket.socket):
+        #     try:
+        #         self.comm_thread(sock)
+        #     finally:
+        #         semaphore.release()
+        #
+        # # start the frontier request thread
+        # threading.Thread(target=self.run, daemon=True).start()
+        #
+        # with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        #     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        #     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #     s.bind((addr, port))
+        #
+        #     s.listen()
+        #
+        #     semaphore = threading.BoundedSemaphore(8)
+        #     while True:
+        #         semaphore.acquire()
+        #
+        #         conn, addr = s.accept()
+        #         logger.debug(f"Receiving connection from {addr}")
+        #
+        #         conn.settimeout(60)
+        #         threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
 
-        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((addr, port))
-
-            s.listen()
-
-            semaphore = threading.BoundedSemaphore(8)
-            while True:
-                semaphore.acquire()
-
-                conn, addr = s.accept()
-                logger.debug(f"Receiving connection from {addr}")
-
-                conn.settimeout(60)
-                threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
-
-    def comm_thread(self, s: socket.socket) -> None:
-        with s:
-            data = s.recv(33)
-            c_packet = client_packet.parse(data)
-            if c_packet.is_all_zero():
-                frontiers = self.database_interface.get_all()
-                s_packet = server_packet(frontiers)
-                s.sendall(s_packet.serialise())
-                return
-
-            else:
-                frontier = self.database_interface.get_frontier(c_packet.account)
-                s_packet = server_packet([frontier])
-                s.sendall(s_packet.serialise())
+    # def comm_thread(self, s: socket.socket) -> None:
+    #     with s:
+    #         data = s.recv(33)
+    #         c_packet = client_packet.parse(data)
+    #         if c_packet.is_all_zero():
+    #             frontiers = self.database_interface.get_all()
+    #             s_packet = server_packet(frontiers)
+    #             s.sendall(s_packet.serialise())
+    #             return
+    #
+    #         else:
+    #             frontier = self.database_interface.get_frontier(c_packet.account)
+    #             s_packet = server_packet([frontier])
+    #             s.sendall(s_packet.serialise())
 
     def fetch_peers(self) -> None:
         peers = peercrawler.get_peers_from_service(self.ctx)
