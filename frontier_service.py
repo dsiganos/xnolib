@@ -714,7 +714,7 @@ def main():
             cursor = database.cursor()
 
             if args.rmdb:
-                cursor().execute(f"DROP DATABASE {args.db}")
+                cursor.execute(f"DROP DATABASE {args.db}")
                 sys.exit(0)
 
             create_new_database(cursor, args.db)
