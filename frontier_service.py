@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import copy
+import itertools
 import sys
 import time
 import lmdb
@@ -125,17 +125,6 @@ class frontier_service:
             except StopIteration:
                 return
 
-    # Function which will query all accounts with different frontier hashes
-    # def find_accounts_different_hashes(self):
-    #     fetched_records = []
-    #
-    #     query_accounts_different_hashes(self.cursor)
-    #
-    #     for record in self.cursor.fetchall():
-    #         fetched_records.append(record[0])
-    #
-    #     return fetched_records
-    #
     # def get_all_records(self):
     #     records = []
     #
@@ -262,6 +251,11 @@ class frontier_database(ABC):
     def count_frontiers(self) -> int:
         raise NotImplementedError()
 
+    @abstractmethod
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        """Finds all the accounts which have more than one known frontier hash. Might take a long time to process."""
+        raise NotImplementedError()
+
 
 class my_sql_db(frontier_database):
     BATCH_SIZE = 1024
@@ -376,6 +370,14 @@ class my_sql_db(frontier_database):
                 for c in cache:
                     yield c
 
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            accounts = query_accounts_different_hashes(cursor).fetchall()
+
+        accounts_flattened = itertools.chain.from_iterable(accounts)
+        return set([bytes.fromhex(account) for account in accounts_flattened])
+
 
 class store_in_ram_interface(frontier_database):
     def __init__(self):
@@ -437,6 +439,26 @@ class store_in_ram_interface(frontier_database):
                 sent_accounts.add(account)
                 yield frontier_request.frontier_entry(account=account, frontier_hash=f.frontier_hash)
 
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        # make shallow copy of the frontiers set, to avoid it changing size during iteration (temporary)
+        with self.__mutex:
+            frontiers = self.__frontiers.copy()
+
+        accounts: Set[bytes] = set()
+        for f1 in frontiers:
+            account_hash = f1.account_hash
+            frontier_hash = f1.frontier_hash
+
+            if account_hash in accounts:
+                continue
+
+            for f2 in frontiers:
+                if f1 is not f2 and f2.account_hash == account_hash and f2.frontier_hash != frontier_hash:
+                    accounts.add(account_hash)
+                    break
+
+        return accounts
+
     def __find_specific(self, peer: Peer, account_hash: bytes) -> frontier_database_entry:
         for f in self.__frontiers:
             if f.peer == peer and f.account_hash == account_hash:
@@ -480,6 +502,9 @@ class store_in_lmdb(frontier_database):
         raise NotImplementedError()
 
     def count_frontiers(self) -> int:
+        raise NotImplementedError()
+
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
         raise NotImplementedError()
 
 
