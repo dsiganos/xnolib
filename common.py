@@ -1,4 +1,6 @@
 import binascii
+import re
+from typing import Tuple
 
 
 def writefile(filename, content) -> None:
@@ -9,6 +11,14 @@ def writefile(filename, content) -> None:
 def hexlify(data) -> str:
     if data is None: return 'None'
     return binascii.hexlify(data).decode("utf-8").upper()
+
+
+def extract_ip_and_port_from_ipv6_address(address: str) -> Tuple[str, int]:
+    """Extract the IP and port from an IPv6 address such as \"[::ffff:1.2.3.4]:7075\"."""
+    ip_address = re.search(r"(?<=\[)(.*?)(?=\])", address).group(0)
+    port = int(address.split(":")[-1])
+
+    return ip_address, port
 
 
 class hash_pair:

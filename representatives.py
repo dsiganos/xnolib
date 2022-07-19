@@ -14,6 +14,7 @@ import peercrawler
 import pynanocoin
 import acctools
 import constants
+from common import extract_ip_and_port_from_ipv6_address
 from peer import Peer
 
 
@@ -221,6 +222,8 @@ def get_representatives_from_service(url: str, prs_only: bool = False) -> Set[Pe
         address = representative["endpoint"]  # example: "[::ffff:94.130.238.161]:7075"
         if address is None:
             continue
+        else:
+            ip_address, port = extract_ip_and_port_from_ipv6_address(address)
 
         ip_address = re.search(r"(?<=\[)(.*?)(?=\])", address).group(0)
         port = int(address.split(":")[-1])
