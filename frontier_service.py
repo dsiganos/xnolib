@@ -728,9 +728,9 @@ def main():
     #     sys.exit(0)
 
     if args.ram:
-        inter = store_in_ram_interface()
+        database_interface = store_in_ram_interface()
     elif args.lmdb:
-        inter = store_in_lmdb(file_name=args.db)
+        database_interface = store_in_lmdb(file_name=args.db)
     else:
         connection_pool = MySQLConnectionPool(pool_name="mypool", pool_size=8, host=args.host, user=args.username, passwd=args.password, auth_plugin='mysql_native_password')
 
@@ -746,32 +746,25 @@ def main():
             database.commit()
 
         connection_pool.set_config(database=args.db)
-        inter = my_sql_db(connection_pool)
+        database_interface = my_sql_db(connection_pool)
 
     initial_peers = set()
     for peer in args.peer:
         ip, port = extract_ip_and_port_from_ipv6_address(peer)
         initial_peers.add(Peer(ip=ip_addr.from_string(ip), port=port))
 
-    service = frontier_service(ctx, inter, args.verbosity, initial_peers=initial_peers)
+    service = frontier_service(ctx, database_interface, args.verbosity, initial_peers=initial_peers)
 
-    if args.service:  # this will run forever
+    if args.service:
         if args.forever:
             service.start_service()
         else:
             service.fetch_peers()
             service.single_pass()
-
-    # This is a piece of code which can find accounts with different frontier hashes
-    # if args.differences:
-    #     records = frontserv.find_accounts_different_hashes()
-    #     for rec in records:
-    #         print(rec)
-    #
-    # if args.dumpdb:
-    #     records = frontserv.get_all_records()
-    #     for rec in records:
-    #         print(rec)
+    elif args.differences:
+        records = database_interface.find_accounts_with_different_hashes()
+        for record in records:
+            print(hexlify(record))
 
 
 if __name__ == "__main__":
