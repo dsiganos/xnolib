@@ -154,7 +154,7 @@ class peer_manager:
     def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer], bool]]:
         logger.log(_logger.VERBOSE, f"Receiving connection from {address}")
 
-        incoming_peer = Peer(ip_addr.from_string(address[0]), address[1], incoming=True)
+        incoming_peer = Peer(ip=ip_addr.from_string(address[0]), incoming=True)
         incoming_peer_peers = None
         is_voting = False
 
