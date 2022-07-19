@@ -15,6 +15,7 @@ from typing import Collection, Iterator, Set
 
 from mysql.connector.pooling import MySQLConnectionPool
 
+import representatives
 from _logger import get_logger, get_logging_level_from_int, VERBOSE, setup_logger
 from args import add_network_switcher_args
 from sql_utils import *
@@ -81,10 +82,7 @@ class frontier_service:
     #             s.sendall(s_packet.serialise())
 
     def fetch_peers(self) -> None:
-        peers = peercrawler.get_peers_from_service(self.ctx)
-        peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
-        assert peers
-
+        peers = representatives.get_representatives_from_service(self.ctx["repservurl"], prs_only=True)
         logger.debug(f"Fetched {len(peers)} from the peer service")
         self.merge_peers(peers)
 
