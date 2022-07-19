@@ -225,9 +225,7 @@ def get_representatives_from_service(url: str, prs_only: bool = False) -> Set[Pe
         else:
             ip_address, port = extract_ip_and_port_from_ipv6_address(address)
 
-        ip_address = re.search(r"(?<=\[)(.*?)(?=\])", address).group(0)
-        port = int(address.split(":")[-1])
-        voting = representative["voting"]
+        voting = representative["voting"] is True
 
         peers.add(Peer(ip=pynanocoin.ip_addr.from_string(ip_address), port=port, is_voting=voting))
 
