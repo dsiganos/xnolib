@@ -11,7 +11,7 @@ import threading
 import frontier_request
 import peercrawler
 from abc import ABC, abstractmethod
-from typing import Collection, Iterator, Set
+from typing import Collection, Iterable, Iterator, Set
 
 from mysql.connector.pooling import MySQLConnectionPool
 
@@ -28,13 +28,16 @@ logger = get_logger()
 
 
 class frontier_service:
-    def __init__(self, ctx, interface, verbosity = 0):
+    def __init__(self, ctx, interface, verbosity=0, initial_peers: Iterable[Peer] = None):
         assert isinstance(interface, frontier_database)
         self.ctx = ctx
         self.database_interface: frontier_database = interface
         self.verbosity = verbosity
         self.peers: Set[Peer] = peer_set()
         self.blacklist = blacklist_manager(Peer, 1800)
+
+        if initial_peers:
+            self.merge_peers(initial_peers)
 
     def start_service(self, addr='::', port=7080) -> None:
         self.run()
@@ -135,7 +138,7 @@ class frontier_service:
     def count_frontiers(self) -> int:
         return self.database_interface.count_frontiers()
 
-    def merge_peers(self, peers) -> None:
+    def merge_peers(self, peers: Iterable[Peer]) -> None:
         for p in peers:
             if not self.blacklist.is_blacklisted(p) and p not in self.peers:
                 self.peers.add(p)
@@ -627,10 +630,8 @@ def parse_args():
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='the ip of the sql server')
 
-    parser.add_argument('--peer', type=str, default=None,
-                        help='the ip address of the single peer which the service will connect to')
-    parser.add_argument('--peer-port', type=int, default=7075,
-                        help='the port of the single peer which the service will connect to')
+    parser.add_argument('--peer', action="append", default=[],
+                        help='also connect to this peer, address should be provided in the following format: [2001:db8::1]:80')
 
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
@@ -747,13 +748,14 @@ def main():
         connection_pool.set_config(database=args.db)
         inter = my_sql_db(connection_pool)
 
-    service = frontier_service(ctx, inter, args.verbosity)
+    initial_peers = set()
+    for peer in args.peer:
+        ip, port = extract_ip_and_port_from_ipv6_address(peer)
+        initial_peers.add(Peer(ip=ip_addr.from_string(ip), port=port))
 
-    if args.peer:
-        peer = Peer(ip=ip_addr.from_string(args.peer), port=args.peer_port)
-        service.merge_peers([peer])
-        service.single_pass()
-    elif args.service:  # this will run forever
+    service = frontier_service(ctx, inter, args.verbosity, initial_peers=initial_peers)
+
+    if args.service:  # this will run forever
         if args.forever:
             service.start_service()
         else:
