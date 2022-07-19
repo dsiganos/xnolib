@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import copy
+import re
+
 import requests
 import json
 import argparse
-from typing import List, Dict
+from typing import Dict, List, Set
 
 import peercrawler
 import pynanocoin
 import acctools
 import constants
+from peer import Peer
 
 
 RPC_URL = "https://mynano.ninja/api/node"
@@ -200,6 +203,32 @@ def get_representatives(peer_service_url: str = None) -> Dict[str, Representativ
                     rep.voting = peer.is_voting
 
     return reps
+
+
+# noinspection PyUnboundLocalVariable
+def get_representatives_from_service(url: str, prs_only: bool = False) -> Set[Peer]:
+    representatives = requests.get(url).json()
+    peers = set()
+
+    if prs_only is True:
+        quorum = requests.get(url + "/network").json()
+        minimum_weight = int(quorum["online_stake_total"]) * 0.001
+
+    for representative in representatives.values():
+        if prs_only is True and int(representative["weight"]) < minimum_weight:
+            continue
+
+        address = representative["endpoint"]  # example: "[::ffff:94.130.238.161]:7075"
+        if address is None:
+            continue
+
+        ip_address = re.search(r"(?<=\[)(.*?)(?=\])", address).group(0)
+        port = int(address.split(":")[-1])
+        voting = representative["voting"]
+
+        peers.add(Peer(ip=pynanocoin.ip_addr.from_string(ip_address), port=port, is_voting=voting))
+
+    return peers
 
 
 def parse_args():
