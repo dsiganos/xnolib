@@ -225,9 +225,9 @@ class peer_manager:
             try:
                 s.connect((str(peer.ip), peer.port))
                 s.settimeout(10)
-            except OSError as error:
+            except OSError:
                 peer.score = 0
-                logger.log(_logger.VERBOSE, f"Failed to connect to peer {peer}", exc_info=True)
+                logger.debug(f"Failed to connect to peer {peer}", exc_info=True)
                 return []
 
             # connected to peer, do handshake followed by listening for the first keepalive
@@ -238,7 +238,7 @@ class peer_manager:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 peer_id = node_handshake_id.perform_handshake_exchange(self.ctx, s, signing_key, verifying_key)
                 peer.peer_id = peer_id
-                logger.debug(f"ID: {hexlify(peer_id)}")
+                logger.log(VERBOSE, f"Connected and handshaked to peer with ID {hexlify(peer_id)}")
 
                 if self.listening_address:
                     self.send_keepalive_packet(s)
@@ -275,10 +275,11 @@ class peer_manager:
         def crawl_peer(peer: Peer):
             # catch unexpected exceptions here otherwise they get lost/ignored due to ThreadPoolExecutor
             try:
-                logger.debug("Query %39s:%5s (score:%4s)" % ('[%s]' % p.ip, p.port, p.score))
-                self.add_peers(peer, self.get_peers_from_peer(peer))
+                logger.debug(f"Querying peer {peer}")
+                peers = self.get_peers_from_peer(peer)
+                self.add_peers(peer, peers)
             except Exception:
-                logger.error(f"Unexpected exception while crawling peer [{peer.ip}]:{peer.port}", exc_info=True, stack_info=True)
+                logger.error(f"Unexpected exception while crawling peer {peer}", exc_info=True, stack_info=True)
 
         with ThreadPoolExecutor(max_workers=max_workers) as t:
             for p in peers_copy:
@@ -290,16 +291,13 @@ class peer_manager:
         for peer in initial_peers:
             self.add_peers(peer, [])
 
-        self.crawl_once(max_workers)
-        logger.info(self)
-
-        count = 1
+        count = 0
         while forever:
-            if count > 5:  # for a faster startup, do not delay the first 5 times
+            if count > 4:  # for a faster startup, do not delay the first 5 times
                 time.sleep(delay)
 
             self.crawl_once(max_workers)
-            logger.info(self)
+            logger.log(VERBOSE, self)
             count += 1
 
     # noinspection PyUnresolvedReferences
