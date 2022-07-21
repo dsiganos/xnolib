@@ -192,7 +192,6 @@ def confirm_block(ctx: dict, block, s: socket.socket) -> bool:
     s.sendall(req.serialise())
 
     resp = search_for_response(s, req)
-    print(resp)
 
     if resp is None:
         return False
