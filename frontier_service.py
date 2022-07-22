@@ -3,82 +3,90 @@
 from __future__ import annotations
 
 import argparse
-import copy
+import itertools
 import sys
 import time
 import lmdb
 import threading
 import frontier_request
 import peercrawler
-import mysql.connector
 from abc import ABC, abstractmethod
-from typing import Set
+from typing import Collection, Iterable, Iterator, Set
 
+from mysql.connector.pooling import MySQLConnectionPool
+
+import representatives
 from _logger import get_logger, get_logging_level_from_int, VERBOSE, setup_logger
 from args import add_network_switcher_args
 from sql_utils import *
 from pynanocoin import *
 from peer import Peer
+from peer_set import peer_set
 
 
 logger = get_logger()
 
 
 class frontier_service:
-    def __init__(self, ctx, interface, verbosity = 0):
+    def __init__(self, ctx, interface, verbosity=0, initial_peers: Iterable[Peer] = None):
         assert isinstance(interface, frontier_database)
         self.ctx = ctx
         self.database_interface: frontier_database = interface
         self.verbosity = verbosity
-        self.peers: Set[Peer] = set()
+        self.peers: Set[Peer] = peer_set()
         self.blacklist = blacklist_manager(Peer, 1800)
 
+        if initial_peers:
+            self.merge_peers(initial_peers)
+
     def start_service(self, addr='::', port=7080) -> None:
-        def incoming_connection_handler(sock: socket.socket):
-            try:
-                self.comm_thread(sock)
-            finally:
-                semaphore.release()
+        self.run()
 
-        # start the frontier request thread
-        threading.Thread(target=self.run, daemon=True).start()
+        # TODO broken
+        # def incoming_connection_handler(sock: socket.socket):
+        #     try:
+        #         self.comm_thread(sock)
+        #     finally:
+        #         semaphore.release()
+        #
+        # # start the frontier request thread
+        # threading.Thread(target=self.run, daemon=True).start()
+        #
+        # with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+        #     s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        #     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #     s.bind((addr, port))
+        #
+        #     s.listen()
+        #
+        #     semaphore = threading.BoundedSemaphore(8)
+        #     while True:
+        #         semaphore.acquire()
+        #
+        #         conn, addr = s.accept()
+        #         logger.debug(f"Receiving connection from {addr}")
+        #
+        #         conn.settimeout(60)
+        #         threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
 
-        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((addr, port))
-
-            s.listen()
-
-            semaphore = threading.BoundedSemaphore(8)
-            while True:
-                semaphore.acquire()
-
-                conn, addr = s.accept()
-                conn.settimeout(60)
-                threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
-
-    def comm_thread(self, s) -> None:
-        with s:
-            s.settimeout(10)
-
-            data = s.recv(33)
-            c_packet = client_packet.parse(data)
-            if c_packet.is_all_zero():
-                frontiers = self.database_interface.get_all()
-                s_packet = server_packet(frontiers)
-                s.sendall(s_packet.serialise())
-                return
-
-            else:
-                frontier = self.database_interface.get_frontier(c_packet.account)
-                s_packet = server_packet([frontier])
-                s.sendall(s_packet.serialise())
+    # def comm_thread(self, s: socket.socket) -> None:
+    #     with s:
+    #         data = s.recv(33)
+    #         c_packet = client_packet.parse(data)
+    #         if c_packet.is_all_zero():
+    #             frontiers = self.database_interface.get_all()
+    #             s_packet = server_packet(frontiers)
+    #             s.sendall(s_packet.serialise())
+    #             return
+    #
+    #         else:
+    #             frontier = self.database_interface.get_frontier(c_packet.account)
+    #             s_packet = server_packet([frontier])
+    #             s.sendall(s_packet.serialise())
 
     def fetch_peers(self) -> None:
-        peers = peercrawler.get_peers_from_service(self.ctx)
-        peers = list(filter(lambda p: p.score >= 1000 and p.ip.is_ipv4(), peers))
-        assert peers
+        peers = representatives.get_representatives_from_service(self.ctx["repservurl"], prs_only=True)
+        logger.debug(f"Fetched {len(peers)} from the peer service")
         self.merge_peers(peers)
 
     def run(self) -> None:
@@ -89,7 +97,7 @@ class frontier_service:
     def single_pass(self) -> None:
         for p in self.peers:
             try:
-                logger.debug(f"Fetching frontiers from peer {p}")
+                logger.info(f"Fetching frontiers from peer {p}")
                 self.manage_peer_frontiers(p)
             except (ConnectionRefusedError, socket.timeout, PyNanoCoinException, FrontierServiceSlowPeer) as exception:
                 p.deduct_score(200)
@@ -118,17 +126,6 @@ class frontier_service:
             except StopIteration:
                 return
 
-    # Function which will query all accounts with different frontier hashes
-    # def find_accounts_different_hashes(self):
-    #     fetched_records = []
-    #
-    #     query_accounts_different_hashes(self.cursor)
-    #
-    #     for record in self.cursor.fetchall():
-    #         fetched_records.append(record[0])
-    #
-    #     return fetched_records
-    #
     # def get_all_records(self):
     #     records = []
     #
@@ -141,7 +138,7 @@ class frontier_service:
     def count_frontiers(self) -> int:
         return self.database_interface.count_frontiers()
 
-    def merge_peers(self, peers) -> None:
+    def merge_peers(self, peers: Iterable[Peer]) -> None:
         for p in peers:
             if not self.blacklist.is_blacklisted(p) and p not in self.peers:
                 self.peers.add(p)
@@ -228,38 +225,50 @@ class server_packet:
 
 class frontier_database(ABC):
     @abstractmethod
-    def add_frontier(self, frontier, peer) -> None:
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def remove_frontier(self, frontier, peer) -> None:
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_frontier(self, account) -> tuple[str, str]:
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_all(self) -> list:
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_all(self) -> Iterator[frontier_request.frontier_entry]:
         raise NotImplementedError()
 
     @abstractmethod
     def count_frontiers(self) -> int:
         raise NotImplementedError()
 
+    @abstractmethod
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        """Finds all the accounts which have more than one known frontier hash. Might take a long time to process."""
+        raise NotImplementedError()
+
 
 class my_sql_db(frontier_database):
     BATCH_SIZE = 1024
 
-    def __init__(self, cursor, db):
-        self.cursor = cursor
-        self.db = db
+    def __init__(self, database_connection_pool: MySQLConnectionPool):
         self.peers_stored = []
 
+        self.__connection_pool = database_connection_pool
         self.__cache = []
         self.__cache_lock = threading.Lock()
 
-    def add_frontier(self, frontier, peer) -> None:
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         if peer not in self.peers_stored:
             self.add_peer_to_db(peer)
             self.peers_stored.append(peer)
@@ -275,28 +284,71 @@ class my_sql_db(frontier_database):
         query = f"INSERT INTO Frontiers(peer_id, account_hash, frontier_hash) VALUES {', '.join(self.__cache)} ON DUPLICATE KEY UPDATE frontier_hash = VALUES(frontier_hash)"
         self.__cache.clear()
 
-        self.cursor.execute(query)
-        self.db.commit()
+        with self.__connection_pool.get_connection() as database:
+            database.cursor().execute(query)
+            database.commit()
 
-    def get_frontier(self, account) -> tuple[str, str]:
-        query = 'SELECT (account_hash, frontier_hash) FROM Frontiers WHERE account_hash = "%s"' % hexlify(account)
-        self.cursor.execute(query)
-        return self.cursor.fetchone()
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute("""
+            SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+            FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
+            """, {"account_hash": hexlify(account_hash)})
+            entry = cursor.fetchone()
 
-    def remove_frontier(self, frontier, peer) -> None:
-        self.remove_peer_data(peer)
+        if entry is None:
+            return None
 
-        self.cursor.execute("DELETE FROM Frontiers WHERE account  = '%s'")
+        peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
+        return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
+
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute("""
+            SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+            FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id
+            WHERE f.account_hash = %(account_hash)s AND f.peer_id = %(peer_id)s
+            """, {"account_hash": hexlify(account_hash), "peer_id": hexlify(peer.serialise())})
+            entry = cursor.fetchone()
+
+        if entry is None:
+            return None
+
+        peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
+        return frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
+
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute("""
+                    SELECT f.frontier_hash, f.account_hash, p.ip_address, p.port
+                    FROM Frontiers AS f INNER JOIN Peers AS p ON f.peer_id = p.peer_id AND f.account_hash = %(account_hash)s
+                    """, {"account_hash": hexlify(account_hash)})
+            entries = cursor.fetchall()
+
+        result = set()
+        for entry in entries:
+            peer = Peer(ip=ip_addr.from_string(entry[2]), port=entry[3])
+            database_entry = frontier_database_entry(peer=peer, frontier_hash=bytes.fromhex(entry[0]), account_hash=bytes.fromhex(entry[1]))
+            result.add(database_entry)
+
+        return result
+
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
+        with self.__connection_pool.get_connection() as database:
+            database.cursor().execute("DELETE FROM Frontiers WHERE account_hash = %(account_hash)s AND peer_id = %(peer_id)s",
+                                      {"account_hash": hexlify(frontier.account), "peer_id": hexlify(peer.serialise())})
+            database.commit()
 
     def count_frontiers(self) -> int:
-        query = "SELECT COUNT(*) from Frontiers;"
-        self.cursor.execute(query)
-        return self.cursor.fetchone()[0]
+        query = "SELECT COUNT(*) from Frontiers"
 
-    def remove_peer_data(self, p) -> None:
-        self.cursor.execute("DELETE FROM Frontiers WHERE peer_id = '%s'" % hexlify(p.serialise()))
-        self.cursor.execute("DELETE FROM Peers WHERE peer_id = '%s'" % hexlify(p.serialise()))
-        self.db.commit()
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            cursor.execute(query)
+            return cursor.fetchone()[0]
 
     def add_peer_to_db(self, peer) -> None:
         query = "INSERT INTO Peers(peer_id, ip_address, port, score) "
@@ -305,56 +357,120 @@ class my_sql_db(frontier_database):
 
         logger.info(f"Adding new peer to database: {peer}")
 
-        self.cursor.execute(query)
-        self.db.commit()
+        with self.__connection_pool.get_connection() as database:
+            database.cursor().execute(query)
+            database.commit()
 
-    def get_all(self) -> list:
-        raise NotImplementedError()
+    def get_all(self) -> Iterator[frontier_request.frontier_entry]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor(buffered=False)
+            cursor.execute("""SELECT account_hash, frontier_hash FROM Frontiers GROUP BY account_hash""")
+            while True:
+                cache = cursor.fetchmany(size=64)
+                cache = [frontier_request.frontier_entry(account=bytes.fromhex(f[0]), frontier_hash=bytes.fromhex(f[1])) for f in cache]
+                for c in cache:
+                    yield c
+
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        with self.__connection_pool.get_connection() as database:
+            cursor = database.cursor()
+            accounts = query_accounts_different_hashes(cursor).fetchall()
+
+        accounts_flattened = itertools.chain.from_iterable(accounts)
+        return set([bytes.fromhex(account) for account in accounts_flattened])
 
 
 class store_in_ram_interface(frontier_database):
     def __init__(self):
-        self.__frontiers = []
+        self.__frontiers: Set[frontier_database_entry] = set()
+        self.__mutex = threading.Lock()
 
-    def add_frontier(self, frontier, peer) -> None:
-        existing_front = self.get_frontier(frontier.account)
-        if existing_front is not None:
-            existing_front.frontier_hash = frontier.frontier_hash
-            logger.info("Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
-        else:
-            self.__frontiers.append(frontier)
-            logger.info("Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
+        with self.__mutex:
+            existing_frontier_entry = self.__find_specific(peer, frontier.account)
+            if existing_frontier_entry is not None:
+                existing_frontier_entry.frontier_hash = frontier.frontier_hash
+                logger.log(VERBOSE, "Updated %s accounts frontier to %s" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
+            else:
+                entry = frontier_database_entry(peer=peer, frontier_hash=frontier.frontier_hash, account_hash=frontier.account)
+                self.__frontiers.add(entry)
+                logger.log(VERBOSE, "Added %s accounts frontier %s " % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
 
-    def remove_frontier(self, frontier, peer) -> None:
-        existing_front = self.get_frontier(frontier.account)
-        if existing_front is not None:
-            self.__frontiers.remove(existing_front)
-            logger.info("Removed the following frontier from list %s" % str(existing_front))
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
+        with self.__mutex:
+            existing_frontier_entry = self.__find_specific(peer, frontier.account)
+            if existing_frontier_entry is not None:
+                self.__frontiers.remove(existing_frontier_entry)
+                logger.log(VERBOSE, "Removed the following frontier from list %s" % str(existing_frontier_entry))
 
-    def get_frontier(self, account):
-        for f in self.__frontiers:
-            if f.account == account:
-                return f
-        return None
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
+        with self.__mutex:
+            for f in self.__frontiers:
+                if f.account_hash == account_hash:
+                    return f
+
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        with self.__mutex:
+            for f in self.__frontiers:
+                if f.account_hash == account_hash and f.peer == peer:
+                    return f
+
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
+        result = set()
+        with self.__mutex:
+            for f in self.__frontiers:
+                if f.account_hash == account_hash:
+                    result.add(f)
+
+        return result
 
     def count_frontiers(self) -> int:
-        return len(self.__frontiers)
+        with self.__mutex:
+            return len(self.__frontiers)
 
-    def get_all(self):
-        return copy.copy(self.__frontiers)
+    def get_all(self) -> Iterator[frontier_request.frontier_entry]:
+        # make shallow copy of the frontiers set, to avoid it changing size during iteration (temporary)
+        with self.__mutex:
+            frontiers = self.__frontiers.copy()
 
-    def __str__(self):
-        string = "--- Frontiers in RAM ---\n"
+        sent_accounts: Set[bytes] = set()
+        for f in frontiers:
+            account = f.account_hash
+            if account not in sent_accounts:
+                sent_accounts.add(account)
+                yield frontier_request.frontier_entry(account=account, frontier_hash=f.frontier_hash)
+
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        # make shallow copy of the frontiers set, to avoid it changing size during iteration (temporary)
+        with self.__mutex:
+            frontiers = self.__frontiers.copy()
+
+        accounts: Set[bytes] = set()
+        for f1 in frontiers:
+            account_hash = f1.account_hash
+            frontier_hash = f1.frontier_hash
+
+            if account_hash in accounts:
+                continue
+
+            for f2 in frontiers:
+                if f1 is not f2 and f2.account_hash == account_hash and f2.frontier_hash != frontier_hash:
+                    accounts.add(account_hash)
+                    break
+
+        return accounts
+
+    def __find_specific(self, peer: Peer, account_hash: bytes) -> frontier_database_entry:
         for f in self.__frontiers:
-            string += "acc: %s   front: %s\n" % (hexlify(f.account), hexlify(f.frontier_hash))
-        return string
+            if f.peer == peer and f.account_hash == account_hash:
+                return f
 
 
 class store_in_lmdb(frontier_database):
     def __init__(self, file_name: str = "frontiers_db"):
         self.lmdb_env = self.get_lmdb_env(file_name)
 
-    def add_frontier(self, frontier, peer):
+    def add_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer):
         with self.lmdb_env.begin(write=True) as tx:
             tx.put(frontier.account, frontier.frontier_hash)
             logger.info("Added values %s, %s to lmdb" % (hexlify(frontier.account), hexlify(frontier.frontier_hash)))
@@ -364,10 +480,13 @@ class store_in_lmdb(frontier_database):
         os.makedirs('frontier_lmdb_databases', exist_ok=True)
         return lmdb.open('frontier_lmdb_databases/' + name, subdir=False, max_dbs=10000, map_size=(10 * 1000 * 1000 * 1000))
 
-    def get_frontier(self, account):
+    def get_frontier(self, account_hash: bytes) -> Optional[frontier_database_entry]:
         with self.lmdb_env.begin(write=False) as tx:
-            front_hash = tx.get(account)
-            return frontier_request.frontier_entry(account, front_hash)
+            front_hash = tx.get(account_hash)
+            return frontier_request.frontier_entry(account_hash, front_hash)
+
+    def get_frontier_from_peer(self, account_hash: bytes, peer: Peer) -> Optional[frontier_database_entry]:
+        raise NotImplementedError()
 
     def get_all(self):
         with self.lmdb_env.begin(write=False) as tx:
@@ -377,11 +496,27 @@ class store_in_lmdb(frontier_database):
                 frontiers.append(front)
         return frontiers
 
-    def remove_frontier(self, frontier, peer) -> None:
+    def get_all_frontiers_for_account(self, account_hash: bytes) -> Set[frontier_database_entry]:
+        raise NotImplementedError()
+
+    def remove_frontier(self, frontier: frontier_request.frontier_entry, peer: Peer) -> None:
         raise NotImplementedError()
 
     def count_frontiers(self) -> int:
         raise NotImplementedError()
+
+    def find_accounts_with_different_hashes(self) -> Set[bytes]:
+        raise NotImplementedError()
+
+
+class frontier_database_entry:
+    def __init__(self, peer: Peer, frontier_hash: bytes, account_hash: bytes):
+        self.peer: Peer = peer
+        self.frontier_hash: bytes = frontier_hash
+        self.account_hash: bytes = account_hash
+
+    def __str__(self):
+        return f"frontier_hash:{hexlify(self.frontier_hash)} account_hash:{hexlify(self.account_hash)} peer:{self.peer}"
 
 
 class blacklist_entry:
@@ -485,7 +620,7 @@ def parse_args():
                         help='verbosity for the peercrawler')
 
     parser.add_argument('--rmdb', action='store_true', default=False,
-                        help='determines whether the frontier service tables should be reset')
+                        help='drops the MySQL database and exits')
     parser.add_argument('--db', type=str, default=None,
                         help='the name of the database that will be either created or connected to')
     parser.add_argument('-u', '--username', type=str, default='root',
@@ -495,10 +630,8 @@ def parse_args():
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='the ip of the sql server')
 
-    parser.add_argument('--peer', type=str, default=None,
-                        help='the ip address of the single peer which the service will connect to')
-    parser.add_argument('--peer-port', type=int, default=7075,
-                        help='the port of the single peer which the service will connect to')
+    parser.add_argument('--peer', action="append", default=[],
+                        help='also connect to this peer, address should be provided in the following format: [2001:db8::1]:80')
 
     parser.add_argument('-D', '--differences', action='store_true', default=False,
                         help='If you want the service to get differences or not')
@@ -589,53 +722,49 @@ def main():
     if args.db is None:
         args.db = db_name
 
-    if args.rmdb:  # drop database and exit program
-        db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
-        db.cursor().execute(f"DROP DATABASE {args.db}")
-        sys.exit(0)
+    # if args.rmdb:  # drop database and exit program
+    #     db = setup_db_connection(host=args.host, user=args.username, password=args.password)
+    #     db.cursor().execute(f"DROP DATABASE {args.db}")
+    #     sys.exit(0)
 
     if args.ram:
-        inter = store_in_ram_interface()
+        database_interface = store_in_ram_interface()
     elif args.lmdb:
-        inter = store_in_lmdb(file_name=args.db)
-
+        database_interface = store_in_lmdb(file_name=args.db)
     else:
-        try:
-            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
-            cursor = db.cursor()
-            inter = my_sql_db(cursor, db)
-        except mysql.connector.errors.ProgrammingError:
-            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password)
-            create_new_database(db.cursor(), name=args.db)
-            create_db_structure_frontier_service(db.cursor())
-            db.close()
-            db = setup_db_connection(host=args.host, user=args.username, passwd=args.password, db=args.db)
-            cursor = db.cursor()
-            inter = my_sql_db(cursor, db)
+        connection_pool = MySQLConnectionPool(pool_name="mypool", pool_size=8, host=args.host, user=args.username, passwd=args.password, auth_plugin='mysql_native_password')
 
-    service = frontier_service(ctx, inter, args.verbosity)
+        with connection_pool.get_connection() as database:
+            cursor = database.cursor()
 
-    if args.peer:
-        peer = Peer(ip=ip_addr.from_string(args.peer), port=args.peer_port)
-        service.merge_peers([peer])
-        service.single_pass()
-    elif args.service:  # this will run forever
+            if args.rmdb:
+                cursor.execute(f"DROP DATABASE {args.db}")
+                sys.exit(0)
+
+            create_new_database(cursor, args.db)
+            create_db_structure_frontier_service(cursor)
+            database.commit()
+
+        connection_pool.set_config(database=args.db)
+        database_interface = my_sql_db(connection_pool)
+
+    initial_peers = set()
+    for peer in args.peer:
+        ip, port = extract_ip_and_port_from_ipv6_address(peer)
+        initial_peers.add(Peer(ip=ip_addr.from_string(ip), port=port))
+
+    service = frontier_service(ctx, database_interface, args.verbosity, initial_peers=initial_peers)
+
+    if args.service:
         if args.forever:
             service.start_service()
         else:
             service.fetch_peers()
             service.single_pass()
-
-    # This is a piece of code which can find accounts with different frontier hashes
-    # if args.differences:
-    #     records = frontserv.find_accounts_different_hashes()
-    #     for rec in records:
-    #         print(rec)
-    #
-    # if args.dumpdb:
-    #     records = frontserv.get_all_records()
-    #     for rec in records:
-    #         print(rec)
+    elif args.differences:
+        records = database_interface.find_accounts_with_different_hashes()
+        for record in records:
+            print(hexlify(record))
 
 
 if __name__ == "__main__":
