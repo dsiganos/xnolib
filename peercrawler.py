@@ -177,8 +177,10 @@ class peer_manager:
             telemetry_request = telemetry_req.telemetry_req(ctx)
             connection.sendall(telemetry_request.serialise())
 
-            block = ctx["genesis_block"]
-            confirm_request = confirm_req.confirm_req_block(message_header(ctx['net_id'], [18, 18, 18], message_type(4), 0), block)
+            hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.confirm_req), 0)
+            pairs = [ common.hash_pair(ctx["genesis_block"].hash(), ctx["genesis_block"].root()) ]
+            confirm_request = confirm_req.confirm_req_hash(hdr, pairs)
+
             connection.sendall(confirm_request.serialise())
 
         else:
