@@ -233,26 +233,16 @@ def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket) 
     return resp is not None
 
 
-def confirm_req_peer(ctx: dict, block, pair: hash_pair, peeraddr: str = None, peerport: int = None) -> bool:
-    assert (pair is None if block is not None else pair is not None)
-
-    s = get_connected_socket_endpoint(peeraddr, peerport)
-    with s:
-
+def confirm_req_peer(ctx: dict, pair: hash_pair, peeraddr: str = None, peerport: int = None) -> bool:
+    assert pair is not None
+    with get_connected_socket_endpoint(peeraddr, peerport) as s:
         signing_key, verifying_key = node_handshake_id.keypair()
         node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
         print('handshake done')
-
         s.settimeout(10)
-        if pair is None:
-            print('Confirm Block')
-            outcome = confirm_block(ctx, block, s)
-            print('Finished with confirmed status: %s' % outcome)
-        else:
-            print('Confirm Hash')
-            outcome = confirm_blocks_by_hash(ctx, [pair], s)
-            print('Finished with confirmed status: %s' % outcome)
-
+        print('Confirm Hash')
+        outcome = confirm_blocks_by_hash(ctx, [pair], s)
+        print('Finished with confirmed status: %s' % outcome)
         return outcome
 
 
@@ -279,7 +269,7 @@ def main() -> None:
         else:
             pair = common.hash_pair(binascii.unhexlify(raw_pair[0]), binascii.unhexlify(raw_pair[1]))
     else:
-        block = ctx['genesis_block']
+        pair = common.hash_pair(ctx['genesis_block'].hash(), ctx['genesis_block'].root())
 
     if args.peer is not None:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
@@ -290,22 +280,20 @@ def main() -> None:
         peerport = peer.port
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
-    confirm_req_peer(ctx, block, pair, peeraddr=peeraddr, peerport=peerport)
+    confirm_req_peer(ctx, pair, peeraddr=peeraddr, peerport=peerport)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-
-    group1 = parser.add_mutually_exclusive_group(required=True)
-    group1.add_argument('-B', '--block', action='store_true', default=False)
-    group1.add_argument('-H', '--hash', type=str, default=None,
-                        help='hash or hash-root pair in the form hash:root')
 
     group2 = parser.add_mutually_exclusive_group()
     group2.add_argument('-b', '--beta', action='store_true', default=False,
                         help='use beta network')
     group2.add_argument('-t', '--test', action='store_true', default=False,
                         help='use test network')
+
+    parser.add_argument('-H', '--hash', type=str,
+                        help='hash or hash-root pair in the form hash:root')
 
     parser.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
