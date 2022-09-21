@@ -296,44 +296,6 @@ class message_keepalive:
         return keepalive.serialise()
 
 
-class message_bulk_pull:
-    def __init__(self, hdr: message_header, start: str, finish: str = None, count: int = None):
-        self.header = hdr
-        self.count = count
-        self.public_key = binascii.unhexlify(start)
-        if finish is not None:
-            self.finish = binascii.unhexlify(finish)
-        else:
-            self.finish = (0).to_bytes(32, "big")
-        if count is not None:
-            assert(hdr.ext == 1)
-
-    def serialise(self) -> bytes:
-        data = self.header.serialise_header()
-        data += self.public_key
-        data += self.finish
-        if self.count is not None:
-            data += self.generate_extended_params()
-        return data
-
-    @classmethod
-    def parse(cls, hdr: message_header, data: bytes):
-        public_key = data[0:32]
-        finish = data[32:64]
-        bp = message_bulk_pull(hdr, public_key, finish)
-        if hdr.ext == 1:
-            count = data[66:]
-            bp = message_bulk_pull(hdr, public_key, finish, count=count)
-        return bp
-
-    def generate_extended_params(self) -> bytes:
-        assert(self.count is not None)
-        data = (0).to_bytes(1, "big")
-        data += self.count.to_bytes(4, "little")
-        data += (0).to_bytes(3, "big")
-        return data
-
-
 class bulk_push:
     def __init__(self, hdr: message_header, blocks: list):
         self.hdr = hdr
@@ -969,18 +931,6 @@ def get_next_hdr_payload(s: socket.socket) -> tuple[message_header, bytes]:
     # read and parse payload
     data = read_socket(s, size)
     return header, data
-
-
-def get_account_blocks(ctx: dict, s: socket.socket, account: bytes, no_of_blocks: int = None):
-    if no_of_blocks is None:
-        hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 0)
-    else:
-        hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(6), 1)
-    if isinstance(account, bytes):
-        account = hexlify(account)
-    bulk_pull = message_bulk_pull(hdr, account, count=no_of_blocks)
-    s.sendall(bulk_pull.serialise())
-    return read_bulk_pull_response(s)
 
 
 def extensions_to_count(extensions: int) -> int:

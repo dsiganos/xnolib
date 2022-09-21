@@ -2,8 +2,10 @@
 import random
 import socket
 import argparse
+import binascii
 
 from peercrawler import get_random_peer
+from bulk_pull import get_account_blocks
 from pynanocoin import *
 
 def parse_args():
@@ -29,12 +31,13 @@ def main():
     if args.beta: ctx = betactx
     if args.test: ctx = testctx
 
-    account = ctx["genesis_pub"]
+    start = ctx["genesis_pub"]
     if args.account is not None:
         if len(args.account) == 64:
-            account = args.account
+            start = args.account
         else:
-            account = acctools.account_key(args.account).hex()
+            start = acctools.account_key(args.account).hex()
+    start = binascii.unhexlify(start)
 
     if args.peer:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
@@ -44,7 +47,7 @@ def main():
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
-        blocks = get_account_blocks(ctx, s, account)
+        blocks = get_account_blocks(ctx, s, start)
 
         blockman = block_manager(ctx, None, None)
         blocks_pulled = len(blocks)
