@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
 # Read a block from stdin and validate its signature and proof of work.
 # Currently only json format is supported

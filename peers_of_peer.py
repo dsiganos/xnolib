@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
 # This script is a way to discover the peers of a remote node.
 # This script connects to a peer repeadedly to get a keepalive packet.

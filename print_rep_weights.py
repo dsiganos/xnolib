@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
 # script to print the rep weights captured by the script record_rep_weights.py
 
