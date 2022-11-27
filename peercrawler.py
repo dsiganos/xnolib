@@ -341,7 +341,8 @@ class peer_manager:
         good = reduce(lambda c, p: c + int(p.score >= 1000), peers, 0)
         s = '---------- Start of Manager peers (%s peers, %s good) ----------\n' % (len(peers), good)
         for p in peers:
-            s += self.peer_to_string(p)
+            if p.score >= 1000:
+                s += self.peer_to_string(p)
         s += '---------- End of Manager peers (%s peers, %s good) ----------' % (len(peers), good)
 
         return s
