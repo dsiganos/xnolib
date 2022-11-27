@@ -15,6 +15,7 @@ from copy import deepcopy
 import requests
 from pydot import Dot, Node, Edge
 
+import common
 import _logger
 import confirm_req
 import jsonencoder
