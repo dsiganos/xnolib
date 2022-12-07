@@ -27,11 +27,13 @@ class block_type_enum:
 
 def block_length_by_type(blktype: int) -> int:
     lengths = {
-        2: 152,
-        3: 136,
-        4: 168,
-        5: 136,
-        6: 216
+        block_type_enum.invalid:     0,
+        block_type_enum.not_a_block: 0,
+        block_type_enum.send:        152,
+        block_type_enum.receive:     136,
+        block_type_enum.open:        168,
+        block_type_enum.change:      136,
+        block_type_enum.state:       216
     }
     return lengths[blktype]
 
@@ -82,6 +84,32 @@ class Block:
             print('received unknown block type %s' % int.from_bytes(block_type, 'big'))
 
         return block
+
+    @classmethod
+    def parse_type_and_block_from_bytes(cls, data: bytes):
+        ''' Read a block from a byte buffer, the buffer can have more data that the block '''
+        assert len(data) > 0
+        block = None
+        blen = block_length_by_type(data[0])
+
+        if data[0] == block_type_enum.send:
+            block = block_send.parse(data[1:blen+1])
+        elif data[0] == block_type_enum.receive:
+            block = block_receive.parse(data[1:blen+1])
+        elif data[0] == block_type_enum.open:
+            block = block_open.parse(data[1:blen+1])
+        elif data[0] == block_type_enum.change:
+            block = block_change.parse(data[1:blen+1])
+        elif data[0] == block_type_enum.state:
+            block = block_state.parse(data[1:blen+1])
+        elif data[0] == block_type_enum.not_a_block:
+            pass
+        else:
+            raise PyNanoCoinException('unknown block type: 0x%x' % data[0])
+
+        bytes_consumed = blen + 1
+        return block, bytes_consumed
+
 
 class block_send:
     def __init__(self, prev: bytes, dest: bytes, bal: int, sig: bytes, work: int):

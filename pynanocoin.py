@@ -68,6 +68,9 @@ class message_type_enum:
     bulk_pull_account = 0x0b
     telemetry_req = 0x0c
     telemetry_ack = 0x0d
+    asc_pull_req = 0x0e
+    asc_pull_ack = 0x0f
+    max = 0x0f
 
 
 def message_type_enum_to_str(msg_type: int):
@@ -96,7 +99,7 @@ class network_id:
 
 class message_type:
     def __init__(self, num: int) -> None:
-        if not (num in range(0, 14)):
+        if not (num in range(0, message_type_enum.max + 1)):
              raise ParseErrorBadMessageType()
         self.type = num
 
@@ -223,6 +226,12 @@ class message_header:
 
         elif self.msg_type == message_type(message_type_enum.telemetry_ack):
             return self.telemetry_ack_size()
+
+        elif self.msg_type == message_type(message_type_enum.asc_pull_req):
+            return 1 + 8 + self.ext
+
+        elif self.msg_type == message_type(message_type_enum.asc_pull_ack):
+            return 1 + 8 + self.ext
 
         else:
             logger.debug(f"Unknown message type: {self.msg_type}")
