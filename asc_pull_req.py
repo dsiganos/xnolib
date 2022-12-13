@@ -15,6 +15,20 @@ from peercrawler import *
 import confirm_ack
 
 
+class asc_hash_type:
+	account = 0
+	block  = 1
+
+
+def hash_type_to_string(t: asc_hash_type):
+    if t == asc_hash_type.block:
+        return 'block'
+    elif t == asc_hash_type.account:
+        return 'account'
+    else:
+        return 'unknown'
+
+
 class asc_pull_type:
 	invalid = 0
 	blocks = 1
@@ -48,33 +62,37 @@ class asc_pull_req:
 
 class asc_pull_req_account_info(asc_pull_req):
 
-    def __init__(self, hdr: message_header, hash_or_acc: bytes):
+    def __init__(self, hdr: message_header, start: bytes, start_type: asc_hash_type):
         super().__init__(hdr)
-        self.hdr.ext = 32
+        self.hdr.ext = 33
         self.type = asc_pull_type.account_info
         self.id = 0
-        self.hash_or_acc = hash_or_acc
+        self.start = start
+        self.start_type = start_type
 
     def serialise(self) -> bytes:
         data = super().serialise()
-        data += self.hash_or_acc
+        data += self.start
+        data += self.start_type.to_bytes(1, "big")
         return data
 
 
 class asc_pull_req_blocks(asc_pull_req):
 
-    def __init__(self, hdr: message_header, hash_or_acc: bytes, count: int):
+    def __init__(self, hdr: message_header, start: bytes, count: int, start_type: asc_hash_type):
         super().__init__(hdr)
-        self.hdr.ext = 33
+        self.hdr.ext = 34
         self.type = asc_pull_type.blocks
         self.id = 0
-        self.hash_or_acc = hash_or_acc
+        self.start = start
         self.count = count
+        self.start_type = start_type
 
     def serialise(self) -> bytes:
         data = super().serialise()
-        data += self.hash_or_acc
+        data += self.start
         data += self.count.to_bytes(1, "big")
+        data += self.start_type.to_bytes(1, "big")
         return data
 
 
@@ -188,19 +206,19 @@ def read_asc_pull_acks(ctx: dict, s: socket.socket) -> bool:
     return asc_pull_ack.parse(hdr, data)
 
 
-def do_asc_pull_account_info(ctx: dict, s: socket.socket, start: bytes) -> bool:
+def do_asc_pull_account_info(ctx: dict, s: socket.socket, start: bytes, start_type: asc_hash_type) -> bool:
     hdr = message_header(ctx['net_id'], [19, 19, 18], message_type(message_type_enum.asc_pull_req), 0)
-    print('Requesting hash or account: %s' % hexlify(start))
-    req = asc_pull_req_account_info(hdr, start)
+    print('Requesting %s: %s' % (hash_type_to_string(start_type), hexlify(start)))
+    req = asc_pull_req_account_info(hdr, start, start_type)
     s.sendall(req.serialise())
     ack = read_asc_pull_acks(ctx, s)
     print(ack)
 
 
-def do_asc_pull_blocks(ctx: dict, s: socket.socket, start: bytes, count: int) -> bool:
+def do_asc_pull_blocks(ctx: dict, s: socket.socket, start: bytes, count: int, start_type: asc_hash_type) -> bool:
     hdr = message_header(ctx['net_id'], [19, 19, 18], message_type(message_type_enum.asc_pull_req), 0)
-    print('Requesting hash or account: %s count=%s' % (hexlify(start), count))
-    req = asc_pull_req_blocks(hdr, start, count)
+    print('Requesting %s: %s count=%s' % (hash_type_to_string(start_type), hexlify(start), count))
+    req = asc_pull_req_blocks(hdr, start, count, start_type)
     s.sendall(req.serialise())
     ack = read_asc_pull_acks(ctx, s)
     print(ack)
@@ -218,14 +236,22 @@ def main() -> None:
         peeraddr, peerport = parse_endpoint(args.peer, default_port=ctx['peerport'])
 
     else:
-        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.ip.is_ipv4() and p.telemetry and p.telemetry.protocol_ver >= 19)
+        peer = get_random_peer(ctx, lambda p: p.score >= 1000 and p.ip.is_ipv4() and p.telemetry and p.telemetry.protocol_ver >= 19 and p.telemetry.patch_ver >= 2)
         peeraddr = str(peer.ip)
         peerport = peer.port
 
-    if args.start is not None:
-        start = binascii.unhexlify(args.start)
+    if args.start_blkhash is not None:
+        start = binascii.unhexlify(args.start_blkhash)
+        start_type = asc_hash_type.block
+    elif args.start_account is not None:
+        if len(args.start_account) == 64:
+            start = binascii.unhexlify(args.start_account)
+        else:
+            start = acctools.account_key(args.start_account)
+        start_type = asc_hash_type.account
     else:
         start = binascii.unhexlify(ctx['genesis_pub'])
+        start_type = asc_hash_type.account
 
     print('Connecting to [%s]:%s' % (peeraddr, peerport))
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
@@ -235,9 +261,9 @@ def main() -> None:
         s.settimeout(10)
 
         if args.accinfo:
-            do_asc_pull_account_info(ctx, s, start)
+            do_asc_pull_account_info(ctx, s, start, start_type)
         else:
-            do_asc_pull_blocks(ctx, s, start, args.count)
+            do_asc_pull_blocks(ctx, s, start, args.count, start_type)
 
 
 def parse_args():
@@ -252,8 +278,11 @@ def parse_args():
     parser.add_argument('-p', '--peer',
                         help='peer to contact for frontiers (if not set, one is randomly selected using DNS)')
 
-    parser.add_argument('-s', '--start', type=str,
-                        help='hash or account to pull')
+    parser.add_argument('-H', '--start_blkhash', type=str,
+                        help='start is a block hash that identifies an account to pull')
+
+    parser.add_argument('-a', '--start_account', type=str,
+                        help='acount to pull')
 
     parser.add_argument('-i', '--accinfo', action='store_true', default=False,
                         help='request account info')
