@@ -1,0 +1,14 @@
+name: Unit test for confirm_req.py script
+on: push
+
+jobs:
+  build:
+    name: confirm_req_unit_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip3 install -r requirements.txt
+      - run: python3 -m unittest confirm_req.TestConfirmReq
