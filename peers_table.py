@@ -40,7 +40,7 @@ class PeersTable:
         data = ip_addr(ipaddr_str).serialise() + port.to_bytes(2, "big")
         assert len(data) == 18
 
-        with lmdb.open(self.filename, subdir=False, max_dbs=10000, map_size=10*1000*1000*1000) as env:
+        with lmdb.open(self.filename, subdir=False, max_dbs=10000, map_size=256*1000*1000*1000) as env:
             peers_db = env.open_db(b'peers')
             print('Adding peer [%s]:%s' % (ipaddr_str, port))
             with env.begin(write=True) as tx:
