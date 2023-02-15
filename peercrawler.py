@@ -17,11 +17,11 @@ from pydot import Dot, Node, Edge
 
 import common
 import _logger
-import confirm_req
 import jsonencoder
 import telemetry_req
 from args import add_network_switcher_args
 from msg_handshake import *
+import confirm_req
 from peer_set import peer_set
 from confirm_ack import confirm_ack
 from peer import Peer
