@@ -24,6 +24,7 @@ from block import *
 from net import *
 from common import *
 from peer import Peer, ip_addr
+from bulk_pull import message_bulk_pull
 
 logger = get_logger()
 
