@@ -8,46 +8,6 @@ from peercrawler import get_random_peer
 from pynanocoin import *
 
 
-class message_bulk_pull:
-    def __init__(self, ctx, start: str, end: str = None, count: int = None, ascending: bool = False):
-        self.hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(message_type_enum.bulk_pull), 0)
-        self.count = count
-        if count is not None:
-            self.hdr.ext |= 1
-        if ascending:
-            self.hdr.ext |= 2
-        self.start = start
-        if end is not None:
-            self.end = end
-        else:
-            self.end = (0).to_bytes(32, "big")
-
-    def serialise(self) -> bytes:
-        data = self.hdr.serialise_header()
-        data += self.start
-        data += self.end
-        if self.count is not None:
-            data += self.generate_extended_params()
-        return data
-
-    @classmethod
-    def parse(cls, hdr: message_header, data: bytes):
-        start = data[0:32]
-        end = data[32:64]
-        bp = message_bulk_pull(hdr, start, end)
-        if hdr.ext == 1:
-            count = data[66:]
-            bp = message_bulk_pull(hdr, start, end, count=count)
-        return bp
-
-    def generate_extended_params(self) -> bytes:
-        assert(self.count is not None)
-        data = (0).to_bytes(1, "big")
-        data += self.count.to_bytes(4, "little")
-        data += (0).to_bytes(3, "big")
-        return data
-
-
 def get_account_blocks(ctx: dict, s: socket.socket, start: bytes, no_of_blocks: int = None):
     bulk_pull = message_bulk_pull(ctx, start, count=no_of_blocks)
     s.sendall(bulk_pull.serialise())
