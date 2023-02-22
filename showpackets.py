@@ -14,7 +14,6 @@ from confirm_req import *
 from confirm_ack import confirm_ack
 from msg_publish import *
 from frontier_request import *
-from bulk_pull import message_bulk_pull
 from bulk_pull_account import *
 from telemetry_req import *
 import acctools
