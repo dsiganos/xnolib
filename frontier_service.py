@@ -53,10 +53,8 @@ class frontier_service:
             s.listen()
 
             semaphore = threading.BoundedSemaphore(8)
-            print("Listening for connections... ")
             while True:
                 semaphore.acquire()
-                print("waiting to accept...")
                 conn, addr = s.accept()
                 
                 conn.settimeout(60)
@@ -71,7 +69,6 @@ class frontier_service:
 
             while not self.ready:
                     time.sleep(0.01)
-
             if c_packet.is_all_zero():
                 frontiers = self.database_interface.get_all()
                 s_packet = server_packet(frontiers)
