@@ -67,8 +67,6 @@ class frontier_service:
             data = s.recv(33)
             c_packet = client_packet.parse(data)
 
-            while not self.ready:
-                    time.sleep(0.01)
             if c_packet.is_all_zero():
                 frontiers = self.database_interface.get_all()
                 s_packet = server_packet(frontiers)
