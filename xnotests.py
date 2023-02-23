@@ -671,10 +671,13 @@ class TestComms(unittest.TestCase):
         self.assertEqual(hs1, hs2)
 
     def test_frontier_service_client(self):
+        ctx = testctx
         inter = store_in_ram_interface()
-        frontserv = frontier_service(livectx, inter, 0)
+        frontserv = frontier_service(ctx, inter, 0)
         thread1 = threading.Thread(target=frontserv.start_service, daemon=True)
         thread1.start()
+        while not frontserv.ready:
+            time.sleep(0.01)
         s_packet = get_all_frontiers_packet_from_service()
         self.assertTrue(len(s_packet.frontiers) > 0)
 
