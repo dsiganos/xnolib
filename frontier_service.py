@@ -32,10 +32,12 @@ class frontier_service:
         self.verbosity = verbosity
         self.peers: Set[Peer] = set()
         self.blacklist = blacklist_manager(Peer, 1800)
+        self.ready = False
 
     def start_service(self, addr='::', port=7080) -> None:
         def incoming_connection_handler(sock: socket.socket):
             try:
+
                 self.comm_thread(sock)
             finally:
                 semaphore.release()
@@ -51,10 +53,12 @@ class frontier_service:
             s.listen()
 
             semaphore = threading.BoundedSemaphore(8)
+            print("Listening for connections... ")
             while True:
                 semaphore.acquire()
-
+                print("waiting to accept...")
                 conn, addr = s.accept()
+                
                 conn.settimeout(60)
                 threading.Thread(target=incoming_connection_handler, args=(conn,), daemon=True).start()
 
@@ -64,6 +68,10 @@ class frontier_service:
 
             data = s.recv(33)
             c_packet = client_packet.parse(data)
+
+            while not self.ready:
+                    time.sleep(0.01)
+
             if c_packet.is_all_zero():
                 frontiers = self.database_interface.get_all()
                 s_packet = server_packet(frontiers)
@@ -85,6 +93,8 @@ class frontier_service:
         while True:
             self.fetch_peers()
             self.single_pass()
+            if not self.ready:
+                self.ready = True
 
     def single_pass(self) -> None:
         for p in self.peers:
