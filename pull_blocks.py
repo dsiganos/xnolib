@@ -88,7 +88,7 @@ class TestPullBlocks(unittest.TestCase):
         ob = block_open(open_block['source'], open_block['rep'], open_block['account'], open_block['sign'],
                         open_block['work'])
 
-        account = ctx["genesis_pub"]
+        account = binascii.unhexlify(ctx["genesis_pub"])
         peeraddr = '::ffff:94.130.12.236'
         peerport = 7075
         with get_connected_socket_endpoint(peeraddr, peerport) as s:
