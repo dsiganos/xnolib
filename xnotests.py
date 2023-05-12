@@ -685,6 +685,26 @@ class TestComms(unittest.TestCase):
         peers = get_peers_from_service(ctx)
         self.assertTrue(len(peers) > 0)
 
+    def test_sign_block(self):
+        private_key = "9DFDAF721A0C3CEED3AC09E8667CDC073600B35E6E5A728816C0ABFCAFDC4D47"
+        account = "7668CEA16DEB0BC3E8D08E2B78BD105C213EBDB9189C0C895F0E5462D86FB6BC"
+        previous = "4E5004CA14899B8F9AABA7A76D010F73E6BAE54948912588B8C4FE0A3B558CA5"
+        representative = "E382DD09EC8CAFC2427CF817E9AFE1F372CE81085AB4FEB1F3DE1F25EE818E5D"
+        balance = 100000000000000000000000000
+        link = "7668CEB0C62FBC6BED2D5FB6B71DCE3D7D0588F86656E163A3387E01E4FF7826"
+        expected_signature = "92C3D9FD2C7E10F58E31C098F0815980B4D01776ACA75EE00E23777D09D973AB6BFA79A942A2688EE29C085AF3DA36A64741ECC4FC70E7ECBCCF6066C4BD160C"
+
+        _block = block_state(binascii.unhexlify(account),
+                             binascii.unhexlify(previous),
+                             binascii.unhexlify(representative),
+                             balance,
+                             binascii.unhexlify(link), None, 0)
+
+        private_key_bytes = binascii.unhexlify(private_key)
+        _block.sign(ed25519_blake2b.SigningKey(private_key_bytes))
+
+        self.assertTrue(_block.signature == binascii.unhexlify(expected_signature))
+
 
 if __name__ == '__main__':
     unittest.main()

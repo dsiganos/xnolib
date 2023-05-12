@@ -32,7 +32,7 @@ disclose data to an attacker.  We rely on Python's long-integer
 arithmetic, so we cannot handle secrets without risking their disclosure.
 """
 
-from pyblake2 import blake2b
+from hashlib import blake2b
 
 
 b = 256
