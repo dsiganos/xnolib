@@ -1,5 +1,5 @@
 import sys
-from pyblake2 import blake2b
+from hashlib import blake2b
 import ed25519_blake2
 from bitstring import BitArray
 
