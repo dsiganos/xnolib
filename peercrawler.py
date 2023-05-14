@@ -174,7 +174,7 @@ class peer_manager:
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
             incoming_peer.peer_id = handshake_exchange_server(ctx, connection, query, signing_key, verifying_key).account
-            logger.debug(f"Successful handshake from from {address}")
+            logger.debug(f"Successfully handshaked with incoming connection from {address}")
 
             telemetry_request = telemetry_req.telemetry_req(ctx)
             connection.sendall(telemetry_request.serialise())
