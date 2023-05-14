@@ -227,9 +227,11 @@ def parse_args():
                         help="verbosity level")
     parser.add_argument("-d", "--delay", type=int, default=300,
                         help="delay between crawls in seconds")
-    parser.add_argument('-l', '--listen', type=str, default=None,
-                        help='the public IP address of this machine; this address will be advertised in outgoing keepalive packets and the incoming connection listener will be enabled'
-                             'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
+    parser.add_argument("-l", "--listen", type=str, default=None,
+                        help="the public IP address of this machine; this address will be advertised in outgoing "
+                             "keepalive packets and the incoming connection listener will be enabled, "
+                             "works with both IPv4 and IPv6 addresses, if this argument isn't set no keepalive "
+                             "packets will be sent out and incoming connections will be ignored")
     parser.add_argument("-p", "--port", type=int, default=7777,
                         help="port to listen on for incoming requests from other peers in the network")
     parser.add_argument("--http-port", type=int, default=5001,
@@ -240,12 +242,12 @@ def parse_args():
                         help="how many seconds to wait between rendering the graph; this has no effect if the graph generation feature is not enabled")
     parser.add_argument("--graph-uncached", action="store_true", default=False,
                         help="enables the graph endpoint which serves rendered graphs on demand; this has no effect if the graph generation feature is not enabled")
-    parser.add_argument('--serialize', action='store_true', default=False,
-                        help='serialize the graph of peer connection to peer_connection_graph.json periodically')
-    parser.add_argument('--deserialize', type=str, default=None,
-                        help='deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler')
-    parser.add_argument('--rpc-url', type=str, default=None,
-                        help='the rpc server url to use when needed')
+    parser.add_argument("--serialize", action="store_true", default=False,
+                        help="serialize the graph of peer connection to peer_connection_graph.json periodically")
+    parser.add_argument("--deserialize", type=str, default=None,
+                        help="deserialize the graph of peer connection from the provided file and use it to initialize the peercrawler")
+    parser.add_argument("--rpc-url", type=str, default=None,
+                        help="the rpc server url to use when needed")
 
     return parser.parse_args()
 
