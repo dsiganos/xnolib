@@ -146,7 +146,7 @@ class peer_manager:
             if result:
                 self.add_peers(result[0], result[1])
         except (CommsError, SocketClosedByPeer):
-            logger.log(VERBOSE, f"Error in connection to peer {address}")
+            logger.log(_logger.VERBOSE, f"Error in connection to peer {address}")
         finally:
             semaphore.release()
             connection.close()
@@ -162,12 +162,13 @@ class peer_manager:
         try:
             header, payload = get_next_hdr_payload(connection)
         except UnknownPacketType as exception:
-            logger.log(VERBOSE, f"Received unknown packet type from {address}: {exception.message_type}")
+            logger.debug(f"Received unknown packet type from {address}: {exception.message_type}")
             return
 
         if header.msg_type == message_type(message_type_enum.node_id_handshake):
             if header.is_response():
-                logger.info(f"The first node ID handshake package received from {address} has the response flag set, connection is now closing")
+                logger.debug(f"First node ID handshake package received from {address} has the response flag set, "
+                             f"connection closing")
                 return
 
             query = handshake_query.parse_query(header, payload)
@@ -178,8 +179,8 @@ class peer_manager:
             telemetry_request = telemetry_req.telemetry_req(ctx)
             connection.sendall(telemetry_request.serialise())
 
-            hdr = message_header(ctx['net_id'], [18, 18, 18], message_type(message_type_enum.confirm_req), 0)
-            pairs = [ common.hash_pair(ctx["genesis_block"].hash(), ctx["genesis_block"].root()) ]
+            hdr = message_header(ctx["net_id"], [18, 18, 18], message_type(message_type_enum.confirm_req), 0)
+            pairs = [common.hash_pair(ctx["genesis_block"].hash(), ctx["genesis_block"].root())]
             confirm_request = confirm_req.confirm_req_hash(hdr, pairs)
 
             connection.sendall(confirm_request.serialise())
@@ -191,24 +192,24 @@ class peer_manager:
         start_time = time.time()
         while incoming_peer.telemetry is None or incoming_peer_peers is None or is_voting is False:
             if time.time() - start_time > 15:
-                logger.info(f"The time limit for receiving a keepalive and telemetry has been exceeded for {address}, connection is now closing")
+                logger.debug(f"Time limit for receiving a keepalive and telemetry was exceeded for {address}, connection closing")
                 return
 
             header, payload = get_next_hdr_payload(connection)
             if header.msg_type == message_type(message_type_enum.telemetry_ack):
                 incoming_peer.telemetry = telemetry_req.telemetry_ack.parse(header, payload)
-                logger.debug(f"Received telemetry from {address}")
+                logger.log(_logger.VERBOSE, f"Received telemetry from {address}")
 
             elif header.msg_type == message_type(message_type_enum.keepalive):
                 keepalive = message_keepalive.parse_payload(header, payload)
-                logger.debug(f"Received peers from {address}")
+                logger.log(_logger.VERBOSE, f"Received peers from {address}")
                 incoming_peer_peers = keepalive.peers
 
             elif header.msg_type == message_type(message_type_enum.confirm_ack):
                 confirm_response = confirm_ack.parse(header, payload)
                 if confirm_request.is_response(confirm_response):
                     is_voting = True
-                    logger.debug(f"Received confirm_ack message from {address}")
+                    logger.log(_logger.VERBOSE, f"Received confirm_ack message from {address}")
 
         return incoming_peer, incoming_peer_peers, is_voting
 
@@ -241,7 +242,7 @@ class peer_manager:
                 signing_key, verifying_key = node_handshake_id.keypair()
                 peer_id = node_handshake_id.perform_handshake_exchange(self.ctx, s, signing_key, verifying_key)
                 peer.peer_id = peer_id
-                logger.log(VERBOSE, f"Connected and handshaked to peer with ID {hexlify(peer_id)}")
+                logger.log(_logger.VERBOSE, f"Connected and handshaked to peer with ID {hexlify(peer_id)}")
 
                 if self.listening_address:
                     self.send_keepalive_packet(s)
@@ -300,7 +301,7 @@ class peer_manager:
                 time.sleep(delay)
 
             self.crawl_once(max_workers)
-            logger.log(VERBOSE, self)
+            logger.log(_logger.VERBOSE, self)
             count += 1
 
     # noinspection PyUnresolvedReferences
@@ -502,6 +503,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
 def get_peers_from_service(ctx: dict, url = None):
     if url is None:
         url = ctx['peerserviceurl']
+
     session = requests.Session()
     resp = session.get(url, timeout=5)
     json_resp = resp.json()

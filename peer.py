@@ -5,10 +5,8 @@ import time
 import unittest
 from typing import Union
 
-from _logger import VERBOSE, get_logger
 from net import parse_ipv6
 
-logger = get_logger()
 
 class ip_addr:
     def __init__(self, ipv6: Union[str, ipaddress.IPv6Address] = ipaddress.IPv6Address(0)):
@@ -91,8 +89,6 @@ class Peer:
             self.is_voting = True
         if self.peer_id is None and peer.peer_id is not None:
             self.peer_id = peer.peer_id
-
-        logger.log(VERBOSE, f"Merged peer {peer}")
 
     def compare(self, other: "Peer") -> bool:
         """Check if the ip and node_id of both peers are equal."""
