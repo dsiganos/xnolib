@@ -120,11 +120,8 @@ class Peer:
             sw_ver = ' v' + self.telemetry.get_sw_version()
         return '%s:%s (score:%s, is_voting: %s%s)' % (str(self.ip), self.port, self.score, self.is_voting, sw_ver)
 
-    def __eq__(self, other):
-        return (self.peer_id is not None and self.peer_id == other.peer_id) or (self.ip == other.ip and self.port == other.port)
-
     def __hash__(self):
-        return hash((self.ip, self.port))
+        return hash((self.ip, self.port, self.peer_id))
 
 
 class TestPeer(unittest.TestCase):
