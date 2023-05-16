@@ -94,15 +94,15 @@ class Peer:
         """Check if the ip and node_id of both peers are equal."""
         return (self.peer_id is not None and self.peer_id == other.peer_id) or (self.ip == other.ip and self.port == other.port)
 
-    @classmethod
-    def parse_peer(cls, data: bytes):
-        assert(len(data) == 18)
+    @staticmethod
+    def parse_peer(data: bytes):
+        assert (len(data) == 18)
         ip = parse_ipv6(data[0:16])
         port = int.from_bytes(data[16:], "little")
         return Peer(ip_addr(ip), port)
 
-    @classmethod
-    def from_json(self, json_peer):
+    @staticmethod
+    def from_json(json_peer):
         from telemetry_req import telemetry_ack
         # Add 'incoming' argument when peer service code gets updated
         peer = Peer(ip_addr(json_peer['ip']), json_peer['port'], json_peer['score'], json_peer['is_voting'],
@@ -111,6 +111,7 @@ class Peer:
             peer.telemetry = telemetry_ack.from_json(json_peer['telemetry'])
         if json_peer['peer_id']:
             peer.peer_id = binascii.unhexlify(json_peer['peer_id'])
+
         return peer
 
     def __str__(self):
