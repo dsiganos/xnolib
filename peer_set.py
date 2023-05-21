@@ -40,6 +40,9 @@ class peer_set:
     #
     #     return False
 
+    def __iter__(self):
+        return iter(self.__peers)
+
     def update(self, s: Iterable[Peer]) -> None:
         for p in s:
             self.add(p)
