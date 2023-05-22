@@ -50,8 +50,9 @@ class peer_manager:
         self.listening_address: Optional[ip_addr] = ip_addr.from_string(listening_address) if listening_address is not None else None
         self.listening_port = listening_port
 
+        self.__connections_graph: dict[Peer, peer_set]
         if initial_graph is None:
-            self.__connections_graph: dict[Peer, peer_set] = {}
+            self.__connections_graph = {}
         else:
             self.__connections_graph = initial_graph.copy()
 

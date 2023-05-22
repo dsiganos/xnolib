@@ -3,7 +3,7 @@ import ipaddress
 import json
 import time
 import unittest
-from typing import Union
+from typing import Optional, Union
 
 from net import parse_ipv6
 
@@ -49,11 +49,11 @@ class ip_addr:
 # it into a readable string format
 class Peer:
     def __init__(self, ip: ip_addr = ip_addr(), port: int = 0, score: int = -1, is_voting: bool = False,
-                 last_seen: int = int(time.time()), incoming: bool =False):
+                 last_seen: int = int(time.time()), incoming: bool = False):
         assert isinstance(ip, ip_addr)
         self.ip = ip
         self.port = port
-        self.peer_id = None
+        self.peer_id: Optional[str] = None
         self.is_voting = is_voting
         self.telemetry = None
         self.aux = {}
