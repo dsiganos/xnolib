@@ -120,9 +120,6 @@ class Peer:
             sw_ver = ' v' + self.telemetry.get_sw_version()
         return '%s:%s (score:%s, is_voting: %s%s)' % (str(self.ip), self.port, self.score, self.is_voting, sw_ver)
 
-    def __hash__(self):
-        return hash((self.ip, self.port))
-
 
 class TestPeer(unittest.TestCase):
     def test_peer_from_json(self):
