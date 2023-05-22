@@ -4,6 +4,7 @@ import json
 import time
 import unittest
 from typing import Optional, Union
+from uuid import uuid4
 
 from net import parse_ipv6
 
@@ -60,8 +61,16 @@ class Peer:
         self.last_seen = last_seen
         self.incoming = incoming
 
+        self.__identifier: str = uuid4().hex
+
         # sideband info, not used for equality and hashing
         self.score = score
+
+    def identifier(self) -> str:
+        """
+        Get the unique and immutable string identifier that represents this peer internally.
+        """
+        return self.__identifier
 
     def serialise(self) -> bytes:
         data = b""
@@ -121,7 +130,7 @@ class Peer:
         return '%s:%s (score:%s, is_voting: %s%s)' % (str(self.ip), self.port, self.score, self.is_voting, sw_ver)
 
     def __hash__(self):
-        return hash((self.ip, self.port))
+        return hash(self.identifier())
 
 
 class TestPeer(unittest.TestCase):

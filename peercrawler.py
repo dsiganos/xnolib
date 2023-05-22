@@ -354,8 +354,8 @@ class peer_manager:
         nodes = {}
         for peer, connections in graph_copy.items():
             peer_data = vars(deepcopy(peer))
-            peer_data["connections"] = [str(id(c)) for c in connections]
-            nodes[str(id(peer))] = peer_data
+            peer_data["connections"] = [c.identifier() for c in connections]
+            nodes[peer.identifier()] = peer_data
 
         return nodes
 
