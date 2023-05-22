@@ -121,7 +121,7 @@ class Peer:
         return '%s:%s (score:%s, is_voting: %s%s)' % (str(self.ip), self.port, self.score, self.is_voting, sw_ver)
 
     def __hash__(self):
-        return hash((self.ip, self.port, self.peer_id))
+        return hash((self.ip, self.port))
 
 
 class TestPeer(unittest.TestCase):
