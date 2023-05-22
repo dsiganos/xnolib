@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import time
-from typing import Iterable, Optional
+from typing import Iterable, Iterator, Optional
 
 import _logger
 from peer import Peer
@@ -40,7 +40,7 @@ class peer_set:
     #
     #     return False
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Peer]:
         return iter(self.__peers)
 
     def update(self, s: Iterable[Peer]) -> None:
