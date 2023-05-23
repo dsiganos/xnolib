@@ -91,7 +91,7 @@ class Peer:
             self.peer_id = peer.peer_id
 
     def compare(self, other: "Peer") -> bool:
-        """Check if the ip and node_id of both peers are equal."""
+        """Checks if this peer and the provided one are considered to be the same node in the network."""
         return (self.peer_id is not None and self.peer_id == other.peer_id) or (self.ip == other.ip and self.port == other.port)
 
     @staticmethod
