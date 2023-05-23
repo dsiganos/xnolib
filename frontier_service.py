@@ -19,6 +19,7 @@ from args import add_network_switcher_args
 from sql_utils import *
 from pynanocoin import *
 from peer import Peer
+from peer_set import peer_set
 
 
 logger = get_logger()
@@ -30,7 +31,7 @@ class frontier_service:
         self.ctx = ctx
         self.database_interface: frontier_database = interface
         self.verbosity = verbosity
-        self.peers: Set[Peer] = set()
+        self.peers = peer_set()
         self.blacklist = blacklist_manager(Peer, 1800)
 
     def start_service(self, addr='::', port=7080) -> None:
@@ -143,8 +144,8 @@ class frontier_service:
 
     def merge_peers(self, peers) -> None:
         for p in peers:
-            if not self.blacklist.is_blacklisted(p) and p not in self.peers:
-                self.peers.add(p)
+            if not self.blacklist.is_blacklisted(p):
+                self.peers.add(p)  # if this peer is already in the collection, the existing one will be updated
 
 
 class client_packet:
@@ -434,9 +435,14 @@ class blacklist_manager:
         self.expiry_time = expiry_time
 
     def get_entry(self, item):
-        for b in self.blacklist:
-            if item == b.item:
-                return b
+        if self.object_type == Peer:  # ugly temporary hack
+            for b in self.blacklist:
+                if item.compare(b.item):
+                    return b
+        else:
+            for b in self.blacklist:
+                if item == b.item:
+                    return b
         return None
 
 

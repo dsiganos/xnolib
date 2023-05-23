@@ -18,6 +18,9 @@ class peer_set:
         self.__peers: set[Peer] = set()
 
     def add(self, new_peer: Peer) -> None:
+        """
+        Adds a new peer to the collection or merges it into an existing one if it's already present.
+        """
         assert isinstance(new_peer, Peer)
 
         existing = self.find(new_peer)
