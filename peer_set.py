@@ -29,19 +29,40 @@ class peer_set:
         else:
             self.__peers.add(new_peer)
 
-    # def remove(self, element: Peer) -> bool:
-    #     """
-    #     Looks for a peer in this collection that is considered equal to the provided peer and removes it.
-    #     Returns True if a peer was removed, False otherwise..
-    #     """
-    #     assert isinstance(element, Peer)
-    #
-    #     for p in self.__peers:
-    #         if p == element or p.compare(element):
-    #             self.__peers.remove(p)
-    #             return True
-    #
-    #     return False
+    def remove(self, peer: Peer) -> bool:
+        """
+        Looks for a peer in this collection that is considered equal to the provided peer and removes it.
+        Returns True if a peer was removed, False otherwise.
+        """
+        assert isinstance(peer, Peer)
+
+        # try to remove by hash first, which is often faster than iterating through the set
+        try:
+            self.__peers.remove(peer)
+            return True
+        except KeyError:
+            pass
+
+        for p in self.__peers:
+            if p.compare(peer):
+                self.__peers.remove(p)
+                return True
+
+        return False
+
+    def remove_exact(self, peer: Peer) -> bool:
+        """
+        Looks for the passed Peer instance in this collection and removes it.
+        Returns True if the instance was found and removed, False otherwise.
+        """
+        assert isinstance(peer, Peer)
+
+        try:
+            self.__peers.remove(peer)
+        except KeyError:
+            return False
+
+        return True
 
     def __iter__(self) -> Iterator[Peer]:
         return iter(self.__peers)

@@ -11,6 +11,7 @@ from functools import reduce
 from typing import Collection, Iterable, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from time import time
 
 import requests
 from pydot import Dot, Node, Edge
@@ -64,7 +65,7 @@ class peer_manager:
             threading.Thread(target=self.listen_incoming, daemon=True).start()
 
         if inactivity_threshold_seconds > 0:
-            thread = threading.Thread(target=self.run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
+            thread = threading.Thread(target=self.__run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
             thread.start()
 
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
@@ -97,13 +98,25 @@ class peer_manager:
                     self.__connections_graph[from_peer].add(new_peer)
                     logger.debug(f"Discovered new peer {new_peer}")
 
-    def run_periodic_cleanup(self, inactivity_threshold_seconds):
+    def __run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
             with self.mutex:
-                for peer_collection in self.__connections_graph.values():
-                    peer_collection.cleanup_inactive(inactivity_threshold_seconds)
+                t = time()
+                for peer in self.__connections_graph.keys():
+                    if t - peer.last_seen > inactivity_threshold_seconds:
+                        self.__remove_peer(peer)
 
             time.sleep(inactivity_threshold_seconds)
+
+    def __remove_peer(self, peer: Peer) -> None:
+        """
+        Removes the node representing this peer from the graph and all the edges connected to it.
+        The peer argument should be the exact same instance present in the graph, and not a "similar" instance.
+        """
+        for peer_collection in self.__connections_graph.values():  # remove all the edges connected to that node
+            peer_collection.remove(peer)
+
+        del self.__connections_graph[peer]  # remove the node and its edges
 
     def get_peers_as_list(self) -> Collection[Peer]:
         with self.mutex:
