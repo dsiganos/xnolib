@@ -78,7 +78,7 @@ class Peer:
 
         assert self.compare(peer), "Attempt occurred at merging two peers which aren't considered equal"
 
-        self.last_seen = peer.last_seen
+        self.last_seen = max(self.last_seen, peer.last_seen)
 
         if peer.telemetry is not None:
             self.telemetry = peer.telemetry
