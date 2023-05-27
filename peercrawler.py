@@ -82,6 +82,7 @@ class peer_manager:
                 from_peer = existing_peer
             else:
                 self.__connections_graph[from_peer] = peer_set()  # add this peer as a key to the graph
+                logger.debug(f"Discovered new peer {from_peer}")
 
             for new_peer in new_peers:
                 if new_peer.ip.ipv6.is_unspecified:
@@ -105,6 +106,7 @@ class peer_manager:
                 for peer in self.__connections_graph.keys():
                     if t - peer.last_seen > inactivity_threshold_seconds:
                         self.__remove_peer(peer)
+                        logger.debug(f"Removing peer {peer} due to inactivity")
 
             time.sleep(inactivity_threshold_seconds)
 
