@@ -49,6 +49,8 @@ class peer_manager:
         self.mutex = threading.Lock()
         self.listening_address: Optional[ip_addr] = ip_addr.from_string(listening_address) if listening_address is not None else None
         self.listening_port = listening_port
+        self.inactivity_threshold_seconds = inactivity_threshold_seconds
+        self.__last_inactivity_cleanup = time.time()
 
         self.__connections_graph: dict[Peer, peer_set]
         if initial_graph is None:
@@ -63,10 +65,6 @@ class peer_manager:
         if self.listening_address:
             threading.Thread(target=self.listen_incoming, daemon=True).start()
 
-        if inactivity_threshold_seconds > 0:
-            thread = threading.Thread(target=self.__run_periodic_cleanup, args=(inactivity_threshold_seconds,), daemon=True)
-            thread.start()
-
     def add_peers(self, from_peer: Peer, new_peers: Iterable[Peer]):
         def find_existing_peer(peer: Peer) -> Optional[Peer]:
             """Looks through the connection graph keys for the same peer."""
@@ -75,6 +73,12 @@ class peer_manager:
                     return p
 
         with self.mutex:
+            if self.inactivity_threshold_seconds > 0 \
+                    and time.time() - self.__last_inactivity_cleanup > self.inactivity_threshold_seconds:
+                logger.info("Running inactive peer cleanup")
+                self.__run_cleanup()
+                self.__last_inactivity_cleanup = time.time()
+
             existing_peer = find_existing_peer(from_peer)
             if existing_peer:
                 existing_peer.merge(from_peer)
@@ -98,16 +102,14 @@ class peer_manager:
                     self.__connections_graph[from_peer].add(new_peer)
                     logger.debug(f"Discovered new peer {new_peer}")
 
-    def __run_periodic_cleanup(self, inactivity_threshold_seconds):
-        while True:
-            time.sleep(inactivity_threshold_seconds)
-            logger.info("Running inactive peer cleanup")
-            with self.mutex:
-                t = time.time()
-                for peer in self.__connections_graph.copy().keys():
-                    if t - peer.last_seen > inactivity_threshold_seconds:
-                        self.__remove_peer(peer)
-                        logger.debug(f"Removing peer {peer} due to inactivity")
+    def __run_cleanup(self):
+        t = time.time()
+        peers = list(self.__connections_graph.keys())  # make a copy to delete keys while iterating
+
+        for peer in peers:
+            if t - peer.last_seen > self.inactivity_threshold_seconds:
+                self.__remove_peer(peer)
+                logger.debug(f"Removing peer {peer} due to inactivity")
 
     def __remove_peer(self, peer: Peer) -> None:
         """
