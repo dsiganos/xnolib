@@ -11,7 +11,6 @@ from functools import reduce
 from typing import Collection, Iterable, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from time import time
 
 import requests
 from pydot import Dot, Node, Edge
@@ -104,7 +103,7 @@ class peer_manager:
             time.sleep(inactivity_threshold_seconds)
             logger.info("Running inactive peer cleanup")
             with self.mutex:
-                t = time()
+                t = time.time()
                 for peer in self.__connections_graph.keys():
                     if t - peer.last_seen > inactivity_threshold_seconds:
                         self.__remove_peer(peer)
