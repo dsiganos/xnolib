@@ -101,14 +101,14 @@ class peer_manager:
 
     def __run_periodic_cleanup(self, inactivity_threshold_seconds):
         while True:
+            time.sleep(inactivity_threshold_seconds)
+            logger.info("Running inactive peer cleanup")
             with self.mutex:
                 t = time()
                 for peer in self.__connections_graph.keys():
                     if t - peer.last_seen > inactivity_threshold_seconds:
                         self.__remove_peer(peer)
                         logger.debug(f"Removing peer {peer} due to inactivity")
-
-            time.sleep(inactivity_threshold_seconds)
 
     def __remove_peer(self, peer: Peer) -> None:
         """
