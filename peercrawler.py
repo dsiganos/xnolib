@@ -636,7 +636,9 @@ def main():
         if args.deserialize:
             initial_graph = deserialize_graph_from_file(args.deserialize)
 
-        peerman = peer_manager(ctx, initial_graph=initial_graph, listening_address=args.listen, verbosity=verbosity)
+        peerman = peer_manager(ctx, verbosity=verbosity,
+                               listening_address=args.listen, listening_port=args.port,
+                               initial_graph=initial_graph)
 
         if args.serialize:
             threading.Thread(target=serialize_thread, args=(peerman,), daemon=True).start()
