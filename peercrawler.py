@@ -597,12 +597,20 @@ def deserialize_graph_from_file(path: str) -> Optional[dict[Peer, peer_set]]:
 
 
 def serialize_thread(peerman: peer_manager):
+    file_name = "peer_connection_graph.json"
+    file_name_tmp = file_name + ".tmp"
+
+    with open(file_name, "wt") as file:  # create file with empty peer graph
+        file.write("{}\n")
+
     while True:
         time.sleep(60)
 
         serialized_graph = peerman.serialize()
-        with open("peer_connection_graph.json", "w") as file:
+        with open(file_name_tmp, "wt") as file:
             file.write(serialized_graph)
+
+        os.replace(file_name_tmp, file_name)  # replace file with the new version atomically
 
 
 def main():
