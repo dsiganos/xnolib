@@ -91,7 +91,7 @@ class Peer:
             self.peer_id = peer.peer_id
 
     def compare(self, other: "Peer") -> bool:
-        """Check if the ip and node_id of both peers are equal."""
+        """Checks if this peer and the provided one are considered to be the same node in the network."""
         return (self.peer_id is not None and self.peer_id == other.peer_id) or (self.ip == other.ip and self.port == other.port)
 
     @staticmethod
@@ -119,12 +119,6 @@ class Peer:
         if self.telemetry:
             sw_ver = ' v' + self.telemetry.get_sw_version()
         return '%s:%s (score:%s, is_voting: %s%s)' % (str(self.ip), self.port, self.score, self.is_voting, sw_ver)
-
-    def __eq__(self, other):
-        return (self.peer_id is not None and self.peer_id == other.peer_id) or (self.ip == other.ip and self.port == other.port)
-
-    def __hash__(self):
-        return hash((self.ip, self.port))
 
 
 class TestPeer(unittest.TestCase):

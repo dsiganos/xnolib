@@ -90,7 +90,7 @@ class TestComms(unittest.TestCase):
     def test_peer_deserialisation(self):
         p = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         p1 = Peer.parse_peer(self.data[8:26])
-        self.assertEqual(p, p1)
+        self.assertTrue(p.compare(p1))
 
     def test_peer_serialisation(self):
         p = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
@@ -111,9 +111,9 @@ class TestComms(unittest.TestCase):
         p2 = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54000)
         p3 = Peer(ip_addr(IPv6Address("::ffff:9df5:d113")), 54000)
         p4 = Peer(ip_addr(IPv6Address("::ffff:9df5:d11e")), 54001)
-        self.assertTrue(p == p2)
-        self.assertTrue(p != p3)
-        self.assertTrue(p != p4)
+        self.assertTrue(p.compare(p2))
+        self.assertTrue(not p.compare(p3))
+        self.assertTrue(not p.compare(p4))
 
     def test_keepalive_full_loop1(self):
         h = message_header.parse_header(self.data[0:8])
@@ -527,8 +527,8 @@ class TestComms(unittest.TestCase):
         peer1 = peer_from_endpoint(ip1, port1)
         peer2 = peer_from_endpoint(ip2, port2)
 
-        self.assertEqual(peer1, Peer(ip_addr('::1234:1234'), 12345))
-        self.assertEqual(peer2, Peer(ip_addr('::FFFF:1.2.3.4'), 12345))
+        self.assertTrue(peer1.compare(Peer(ip_addr('::1234:1234'), 12345)))
+        self.assertTrue(peer2.compare(Peer(ip_addr('::FFFF:1.2.3.4'), 12345)))
 
     def test_signing_verifying(self):
         signing_key, verifying_key = ed25519_blake2b.create_keypair()
