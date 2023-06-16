@@ -26,7 +26,6 @@ from peer_set import peer_set
 from confirm_ack import confirm_ack
 from peer import Peer
 
-
 logger = _logger.get_logger()
 
 
@@ -43,12 +42,13 @@ class peer_manager:
     def __init__(self, ctx,
                  verbosity=0, initial_graph: dict[Peer, peer_set] = None,
                  peers: Iterable[Peer] = None, inactivity_threshold_seconds=0,
-                 listening_address: Optional[str] = None, listening_port=7777):
+                 listening_address: Optional[str] = None, listening_port=None):
         self.ctx = ctx
         self.verbosity = verbosity
         self.mutex = threading.Lock()
-        self.listening_address: Optional[ip_addr] = ip_addr.from_string(listening_address) if listening_address is not None else None
-        self.listening_port = listening_port
+        self.listening_address: Optional[ip_addr] = ip_addr.from_string(
+            listening_address) if listening_address is not None else None
+        self.listening_port = listening_port if listening_port else 7777
         self.inactivity_threshold_seconds = inactivity_threshold_seconds
         self.__last_inactivity_cleanup = time.time()
 
@@ -152,7 +152,8 @@ class peer_manager:
                 while True:
                     semaphore.acquire()
                     connection, address = s.accept()
-                    threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address), daemon=True).start()
+                    threading.Thread(target=self.__handle_incoming_semaphore, args=(semaphore, connection, address),
+                                     daemon=True).start()
             except Exception:
                 logger.exception("Error occurred in listener thread")
                 interrupt_main()
@@ -189,7 +190,8 @@ class peer_manager:
 
             query = handshake_query.parse_query(header, payload)
             signing_key, verifying_key = node_handshake_id.keypair()
-            incoming_peer.peer_id = handshake_exchange_server(ctx, connection, query, signing_key, verifying_key).account
+            incoming_peer.peer_id = handshake_exchange_server(ctx, connection, query, signing_key,
+                                                              verifying_key).account
             logger.debug(f"Successfully handshaked with incoming connection from {address}")
 
             telemetry_request = telemetry_req.telemetry_req(ctx)
@@ -208,7 +210,8 @@ class peer_manager:
         start_time = time.time()
         while incoming_peer.telemetry is None or incoming_peer.is_voting is False or incoming_peer_peers is None:
             if time.time() - start_time > 15:
-                logger.debug(f"Time limit for receiving a keepalive and telemetry was exceeded for {address}, connection closing")
+                logger.debug(
+                    f"Time limit for receiving a keepalive and telemetry was exceeded for {address}, connection closing")
                 return
 
             header, payload = get_next_hdr_payload(connection)
@@ -424,7 +427,7 @@ def parse_args():
     parser.add_argument('-l', '--listen', type=str, default=None,
                         help='the public IP address of this machine; this address will be advertised in outgoing keepalive packets and the incoming connection listener will be enabled'
                              'if this argument isn\'t set no keepalive packets will be sent out and incoming connections will be ignored')
-    parser.add_argument('-p', '--port', type=int, default=7070,
+    parser.add_argument('-p', '--port', type=int, default=None,
                         help='tcp port number to listen on in service mode')
     parser.add_argument('--serialize', action='store_true', default=False,
                         help='serialize the graph of peer connection to peer_connection_graph.json periodically')
@@ -516,7 +519,7 @@ def run_peer_service_forever(peerman, addr='', port=7070):
                 conn.sendall(data)
 
 
-def get_peers_from_service(ctx: dict, url = None):
+def get_peers_from_service(ctx: dict, url=None):
     if url is None:
         url = ctx['peerserviceurl']
 
