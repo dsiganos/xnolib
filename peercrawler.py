@@ -169,12 +169,11 @@ class peer_manager:
             connection.close()
 
     @staticmethod
-    def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer], bool]]:
+    def handle_incoming(connection: socket.socket, address, ctx: dict) -> Optional[tuple[Peer, list[Peer]]]:
         logger.log(_logger.VERBOSE, f"Receiving connection from {address}")
 
         incoming_peer = Peer(ip=ip_addr.from_string(address[0]), incoming=True)
         incoming_peer_peers = None
-        is_voting = False
 
         try:
             header, payload = get_next_hdr_payload(connection)
@@ -207,7 +206,7 @@ class peer_manager:
             return
 
         start_time = time.time()
-        while incoming_peer.telemetry is None or incoming_peer_peers is None or is_voting is False:
+        while incoming_peer.telemetry is None or incoming_peer.is_voting is False or incoming_peer_peers is None:
             if time.time() - start_time > 15:
                 logger.debug(f"Time limit for receiving a keepalive and telemetry was exceeded for {address}, connection closing")
                 return
@@ -225,10 +224,10 @@ class peer_manager:
             elif header.msg_type == message_type(message_type_enum.confirm_ack):
                 confirm_response = confirm_ack.parse(header, payload)
                 if confirm_request.is_response(confirm_response):
-                    is_voting = True
+                    incoming_peer.is_voting = True
                     logger.log(_logger.VERBOSE, f"Received confirm_ack message from {address}")
 
-        return incoming_peer, incoming_peer_peers, is_voting
+        return incoming_peer, incoming_peer_peers
 
     def send_keepalive_packet(self, connection: socket):
         assert self.listening_address is not None
