@@ -7,7 +7,7 @@ import sys
 
 import block
 import pynanocoin
-import pow_validation
+import pow_block
 
 
 def to_pass_fail(status: bool) -> str:
@@ -20,7 +20,7 @@ print(json_block)
 blk = block.Block.parse_from_json_string(json_block)
 print(blk)
 
-pow_status = pow_validation.validate_block_pow(blk, False)
+pow_status = pow_block.validate_block_pow(blk, False)
 sig_status = pynanocoin.valid_block(pynanocoin.livectx, blk)
 
 print('POW       check: %s' % to_pass_fail(pow_status))

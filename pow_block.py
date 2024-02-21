@@ -1,3 +1,5 @@
+# this file contains functions that operate with pow at block level
+
 from block import *
 import pow
 

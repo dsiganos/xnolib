@@ -16,7 +16,7 @@ import git
 from typing import Optional, Union
 from _logger import get_logger, VERBOSE
 
-import pow_validation
+import pow_block
 
 import acctools
 from exceptions import *
@@ -959,7 +959,7 @@ def valid_block(ctx, block, post_v2: bool = True) -> bool:
             raise VerificationErrorNoAccount()
         sig_valid = verify(block.hash(), block.signature, block.get_account())
 
-    work_valid = pow_validation.validate_block_pow(block, post_v2)
+    work_valid = pow_block.validate_block_pow(block, post_v2)
     return work_valid and sig_valid
 
 
