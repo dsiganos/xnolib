@@ -712,7 +712,7 @@ class block_state:
 
     def generate_work(self, min_difficulty: int) -> None:
         root_int = int.from_bytes(self.root(), byteorder='big')
-        self.work = pow.find_pow_for_root_and_difficulty(root_int, min_difficulty)
+        self.work = pow.generate_pow_for_root_and_difficulty(root_int, min_difficulty)
 
     @classmethod
     def parse(cls, data: bytes):

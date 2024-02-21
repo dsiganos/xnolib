@@ -23,7 +23,7 @@ def generate_pow_hash(nonce: int, root: int) -> int:
     return int.from_bytes(alg.digest(), byteorder='little')
 
 
-def find_pow_for_root_and_difficulty(root: int, target_difficulty: int) -> int:
+def generate_pow_for_root_and_difficulty(root: int, target_difficulty: int) -> int:
     nonce = random_nonce()
     difficulty = generate_pow_hash(nonce, root)
     while difficulty < target_difficulty:
