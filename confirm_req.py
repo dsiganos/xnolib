@@ -136,8 +136,12 @@ class confirm_req_block(confirm_req):
 
 def get_next_confirm_ack(s: socket.socket) -> message_header and bytes:
     hdr, data = get_next_hdr_payload(s)
+    starttime = time.time()
     while hdr.msg_type != message_type(5):
         hdr, data = get_next_hdr_payload(s)
+        if time.time() - starttime > timeout_value:
+            raise RuntimeError("timeout while waiting for confirm ack")
+
     return hdr, data
 
 
