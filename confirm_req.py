@@ -18,6 +18,9 @@ from peercrawler import *
 import confirm_ack
 
 
+timeout_value = 10
+
+
 class confirm_req:
 
     @classmethod
@@ -167,7 +170,7 @@ def send_example_confirm_req_hash(ctx: dict, s: socket.socket) -> None:
 def search_for_response(s: socket.socket, req) -> confirm_ack.confirm_ack or None:
     assert(isinstance(req, confirm_req_block) or isinstance(req, confirm_req_hash))
     starttime = time.time()
-    while time.time() - starttime <= 10:
+    while time.time() - starttime <= timeout_value:
         hdr, data = get_next_confirm_ack(s)
         ack = confirm_ack.confirm_ack.parse(hdr, data)
         assert ack
@@ -239,7 +242,7 @@ def confirm_req_peer(ctx: dict, pair: hash_pair, peeraddr: str = None, peerport:
         signing_key, verifying_key = node_handshake_id.keypair()
         node_handshake_id.perform_handshake_exchange(ctx, s, signing_key, verifying_key)
         print('handshake done')
-        s.settimeout(10)
+        s.settimeout(timeout_value)
         print('Confirm Hash')
         outcome = confirm_blocks_by_hash(ctx, [pair], s)
         print('Finished with confirmed status: %s' % outcome)
