@@ -34,25 +34,6 @@ def get_all_dns_addresses(addr: str) -> list[str]:
     return ['::ffff:' + x.to_text() for x in result]
 
 
-def confirm_req_size(block_type: int, i_count: int) -> int:
-    if block_type == message_type_enum.not_a_block:
-        size = 64 * i_count
-    else:
-        assert(i_count == 1)
-        size = block_length_by_type.get(block_type)
-    return size
-
-
-def confirm_ack_size(block_type: int, i_count: int) -> int:
-    size = 104
-    if block_type == message_type_enum.not_a_block:
-        size += i_count * 32
-    else:
-        assert(i_count == 1)
-        size += block_length_by_type.get(block_type)
-    return size
-
-
 class message_type_enum:
     invalid = 0x0
     not_a_block = 0x1
@@ -152,9 +133,23 @@ class message_header:
         if bool:
             self.ext = self.ext | RESPONSE_MASK
 
+    def count_v2_get(self):
+        count_v2_mask_left = 0xf000
+        count_v2_mask_right = 0x00f0
+        left = (self.ext & count_v2_mask_left) >> 12
+        right = (self.ext & count_v2_mask_right) >> 4
+        result = ((left << 4) | right) & 0xff
+        print("count_v2_get -> %s" % result)
+        return result
+
     def count_get(self) -> int:
-        COUNT_MASK = 0xf000
-        return (self.ext & COUNT_MASK) >> 12
+        assert self.msg_type == message_type(message_type_enum.confirm_ack) or self.msg_type == message_type(message_type_enum.confirm_req)
+        if self.ext & 1 == 1:
+            print('v2 confirm_ack')
+            return self.count_v2_get()
+        else:
+            COUNT_MASK = 0xf000
+            return (self.ext & COUNT_MASK) >> 12
 
     def block_type(self) -> int:
         BLOCK_TYPE_MASK = 0x0f00
@@ -193,6 +188,25 @@ class message_header:
                               [json_hdr['ver_max'], json_hdr['ver_using'], json_hdr["ver_min"]],
                               message_type(json_hdr['msg_type']), json_hdr['ext'])
 
+
+    def confirm_req_size(self) -> int:
+        if self.block_type() == message_type_enum.not_a_block:
+            size = 64 * self.count_get()
+        else:
+            assert(self.count_get() == 1)
+            size = block_length_by_type.get(self.block_type())
+        return size
+
+
+    def confirm_ack_size(self) -> int:
+        size = 104
+        if self.block_type() == message_type_enum.not_a_block:
+            size += self.count_get() * 32
+        else:
+            assert(self.count_get() == 1)
+            size += block_length_by_type.get(self.block_type())
+        return size
+
     def payload_length_bytes(self) -> Optional[int]:
         if self.msg_type == message_type(message_type_enum.bulk_pull):
             return None
@@ -216,10 +230,10 @@ class message_header:
             return block_length_by_type(self.block_type())
 
         elif self.msg_type == message_type(message_type_enum.confirm_ack):
-            return confirm_ack_size(self.block_type(), self.count_get())
+            return self.confirm_ack_size()
 
         elif self.msg_type == message_type(message_type_enum.confirm_req):
-            return confirm_req_size(self.block_type(), self.count_get())
+            return self.confirm_req_size()
 
         elif self.msg_type == message_type(message_type_enum.node_id_handshake):
             return node_id_handshake_size(self.is_query(), self.is_response())
