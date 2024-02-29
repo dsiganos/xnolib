@@ -9,6 +9,7 @@ import sys
 import time
 import argparse
 import datetime
+import multiprocessing
 
 import common
 import constants
@@ -241,6 +242,7 @@ def confirm_blocks_by_hash(ctx: dict, pairs: list[hash_pair], s: socket.socket) 
 
 
 def confirm_req_peer(ctx: dict, pair: hash_pair, peeraddr: str = None, peerport: int = None) -> bool:
+    print('Connecting to [%s]:%s' % (peeraddr, peerport))
     assert pair is not None
     with get_connected_socket_endpoint(peeraddr, peerport) as s:
         signing_key, verifying_key = node_handshake_id.keypair()
@@ -286,8 +288,12 @@ def main() -> None:
         peeraddr = str(peer.ip)
         peerport = peer.port
 
-    print('Connecting to [%s]:%s' % (peeraddr, peerport))
-    confirm_req_peer(ctx, pair, peeraddr=peeraddr, peerport=peerport)
+    pool_args = [(ctx, pair, peeraddr, peerport)] * 10
+    pool = multiprocessing.Pool(processes=10)
+    results = pool.starmap(confirm_req_peer, pool_args)
+    pool.close()
+    pool.join()
+    print(results)
 
 
 def parse_args():
