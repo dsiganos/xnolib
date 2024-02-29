@@ -116,10 +116,13 @@ class message_header:
         return header
 
     def is_query(self) -> bool:
-        return self.ext& 1
+        return bool(self.ext & 1)
 
     def is_response(self) -> bool:
-        return self.ext& 2
+        return bool(self.ext & 2)
+
+    def is_v2(self) -> bool:
+        return bool(self.ext & 4)
 
     def set_is_query(self, bool: bool) -> None:
         QUERY_MASK = 0x0001
@@ -130,6 +133,12 @@ class message_header:
     def set_is_response(self, bool: bool) -> None:
         RESPONSE_MASK = 0x0002
         self.ext = self.ext & 0xfffd
+        if bool:
+            self.ext = self.ext | RESPONSE_MASK
+
+    def set_is_v2(self, bool: bool) -> None:
+        RESPONSE_MASK = 0x0004
+        self.ext = self.ext & 0xfffb
         if bool:
             self.ext = self.ext | RESPONSE_MASK
 
